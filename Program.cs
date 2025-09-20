@@ -57,10 +57,9 @@ builder.Services.AddCors(options =>
         {
             policy
                 .WithOrigins(
-                    "http://localhost:5173", // Desarrollo
-                    "http://127.0.0.1:5000", // Desarrollo
-                    "https://forestbarber.site", // Producción
-                    "http://forestbarber.site" // Producción
+                    "http://localhost:4200", // Desarrollo
+                    "http://localhost:4200/", // Desarrollo
+                    "https://forestbarber.site" // Producción
                 )
                 .AllowAnyMethod()
                 .AllowAnyHeader()
