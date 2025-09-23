@@ -1,6 +1,6 @@
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=147.93.32.147;Database=pyro;User=fore_forestbarber;Password=KC6LF6ofFy92#wD#;"
+    "DefaultConnection": "Server=147.93.32.147;Database=pyre;User=fore_forestbarber;Password=KC6LF6ofFy92#wD#;"
   },
   "Jwt": {
     "Key": "production-key-super-segura",

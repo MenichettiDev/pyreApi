@@ -12,12 +12,20 @@ namespace pyreApi.Models
         [MaxLength(100)]
         public string? Nombre { get; set; }
 
-        [Required]
+        [MaxLength(100)]
+        public string? Apellido { get; set; }
+
+        [MaxLength(20)]
+        public string? Dni { get; set; }
+
         [EmailAddress]
+        [MaxLength(150)]
         public string? Email { get; set; }
 
+        [MaxLength(50)]
         public string? Telefono { get; set; }
 
+        [MaxLength(45)]
         public string? Avatar { get; set; }
 
         [Required]
@@ -34,7 +42,7 @@ namespace pyreApi.Models
 
         public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 
-        public int IdUsuarioCrea { get; set; }
+        public int? IdUsuarioCrea { get; set; }
 
         public int? IdUsuarioModifica { get; set; }
 
