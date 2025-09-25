@@ -47,6 +47,7 @@ namespace pyreApi.Models
         public string? Ubicacion { get; set; }
 
         public bool Activo { get; set; } = true;
+        public bool EnReparacion { get; set; } = false;
 
         [ForeignKey("IdFamilia")]
         public FamiliaHerramientas Familia { get; set; } = null!;
