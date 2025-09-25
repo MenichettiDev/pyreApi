@@ -9,7 +9,7 @@ namespace pyreApi.Models
 
         [Required]
         [MaxLength(100)]
-        public string NombreEstadoHerramienta { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
 
         public ICollection<Herramienta> Herramientas { get; set; } = new List<Herramienta>();
         public ICollection<MovimientoHerramienta> MovimientosHerramienta { get; set; } = new List<MovimientoHerramienta>();

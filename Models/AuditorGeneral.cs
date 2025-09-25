@@ -33,15 +33,15 @@ namespace pyreApi.Models
         [Required]
         public AccionAuditoria Accion { get; set; }
 
-        [Column(TypeName = "json")]
+        [Column(TypeName = "longtext")]
         public string? ValorAnterior { get; set; }
 
-        [Column(TypeName = "json")]
+        [Column(TypeName = "longtext")]
         public string? ValorNuevo { get; set; }
 
         public string? Observaciones { get; set; }
 
-        [ForeignKey("Id")]
+        [ForeignKey("IdUsuario")]
         public Usuario Usuario { get; set; } = null!;
     }
 }

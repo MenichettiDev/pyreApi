@@ -3,14 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace pyreApi.Models
 {
-    public enum TipoMovimiento
-    {
-        Ingreso,
-        Egreso,
-        Reparación,
-        Baja
-    }
-
     public class MovimientoHerramienta
     {
         [Key]
@@ -20,16 +12,13 @@ namespace pyreApi.Models
         public int IdHerramienta { get; set; }
 
         [Required]
-        public int IdActor { get; set; }
+        public int IdUsuario { get; set; }
 
         [Required]
-        public TipoMovimiento TipoMovimiento { get; set; }
+        public int IdTipoMovimiento { get; set; }
 
         [Required]
         public DateTime Fecha { get; set; }
-
-        [Required]
-        public TimeSpan Hora { get; set; }
 
         [MaxLength(150)]
         public string? DestinoObra { get; set; }
@@ -47,6 +36,9 @@ namespace pyreApi.Models
 
         [ForeignKey("IdUsuario")]
         public Usuario Usuario { get; set; } = null!;
+
+        [ForeignKey("IdTipoMovimiento")]
+        public TipoMovimientoHerramienta TipoMovimiento { get; set; } = null!;
 
         [ForeignKey("IdObra")]
         public Obra? Obra { get; set; }

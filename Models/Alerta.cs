@@ -3,12 +3,6 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace pyreApi.Models
 {
-    public enum TipoAlerta
-    {
-        DevolucionExcedida,
-        ReparacionExcedida
-    }
-
     public class Alerta
     {
         [Key]
@@ -20,7 +14,7 @@ namespace pyreApi.Models
         public int? IdReparacion { get; set; }
 
         [Required]
-        public TipoAlerta TipoAlerta { get; set; }
+        public int IdTipoAlerta { get; set; }
 
         [Required]
         public DateTime FechaGeneracion { get; set; }
@@ -32,5 +26,8 @@ namespace pyreApi.Models
 
         [ForeignKey("IdReparacion")]
         public ReparacionHerramienta? Reparacion { get; set; }
+
+        [ForeignKey("IdTipoAlerta")]
+        public TipoAlerta TipoAlerta { get; set; } = null!;
     }
 }

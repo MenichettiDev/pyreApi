@@ -28,8 +28,6 @@ namespace pyreApi.Models
         [MaxLength(100)]
         public string? Serie { get; set; }
 
-        public int? IdProveedor { get; set; }
-
         [Required]
         public DateTime FechaDeIngreso { get; set; }
 
@@ -52,9 +50,6 @@ namespace pyreApi.Models
 
         [ForeignKey("IdFamilia")]
         public FamiliaHerramientas Familia { get; set; } = null!;
-
-        [ForeignKey("IdProveedor")]
-        public Usuario? Proveedor { get; set; }
 
         [ForeignKey("IdEstadoActual")]
         public EstadoHerramienta EstadoActual { get; set; } = null!;

@@ -10,9 +10,9 @@ namespace pyreApi.Models
 
         [Required]
         [MaxLength(100)]
-        public string NombreRol { get; set; } = string.Empty; // no null permitido
+        public string NombreRol { get; set; } = string.Empty;
 
-        // Navegación inversa (opcional)
         public ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
     }
 }
+

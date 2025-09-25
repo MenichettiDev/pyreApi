@@ -12,10 +12,9 @@ namespace pyreApi.Models
         public int IdHerramienta { get; set; }
 
         [Required]
-        public int IdUsuarioResponsable { get; set; }
+        public int IdUsuario { get; set; }
 
-        [Required]
-        public int IdUsuarioRepara { get; set; }
+        public int? IdProveedor { get; set; }
 
         [Required]
         public DateTime FechaSalida { get; set; }
@@ -27,12 +26,13 @@ namespace pyreApi.Models
         [ForeignKey("IdHerramienta")]
         public Herramienta Herramienta { get; set; } = null!;
 
-        [ForeignKey("IdUsuarioResponsable")]
-        public Usuario UsuarioResponsable { get; set; } = null!;
+        [ForeignKey("IdUsuario")]
+        public Usuario Usuario { get; set; } = null!;
 
-        [ForeignKey("IdUsuarioRepara")]
-        public Usuario UsuarioRepara { get; set; } = null!;
+        [ForeignKey("IdProveedor")]
+        public Proveedor? Proveedor { get; set; }
 
         public ICollection<Alerta> Alertas { get; set; } = new List<Alerta>();
     }
 }
+

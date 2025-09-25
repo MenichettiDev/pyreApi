@@ -18,9 +18,9 @@ namespace pyreApi.Models
         [MaxLength(200)]
         public string? Ubicacion { get; set; }
 
-        public DateTime? FechaInicio { get; set; }
+        public DateOnly? FechaInicio { get; set; }
 
-        public DateTime? FechaFin { get; set; }
+        public DateOnly? FechaFin { get; set; }
 
         public bool Activa { get; set; } = true;
 

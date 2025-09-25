@@ -25,9 +25,6 @@ namespace pyreApi.Models
         [MaxLength(50)]
         public string? Telefono { get; set; }
 
-        [MaxLength(45)]
-        public string? Avatar { get; set; }
-
         [Required]
         public int RolId { get; set; }
 
@@ -35,18 +32,19 @@ namespace pyreApi.Models
 
         public bool Activo { get; set; } = true;
 
-        public string? PasswordHash { get; set; } // Contraseña encriptada
+        [MaxLength(45)]
+        public string? Avatar { get; set; }
 
-        [NotMapped]
-        public string? Password { get; set; } // Recibe la contraseña en texto plano, pero no se guarda en la DB
 
+        public DateTime FechaModificacion { get; set; }
         public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 
         public int? IdUsuarioCrea { get; set; }
 
         public int? IdUsuarioModifica { get; set; }
+        [NotMapped]
 
-        public DateTime? FechaModificacion { get; set; }
+        public string? PasswordHash { get; set; } // Contraseña encriptada
 
         [ForeignKey("RolId")]
         public Rol Rol { get; set; } = null!;
