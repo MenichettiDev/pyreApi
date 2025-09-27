@@ -12,7 +12,8 @@ namespace pyreApi.Data
         public DbSet<Usuario> Usuario { get; set; }
         public DbSet<Imagen> Imagen { get; set; }
         public DbSet<Rol> Rol { get; set; }
-        public DbSet<EstadoHerramienta> EstadoHerramienta { get; set; }
+        public DbSet<EstadoFisicoHerramienta> EstadoFisicoHerramienta { get; set; }
+        public DbSet<EstadoDisponibilidadHerramienta> EstadoDisponibilidadHerramienta { get; set; }
         public DbSet<FamiliaHerramientas> FamiliaHerramientas { get; set; }
         public DbSet<Planta> Planta { get; set; }
         public DbSet<Obra> Obra { get; set; }
@@ -34,7 +35,8 @@ namespace pyreApi.Data
             modelBuilder.Entity<Usuario>().ToTable("usuario");
             modelBuilder.Entity<Imagen>().ToTable("imagen");
             modelBuilder.Entity<Rol>().ToTable("rol");
-            modelBuilder.Entity<EstadoHerramienta>().ToTable("estadoherramienta");
+            modelBuilder.Entity<EstadoFisicoHerramienta>().ToTable("estadofisicoherramienta");
+            modelBuilder.Entity<EstadoDisponibilidadHerramienta>().ToTable("estadodisponibilidadherramienta");
             modelBuilder.Entity<FamiliaHerramientas>().ToTable("familiaherramientas");
             modelBuilder.Entity<Planta>().ToTable("planta");
             modelBuilder.Entity<Obra>().ToTable("obra");

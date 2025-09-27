@@ -11,6 +11,8 @@ namespace pyreApi.Models
         [MaxLength(150)]
         public string NombreProveedor { get; set; } = string.Empty;
 
+        [MaxLength(11)]
+        public string? Cuit { get; set; }
         [MaxLength(50)]
         public string? Telefono { get; set; }
 

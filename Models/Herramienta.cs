@@ -38,7 +38,7 @@ namespace pyreApi.Models
         public string? UbicacionFisica { get; set; }
 
         [Required]
-        public int IdEstadoActual { get; set; }
+        public int IdEstadoFisico { get; set; }
 
         [Required]
         public int IdPlanta { get; set; } = 1;
@@ -47,13 +47,16 @@ namespace pyreApi.Models
         public string? Ubicacion { get; set; }
 
         public bool Activo { get; set; } = true;
-        public bool EnReparacion { get; set; } = false;
+        [Required]
+        public int IdDisponibilidad { get; set; }
 
         [ForeignKey("IdFamilia")]
         public FamiliaHerramientas Familia { get; set; } = null!;
 
-        [ForeignKey("IdEstadoActual")]
-        public EstadoHerramienta EstadoActual { get; set; } = null!;
+        [ForeignKey("IdEstadoFisico")]
+        public EstadoFisicoHerramienta EstadoFisico { get; set; } = null!;
+        [ForeignKey("IdDisponibilidad")]
+        public EstadoDisponibilidadHerramienta EstadoDisponibilidad { get; set; } = null!;
 
         [ForeignKey("IdPlanta")]
         public Planta Planta { get; set; } = null!;
