@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using pyreApi.Repositories;
 
 var builder = WebApplication.CreateBuilder(args); // aca lo q se hace es crear la instancia de la app
 
@@ -48,6 +49,10 @@ builder.Logging.SetMinimumLevel(LogLevel.Information); // para tu código, info+
 //     );
 // });
 
+
+//Repos
+
+
 //Cambio
 builder.Services.AddCors(options =>
 {
@@ -76,6 +81,12 @@ builder
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
+
+//Repositorios
+builder.Services.AddScoped(typeof(GenericRepository<>));
+builder.Services.AddScoped<UsuarioRepository>();
+builder.Services.AddScoped<HerramientaRepository>();
+builder.Services.AddScoped<MovimientoHerramientaRepository>();
 
 // Configurar Swagger
 builder.Services.AddSwaggerGen(options =>

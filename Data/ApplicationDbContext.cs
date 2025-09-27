@@ -25,7 +25,6 @@ namespace pyreApi.Data
         public DbSet<TipoMovimientoHerramienta> TipoMovimientoHerramienta { get; set; }
         public DbSet<Proveedor> Proveedor { get; set; }
 
-        // Nuevas tablas para cierre de caja
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) // Mapeo de tablas y relaciones
         {
