@@ -47,6 +47,7 @@ namespace pyreApi.Services
                 {
                     Nombre = createDto.Nombre,
                     Apellido = createDto.Apellido,
+                    Legajo = createDto.Legajo,
                     Dni = createDto.Dni,
                     Email = createDto.Email,
                     Telefono = createDto.Telefono,

@@ -1,12 +1,11 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using pyreApi.Data;
+using pyreApi.Services;
 using pyreApi.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace pyreApi.Controllers
@@ -15,17 +14,17 @@ namespace pyreApi.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly UsuarioService _usuarioService;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthController> _logger;
 
         public AuthController(
-            ApplicationDbContext context,
+            UsuarioService usuarioService,
             IConfiguration configuration,
             ILogger<AuthController> logger
         )
         {
-            _context = context;
+            _usuarioService = usuarioService;
             _configuration = configuration;
             _logger = logger;
         }
@@ -34,11 +33,11 @@ namespace pyreApi.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
+            if (string.IsNullOrEmpty(request.Dni) || string.IsNullOrEmpty(request.Password))
             {
                 _logger.LogWarning(
-                    "Intento de login con campos vacíos. Email: '{Email}', Password vacío: {PasswordEmpty}",
-                    request.Email ?? "(nulo)",
+                    "Intento de login con campos vacíos. DNI: '{Dni}', Password vacío: {PasswordEmpty}",
+                    request.Dni ?? "(nulo)",
                     string.IsNullOrEmpty(request.Password)
                 );
                 return BadRequest(
@@ -46,31 +45,39 @@ namespace pyreApi.Controllers
                     {
                         status = 400,
                         error = "Bad Request",
-                        message = "El email y la contraseña son obligatorios.",
+                        message = "El DNI y la contraseña son obligatorios.",
                     }
                 );
             }
 
-            var usuario = await _context
-                .Usuario.Include(u => u.Rol)
-                .SingleOrDefaultAsync(u => u.Email == request.Email);
-            if (
-                usuario == null
-                || string.IsNullOrEmpty(usuario.PasswordHash)
-                || !VerifyPassword(request.Password, usuario.PasswordHash)
-            )
+            var validationResponse = await _usuarioService.ValidateCredentialsAsync(request.Dni, request.Password);
+            if (!validationResponse.Success)
             {
-                _logger.LogWarning("Login fallido para el email: {Email}", request.Email);
+                _logger.LogWarning("Login fallido para el DNI: {Dni}", request.Dni);
                 return Unauthorized(
                     new
                     {
                         status = 401,
                         error = "Unauthorized",
-                        message = "Email o contraseña incorrectos.",
+                        message = "DNI o contraseña incorrectos.",
                     }
                 );
             }
-            _logger.LogInformation("Usuario logueado exitosamente: {Email}", usuario.Email);
+
+            var userResponse = await _usuarioService.GetByDniAsync(request.Dni);
+            if (!userResponse.Success || userResponse.Data == null)
+            {
+                _logger.LogError("Error al obtener usuario después de validación exitosa: {Dni}", request.Dni);
+                return StatusCode(500, new
+                {
+                    status = 500,
+                    error = "Internal Server Error",
+                    message = "Error interno del servidor.",
+                });
+            }
+
+            var usuario = userResponse.Data;
+            _logger.LogInformation("Usuario logueado exitosamente: {Dni}", usuario.Dni);
             var token = GenerateJwtToken(usuario);
 
             return Ok(
@@ -84,18 +91,13 @@ namespace pyreApi.Controllers
                         usuario.Id,
                         usuario.Nombre,
                         usuario.Email,
+                        usuario.Dni,
                         usuario.RolId,
                         RolNombre = usuario.Rol?.NombreRol,
                         usuario.Avatar,
                     },
                 }
             );
-        }
-
-        // Método auxiliar para verificar contraseña
-        private bool VerifyPassword(string password, string hashedPassword)
-        {
-            return BCrypt.Net.BCrypt.Verify(password, hashedPassword);
         }
 
         // Método auxiliar para generar token JWT
@@ -129,5 +131,11 @@ namespace pyreApi.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+    }
+
+    public class LoginRequest
+    {
+        public string Dni { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 }
