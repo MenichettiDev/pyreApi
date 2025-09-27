@@ -15,6 +15,11 @@ namespace pyreApi.Repositories
             return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public async Task<Usuario?> GetByLegajoAsync(string legajo)
+        {
+            return await _dbSet.FirstOrDefaultAsync(u => u.Legajo == legajo);
+        }
+
         public async Task<Usuario?> GetByDniAsync(string dni)
         {
             return await _dbSet.FirstOrDefaultAsync(u => u.Dni == dni);
@@ -25,9 +30,9 @@ namespace pyreApi.Repositories
             return await _dbSet.Where(u => u.RolId == rolId).ToListAsync();
         }
 
-        public async Task<bool> ValidateCredentialsAsync(string dni, string passwordHash)
+        public async Task<bool> ValidateCredentialsAsync(string legajo, string passwordHash)
         {
-            var user = await GetByDniAsync(dni);
+            var user = await GetByLegajoAsync(legajo);
             return user != null && user.PasswordHash == passwordHash;
         }
 

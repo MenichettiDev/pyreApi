@@ -33,11 +33,11 @@ namespace pyreApi.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            if (string.IsNullOrEmpty(request.Dni) || string.IsNullOrEmpty(request.Password))
+            if (string.IsNullOrEmpty(request.Legajo) || string.IsNullOrEmpty(request.Password))
             {
                 _logger.LogWarning(
-                    "Intento de login con campos vacíos. DNI: '{Dni}', Password vacío: {PasswordEmpty}",
-                    request.Dni ?? "(nulo)",
+                    "Intento de login con campos vacíos. Legajo: '{Legajo}', Password vacío: {PasswordEmpty}",
+                    request.Legajo ?? "(nulo)",
                     string.IsNullOrEmpty(request.Password)
                 );
                 return BadRequest(
@@ -45,29 +45,29 @@ namespace pyreApi.Controllers
                     {
                         status = 400,
                         error = "Bad Request",
-                        message = "El DNI y la contraseña son obligatorios.",
+                        message = "El legajo y la contraseña son obligatorios.",
                     }
                 );
             }
 
-            var validationResponse = await _usuarioService.ValidateCredentialsAsync(request.Dni, request.Password);
+            var validationResponse = await _usuarioService.ValidateCredentialsAsync(request.Legajo, request.Password);
             if (!validationResponse.Success)
             {
-                _logger.LogWarning("Login fallido para el DNI: {Dni}", request.Dni);
+                _logger.LogWarning("Login fallido para el legajo: {Legajo}", request.Legajo);
                 return Unauthorized(
                     new
                     {
                         status = 401,
                         error = "Unauthorized",
-                        message = "DNI o contraseña incorrectos.",
+                        message = "Legajo o contraseña incorrectos.",
                     }
                 );
             }
 
-            var userResponse = await _usuarioService.GetByDniAsync(request.Dni);
+            var userResponse = await _usuarioService.GetByLegajoAsync(request.Legajo);
             if (!userResponse.Success || userResponse.Data == null)
             {
-                _logger.LogError("Error al obtener usuario después de validación exitosa: {Dni}", request.Dni);
+                _logger.LogError("Error al obtener usuario después de validación exitosa: {Legajo}", request.Legajo);
                 return StatusCode(500, new
                 {
                     status = 500,
@@ -77,7 +77,7 @@ namespace pyreApi.Controllers
             }
 
             var usuario = userResponse.Data;
-            _logger.LogInformation("Usuario logueado exitosamente: {Dni}", usuario.Dni);
+            _logger.LogInformation("Usuario logueado exitosamente: {Legajo}", usuario.Legajo);
             var token = GenerateJwtToken(usuario);
 
             return Ok(
@@ -92,6 +92,7 @@ namespace pyreApi.Controllers
                         usuario.Nombre,
                         usuario.Email,
                         usuario.Dni,
+                        usuario.Legajo,
                         usuario.RolId,
                         RolNombre = usuario.Rol?.NombreRol,
                         usuario.Avatar,
@@ -113,6 +114,7 @@ namespace pyreApi.Controllers
             {
                 new Claim(ClaimTypes.NameIdentifier, usuario.Id.ToString()),
                 new Claim(ClaimTypes.Email, usuario.Email ?? ""),
+                new Claim("legajo", usuario.Legajo ?? ""),
                 new Claim(ClaimTypes.Role, usuario.Rol?.NombreRol ?? "Usuario"),
             };
 
@@ -135,7 +137,7 @@ namespace pyreApi.Controllers
 
     public class LoginRequest
     {
-        public string Dni { get; set; } = string.Empty;
+        public string Legajo { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
 }

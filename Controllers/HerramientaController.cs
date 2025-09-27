@@ -92,5 +92,38 @@ namespace pyreApi.Controllers
                 return Ok(response);
             return BadRequest(response);
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateHerramientaDto updateDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (id != updateDto.IdHerramienta)
+                return BadRequest("ID mismatch");
+
+            var response = await _herramientaService.UpdateHerramientaAsync(updateDto);
+            if (response.Success)
+                return Ok(response);
+            return BadRequest(response);
+        }
+
+        [HttpGet("estado-fisico/{estadoFisicoId}")]
+        public async Task<IActionResult> GetByEstadoFisico(int estadoFisicoId)
+        {
+            var response = await _herramientaService.GetByEstadoFisicoAsync(estadoFisicoId);
+            if (response.Success)
+                return Ok(response);
+            return BadRequest(response);
+        }
+
+        [HttpGet("en-reparacion")]
+        public async Task<IActionResult> GetInRepair()
+        {
+            var response = await _herramientaService.GetInRepairAsync();
+            if (response.Success)
+                return Ok(response);
+            return BadRequest(response);
+        }
     }
 }

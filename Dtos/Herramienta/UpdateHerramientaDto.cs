@@ -26,13 +26,13 @@ namespace pyreApi.DTOs.Herramienta
         [MaxLength(150)]
         public string? UbicacionFisica { get; set; }
 
-        public int? IdEstadoActual { get; set; }
+        public int? IdEstadoFisico { get; set; }
+
+        public int? IdDisponibilidad { get; set; }
 
         public int? IdPlanta { get; set; }
 
         [MaxLength(50)]
         public string? Ubicacion { get; set; }
-
-        public bool? EnReparacion { get; set; }
     }
 }

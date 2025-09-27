@@ -15,7 +15,7 @@ namespace pyreApi.Models
         [MaxLength(100)]
         public string? Apellido { get; set; }
         [Required]
-        public int Legajo { get; set; }
+        public String? Legajo { get; set; }
 
         [MaxLength(20)]
         public string? Dni { get; set; }

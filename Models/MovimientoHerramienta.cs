@@ -44,6 +44,6 @@ namespace pyreApi.Models
         public Obra? Obra { get; set; }
 
         [ForeignKey("EstadoHerramientaAlDevolver")]
-        public EstadoHerramienta? EstadoDevolucion { get; set; }
+        public EstadoFisicoHerramienta? EstadoDevolucion { get; set; }
     }
 }

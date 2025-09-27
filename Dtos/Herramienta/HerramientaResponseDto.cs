@@ -13,9 +13,13 @@ namespace pyreApi.DTOs.Herramienta
         public string? UbicacionFisica { get; set; }
         public string? Ubicacion { get; set; }
         public bool Activo { get; set; }
-        public bool EnReparacion { get; set; }
+        public int IdFamilia { get; set; }
+        public int IdEstadoFisico { get; set; }
+        public int IdDisponibilidad { get; set; }
+        public int IdPlanta { get; set; }
         public string FamiliaNombre { get; set; } = string.Empty;
-        public string EstadoActual { get; set; } = string.Empty;
+        public string EstadoFisicoNombre { get; set; } = string.Empty;
+        public string EstadoDisponibilidadNombre { get; set; } = string.Empty;
         public string PlantaNombre { get; set; } = string.Empty;
     }
 }

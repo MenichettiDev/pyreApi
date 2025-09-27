@@ -111,12 +111,44 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<bool>> ValidateCredentialsAsync(string dni, string password)
+        public async Task<BaseResponseDto<Usuario>> GetByLegajoAsync(string legajo)
+        {
+            try
+            {
+                var usuario = await _usuarioRepository.GetByLegajoAsync(legajo);
+                if (usuario == null)
+                {
+                    return new BaseResponseDto<Usuario>
+                    {
+                        Success = false,
+                        Message = "Usuario no encontrado"
+                    };
+                }
+
+                return new BaseResponseDto<Usuario>
+                {
+                    Success = true,
+                    Data = usuario,
+                    Message = "Usuario encontrado"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<Usuario>
+                {
+                    Success = false,
+                    Message = "Error al buscar el usuario",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<bool>> ValidateCredentialsAsync(string legajo, string password)
         {
             try
             {
                 // TODO: Hash the password before validation
-                var isValid = await _usuarioRepository.ValidateCredentialsAsync(dni, password);
+                var isValid = await _usuarioRepository.ValidateCredentialsAsync(legajo, password);
                 return new BaseResponseDto<bool>
                 {
                     Success = true,

@@ -66,7 +66,7 @@ namespace pyreApi.Controllers
         [HttpPost("validate")]
         public async Task<IActionResult> ValidateCredentials([FromBody] LoginRequest loginRequest)
         {
-            var response = await _usuarioService.ValidateCredentialsAsync(loginRequest.Dni, loginRequest.Password);
+            var response = await _usuarioService.ValidateCredentialsAsync(loginRequest.Legajo, loginRequest.Password);
             if (response.Success)
                 return Ok(response);
             return Unauthorized(response);

@@ -30,7 +30,9 @@ namespace pyreApi.DTOs.Herramienta
         public string? UbicacionFisica { get; set; }
 
         [Required]
-        public int IdEstadoActual { get; set; }
+        public int IdEstadoFisico { get; set; }
+        [Required]
+        public int IdDisponibilidad { get; set; }
 
         [Required]
         public int IdPlanta { get; set; }

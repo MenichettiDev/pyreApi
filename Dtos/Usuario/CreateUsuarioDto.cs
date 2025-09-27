@@ -11,7 +11,7 @@ namespace pyreApi.DTOs.Usuario
         [MaxLength(100)]
         public string? Apellido { get; set; }
         [Required]
-        public int Legajo { get; set; }
+        public String? Legajo { get; set; }
 
         [Required]
         [MaxLength(20)]

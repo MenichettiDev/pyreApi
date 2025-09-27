@@ -46,7 +46,7 @@ namespace pyreApi.Services
                 var result = await _reparacionRepository.AddAsync(reparacion);
 
                 // Marcar herramienta en reparación
-                herramienta.EnReparacion = true;
+                herramienta.EstadoDisponibilidad.Id = 3;
                 await _herramientaRepository.UpdateAsync(herramienta);
 
                 return new BaseResponseDto<ReparacionHerramienta>
