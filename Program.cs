@@ -16,6 +16,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using pyreApi.Repositories;
+using pyreApi.Services;
 
 var builder = WebApplication.CreateBuilder(args); // aca lo q se hace es crear la instancia de la app
 
@@ -87,6 +88,14 @@ builder.Services.AddScoped(typeof(GenericRepository<>));
 builder.Services.AddScoped<UsuarioRepository>();
 builder.Services.AddScoped<HerramientaRepository>();
 builder.Services.AddScoped<MovimientoHerramientaRepository>();
+
+//Services
+builder.Services.AddScoped(typeof(GenericService<>));
+builder.Services.AddScoped<UsuarioService>();
+builder.Services.AddScoped<HerramientaService>();
+builder.Services.AddScoped<MovimientoHerramientaService>();
+builder.Services.AddScoped<ReparacionHerramientaService>();
+builder.Services.AddScoped<AlertaService>();
 
 // Configurar Swagger
 builder.Services.AddSwaggerGen(options =>
