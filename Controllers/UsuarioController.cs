@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using pyreApi.DTOs.Usuario;
 using pyreApi.Services;
 
@@ -6,6 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [AllowAnonymous] // Permitir acceso anónimo a todos los endpoints
     public class UsuarioController : ControllerBase
     {
         private readonly UsuarioService _usuarioService;
@@ -16,24 +18,27 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAll()
         {
-            var response = await _usuarioService.GetAllAsync();
+            var response = await _usuarioService.GetAllUsuariosAsync();
             if (response.Success)
                 return Ok(response);
             return BadRequest(response);
         }
 
         [HttpGet("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
-            var response = await _usuarioService.GetByIdAsync(id);
+            var response = await _usuarioService.GetUsuarioByIdAsync(id);
             if (response.Success)
                 return Ok(response);
             return NotFound(response);
         }
 
         [HttpGet("dni/{dni}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetByDni(string dni)
         {
             var response = await _usuarioService.GetByDniAsync(dni);
@@ -43,6 +48,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("active")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetActiveUsers()
         {
             var response = await _usuarioService.GetActiveUsersAsync();
@@ -52,6 +58,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
+        [AllowAnonymous]
         public async Task<IActionResult> Create([FromBody] CreateUsuarioDto createDto)
         {
             if (!ModelState.IsValid)
@@ -63,8 +70,25 @@ namespace pyreApi.Controllers
             return BadRequest(response);
         }
 
+        [HttpPut("{id}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateUsuarioDto updateDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (id != updateDto.Id)
+                return BadRequest("ID mismatch");
+
+            var response = await _usuarioService.UpdateUsuarioAsync(updateDto);
+            if (response.Success)
+                return Ok(response);
+            return BadRequest(response);
+        }
+
         [HttpPost("validate")]
-        public async Task<IActionResult> ValidateCredentials([FromBody] LoginRequest loginRequest)
+        [AllowAnonymous]
+        public async Task<IActionResult> ValidateCredentials([FromBody] LoginRequestDto loginRequest)
         {
             var response = await _usuarioService.ValidateCredentialsAsync(loginRequest.Legajo, loginRequest.Password);
             if (response.Success)
@@ -73,6 +97,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [AllowAnonymous]
         public async Task<IActionResult> Delete(int id)
         {
             var response = await _usuarioService.DeleteAsync(id);
@@ -81,10 +106,11 @@ namespace pyreApi.Controllers
             return BadRequest(response);
         }
     }
-}
-public class LoginDto
-{
-    public string Dni { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-}
 
+    // Clase única para login por legajo
+    public class LoginRequestDto
+    {
+        public string Legajo { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

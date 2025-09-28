@@ -1,13 +1,22 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using pyreApi.Data;
 using pyreApi.Models;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System.Text;
 
 namespace pyreApi.Repositories
 {
     public class UsuarioRepository : GenericRepository<Usuario>
     {
-        public UsuarioRepository(ApplicationDbContext context) : base(context)
+        private readonly ILogger<UsuarioRepository> _logger;
+        private readonly IConfiguration _configuration;
+
+        public UsuarioRepository(ApplicationDbContext context, ILogger<UsuarioRepository> logger, IConfiguration configuration) : base(context)
         {
+            _logger = logger;
+            _configuration = configuration;
         }
 
         public async Task<Usuario?> GetByEmailAsync(string email)
@@ -30,10 +39,53 @@ namespace pyreApi.Repositories
             return await _dbSet.Where(u => u.RolId == rolId).ToListAsync();
         }
 
-        public async Task<bool> ValidateCredentialsAsync(string legajo, string passwordHash)
+        public async Task<IEnumerable<Usuario>> GetAllWithRolAsync()
         {
-            var user = await GetByLegajoAsync(legajo);
-            return user != null && user.PasswordHash == passwordHash;
+            return await _dbSet.Include(u => u.Rol).ToListAsync();
+        }
+
+        public async Task<Usuario?> GetByIdWithRolAsync(int id)
+        {
+            return await _dbSet.Include(u => u.Rol).FirstOrDefaultAsync(u => u.Id == id);
+        }
+
+        public async Task<bool> ValidateCredentialsAsync(string legajo, string password)
+        {
+            try
+            {
+                _logger.LogInformation("Validando credenciales para legajo: {Legajo}", legajo);
+
+                var usuario = await _context.Usuario
+                    .FirstOrDefaultAsync(u => u.Legajo == legajo);
+
+                if (usuario == null)
+                {
+                    _logger.LogWarning("Usuario no encontrado para validación de credenciales: {Legajo}", legajo);
+                    return false;
+                }
+
+                _logger.LogInformation("Usuario encontrado para validación. Password field exists: {HasPassword}",
+                    !string.IsNullOrEmpty(usuario.PasswordHash));
+
+                // Check if user has a password set
+                if (string.IsNullOrEmpty(usuario.PasswordHash))
+                {
+                    _logger.LogWarning("Usuario {Legajo} no tiene contraseña configurada", legajo);
+                    return false;
+                }
+
+                // Verify password using KeyDerivation (matching the hash method)
+                bool isValid = VerifyPasswordWithKeyDerivation(password, usuario.PasswordHash);
+
+                _logger.LogInformation("Validación de credenciales completada para {Legajo}: {IsValid}", legajo, isValid);
+
+                return isValid;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al validar credenciales para legajo: {Legajo}", legajo);
+                return false;
+            }
         }
 
         public async Task<IEnumerable<Usuario>> GetActiveUsersAsync()
@@ -44,6 +96,57 @@ namespace pyreApi.Repositories
         public async Task<IEnumerable<Usuario>> GetUsersWithSystemAccessAsync()
         {
             return await _dbSet.Where(u => u.AccedeAlSistema == true && u.Activo == true).ToListAsync();
+        }
+
+        public async Task<Usuario?> GetByLegajoWithRolAsync(string legajo)
+        {
+            try
+            {
+                _logger.LogInformation("Buscando usuario por legajo: {Legajo}", legajo);
+
+                var usuario = await _context.Usuario
+                    .Include(u => u.Rol)
+                    .FirstOrDefaultAsync(u => u.Legajo == legajo);
+
+                _logger.LogInformation("Resultado búsqueda por legajo {Legajo}: {Found}",
+                    legajo, usuario != null ? "Encontrado" : "No encontrado");
+
+                return usuario;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar usuario por legajo: {Legajo}", legajo);
+                throw;
+            }
+        }
+
+        // Método auxiliar para verificar contraseña usando KeyDerivation
+        private bool VerifyPasswordWithKeyDerivation(string password, string hashedPassword)
+        {
+            try
+            {
+                // Salt fijo (debe coincidir con el usado para hashear)
+                string salt = _configuration["Salt"]; // Lee el salt del archivo de configuración
+                if (string.IsNullOrEmpty(salt))
+                {
+                    throw new InvalidOperationException("El valor de 'Salt' no está configurado en appsettings.json.");
+                }
+
+                // Hashear la contraseña ingresada con el mismo método
+                string computedHash = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+                    password: password,
+                    salt: Encoding.ASCII.GetBytes(salt),
+                    prf: KeyDerivationPrf.HMACSHA1,
+                    iterationCount: 10000,
+                    numBytesRequested: 256 / 8));
+
+                // Comparar los hashes
+                return computedHash == hashedPassword;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

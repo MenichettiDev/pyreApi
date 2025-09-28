@@ -50,10 +50,11 @@ namespace pyreApi.Controllers
                 );
             }
 
-            var validationResponse = await _usuarioService.ValidateCredentialsAsync(request.Legajo, request.Password);
-            if (!validationResponse.Success)
+            var authResponse = await _usuarioService.AuthenticateAsync(request.Legajo, request.Password);
+            if (!authResponse.Success)
             {
-                _logger.LogWarning("Login fallido para el legajo: {Legajo}", request.Legajo);
+                _logger.LogWarning("Login fallido para el legajo: {Legajo}. Error: {Error}",
+                    request.Legajo, authResponse.Message);
                 return Unauthorized(
                     new
                     {
@@ -64,19 +65,7 @@ namespace pyreApi.Controllers
                 );
             }
 
-            var userResponse = await _usuarioService.GetByLegajoAsync(request.Legajo);
-            if (!userResponse.Success || userResponse.Data == null)
-            {
-                _logger.LogError("Error al obtener usuario después de validación exitosa: {Legajo}", request.Legajo);
-                return StatusCode(500, new
-                {
-                    status = 500,
-                    error = "Internal Server Error",
-                    message = "Error interno del servidor.",
-                });
-            }
-
-            var usuario = userResponse.Data;
+            var usuario = authResponse.Data;
             _logger.LogInformation("Usuario logueado exitosamente: {Legajo}", usuario.Legajo);
             var token = GenerateJwtToken(usuario);
 

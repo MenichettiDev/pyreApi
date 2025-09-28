@@ -5,6 +5,7 @@ namespace pyreApi.DTOs.Usuario
         public int Id { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public string? Apellido { get; set; }
+        public string? Legajo { get; set; }
         public string? Dni { get; set; }
         public string? Email { get; set; }
         public string? Telefono { get; set; }

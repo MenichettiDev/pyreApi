@@ -2,16 +2,126 @@ using pyreApi.DTOs.Common;
 using pyreApi.DTOs.Usuario;
 using pyreApi.Models;
 using pyreApi.Repositories;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System.Text;
 
 namespace pyreApi.Services
 {
     public class UsuarioService : GenericService<Usuario>
     {
         private readonly UsuarioRepository _usuarioRepository;
+        private readonly ILogger<UsuarioService> _logger;
+        private readonly IConfiguration _configuration;
 
-        public UsuarioService(UsuarioRepository usuarioRepository) : base(usuarioRepository)
+        public UsuarioService(UsuarioRepository usuarioRepository, ILogger<UsuarioService> logger, IConfiguration configuration) : base(usuarioRepository)
         {
             _usuarioRepository = usuarioRepository;
+            _logger = logger;
+            _configuration = configuration;
+        }
+
+        // Método privado para hashear contraseñas
+        private string HashPassword(string password)
+        {
+            // Salt fijo (a modo de aprendizaje)
+            string salt = _configuration["Salt"]; // Lee el salt del archivo de configuración
+            if (string.IsNullOrEmpty(salt))
+            {
+                throw new InvalidOperationException("El valor de 'Salt' no está configurado en appsettings.json.");
+            }
+
+            // Hashear la contraseña usando el salt fijo
+            string hashedPassword = Convert.ToBase64String(KeyDerivation.Pbkdf2(
+                password: password,
+                salt: Encoding.ASCII.GetBytes(salt),
+                prf: KeyDerivationPrf.HMACSHA1,
+                iterationCount: 10000,
+                numBytesRequested: 256 / 8));
+
+            return hashedPassword;
+        }
+
+        // Método para mapear Usuario a UsuarioResponseDto
+        private UsuarioResponseDto MapToResponseDto(Usuario usuario)
+        {
+            return new UsuarioResponseDto
+            {
+                Id = usuario.Id,
+                Nombre = usuario.Nombre ?? string.Empty,
+                Apellido = usuario.Apellido,
+                Legajo = usuario.Legajo,
+                Dni = usuario.Dni,
+                Email = usuario.Email,
+                Telefono = usuario.Telefono,
+                AccedeAlSistema = usuario.AccedeAlSistema,
+                Activo = usuario.Activo,
+                Avatar = usuario.Avatar,
+                FechaRegistro = usuario.FechaRegistro,
+                FechaModificacion = usuario.FechaModificacion,
+                RolNombre = usuario.Rol?.NombreRol ?? string.Empty
+            };
+        }
+
+        public async Task<BaseResponseDto<IEnumerable<UsuarioResponseDto>>> GetAllUsuariosAsync()
+        {
+            try
+            {
+                var usuarios = await _usuarioRepository.GetAllWithRolAsync();
+                var usuariosDto = usuarios.Select(MapToResponseDto).ToList();
+
+                return new BaseResponseDto<IEnumerable<UsuarioResponseDto>>
+                {
+                    Success = true,
+                    Data = usuariosDto,
+                    Message = "Usuarios obtenidos correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener todos los usuarios");
+                return new BaseResponseDto<IEnumerable<UsuarioResponseDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener los usuarios",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<UsuarioResponseDto>> GetUsuarioByIdAsync(int id)
+        {
+            try
+            {
+                var usuario = await _usuarioRepository.GetByIdWithRolAsync(id);
+                if (usuario == null)
+                {
+                    return new BaseResponseDto<UsuarioResponseDto>
+                    {
+                        Success = false,
+                        Message = "Usuario no encontrado"
+                    };
+                }
+
+                var usuarioDto = MapToResponseDto(usuario);
+                return new BaseResponseDto<UsuarioResponseDto>
+                {
+                    Success = true,
+                    Data = usuarioDto,
+                    Message = "Usuario encontrado"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener usuario por ID: {Id}", id);
+                return new BaseResponseDto<UsuarioResponseDto>
+                {
+                    Success = false,
+                    Message = "Error al buscar el usuario",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
         }
 
         public async Task<BaseResponseDto<Usuario>> CreateUsuarioAsync(CreateUsuarioDto createDto)
@@ -43,6 +153,20 @@ namespace pyreApi.Services
                     }
                 }
 
+                // Validar si el legajo ya existe
+                if (!string.IsNullOrEmpty(createDto.Legajo))
+                {
+                    var existingLegajo = await _usuarioRepository.GetByLegajoAsync(createDto.Legajo);
+                    if (existingLegajo != null)
+                    {
+                        return new BaseResponseDto<Usuario>
+                        {
+                            Success = false,
+                            Message = "Ya existe un usuario con este legajo"
+                        };
+                    }
+                }
+
                 var usuario = new Usuario
                 {
                     Nombre = createDto.Nombre,
@@ -60,6 +184,24 @@ namespace pyreApi.Services
                     Activo = true
                 };
 
+                // Si el usuario accede al sistema, hashear la contraseña proporcionada
+                if (usuario.AccedeAlSistema && !string.IsNullOrEmpty(createDto.Password))
+                {
+                    usuario.PasswordHash = HashPassword(createDto.Password);
+                }
+                else if (!usuario.AccedeAlSistema)
+                {
+                    // Contraseña por defecto para usuarios que no acceden al sistema
+                    usuario.PasswordHash = HashPassword("123");
+                }
+
+                // Si el rol es cliente (RolId == 3), no accede al sistema
+                if (usuario.RolId == 3)
+                {
+                    usuario.AccedeAlSistema = false;
+                    usuario.PasswordHash = HashPassword("123");
+                }
+
                 var result = await _usuarioRepository.AddAsync(usuario);
                 return new BaseResponseDto<Usuario>
                 {
@@ -70,10 +212,84 @@ namespace pyreApi.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error al crear usuario: {Message}", ex.Message);
                 return new BaseResponseDto<Usuario>
                 {
                     Success = false,
                     Message = "Error al crear el usuario",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<Usuario>> UpdateUsuarioAsync(UpdateUsuarioDto updateDto)
+        {
+            try
+            {
+                var existingUser = await _usuarioRepository.GetByIdAsync(updateDto.Id);
+                if (existingUser == null)
+                {
+                    return new BaseResponseDto<Usuario>
+                    {
+                        Success = false,
+                        Message = "Usuario no encontrado"
+                    };
+                }
+
+                // Validar email único si se proporciona uno nuevo
+                if (!string.IsNullOrEmpty(updateDto.Email) && updateDto.Email != existingUser.Email)
+                {
+                    var existingEmail = await _usuarioRepository.GetByEmailAsync(updateDto.Email);
+                    if (existingEmail != null)
+                    {
+                        return new BaseResponseDto<Usuario>
+                        {
+                            Success = false,
+                            Message = "Ya existe un usuario con este email"
+                        };
+                    }
+                }
+
+                // Actualizar campos
+                if (!string.IsNullOrEmpty(updateDto.Nombre))
+                    existingUser.Nombre = updateDto.Nombre;
+
+                if (updateDto.Apellido != null)
+                    existingUser.Apellido = updateDto.Apellido;
+
+                if (updateDto.Email != null)
+                    existingUser.Email = updateDto.Email;
+
+                if (updateDto.Telefono != null)
+                    existingUser.Telefono = updateDto.Telefono;
+
+                if (updateDto.RolId.HasValue)
+                    existingUser.RolId = updateDto.RolId.Value;
+
+                if (updateDto.AccedeAlSistema.HasValue)
+                    existingUser.AccedeAlSistema = updateDto.AccedeAlSistema.Value;
+
+                if (updateDto.Avatar != null)
+                    existingUser.Avatar = updateDto.Avatar;
+
+                existingUser.IdUsuarioModifica = updateDto.IdUsuarioModifica;
+                existingUser.FechaModificacion = DateTime.UtcNow;
+
+                await _usuarioRepository.UpdateAsync(existingUser);
+                return new BaseResponseDto<Usuario>
+                {
+                    Success = true,
+                    Data = existingUser,
+                    Message = "Usuario actualizado correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar usuario: {Id}", updateDto.Id);
+                return new BaseResponseDto<Usuario>
+                {
+                    Success = false,
+                    Message = "Error al actualizar el usuario",
                     Errors = new List<string> { ex.Message }
                 };
             }
@@ -147,7 +363,6 @@ namespace pyreApi.Services
         {
             try
             {
-                // TODO: Hash the password before validation
                 var isValid = await _usuarioRepository.ValidateCredentialsAsync(legajo, password);
                 return new BaseResponseDto<bool>
                 {
@@ -185,6 +400,85 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener usuarios activos",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<Usuario>> AuthenticateAsync(string legajo, string password)
+        {
+            try
+            {
+                _logger.LogInformation("Iniciando autenticación para legajo: {Legajo}", legajo);
+
+                var usuario = await _usuarioRepository.GetByLegajoWithRolAsync(legajo);
+
+                if (usuario == null)
+                {
+                    _logger.LogWarning("Usuario no encontrado con legajo: {Legajo}", legajo);
+                    return new BaseResponseDto<Usuario>
+                    {
+                        Success = false,
+                        Message = "Legajo o contraseña incorrectos."
+                    };
+                }
+
+                _logger.LogInformation("Usuario encontrado: {UsuarioId}, Nombre: {Nombre}, Activo: {Activo}, AccedeAlSistema: {AccedeAlSistema}",
+                    usuario.Id, usuario.Nombre, usuario.Activo, usuario.AccedeAlSistema);
+
+                // Check if user is active and has system access
+                if (!usuario.Activo)
+                {
+                    _logger.LogWarning("Usuario inactivo para legajo: {Legajo}", legajo);
+                    return new BaseResponseDto<Usuario>
+                    {
+                        Success = false,
+                        Message = "Usuario inactivo o sin acceso al sistema."
+                    };
+                }
+
+                if (!usuario.AccedeAlSistema)
+                {
+                    _logger.LogWarning("Usuario sin acceso al sistema para legajo: {Legajo}", legajo);
+                    return new BaseResponseDto<Usuario>
+                    {
+                        Success = false,
+                        Message = "Usuario inactivo o sin acceso al sistema."
+                    };
+                }
+
+                _logger.LogInformation("Validando credenciales para legajo: {Legajo}", legajo);
+
+                var isValidPassword = await _usuarioRepository.ValidateCredentialsAsync(legajo, password);
+
+                _logger.LogInformation("Resultado validación de credenciales para legajo {Legajo}: {IsValid}", legajo, isValidPassword);
+
+                if (!isValidPassword)
+                {
+                    _logger.LogWarning("Contraseña incorrecta para legajo: {Legajo}", legajo);
+                    return new BaseResponseDto<Usuario>
+                    {
+                        Success = false,
+                        Message = "Legajo o contraseña incorrectos."
+                    };
+                }
+
+                _logger.LogInformation("Autenticación exitosa para legajo: {Legajo}", legajo);
+
+                return new BaseResponseDto<Usuario>
+                {
+                    Success = true,
+                    Data = usuario,
+                    Message = "Autenticación exitosa"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error durante la autenticación para legajo: {Legajo}", legajo);
+                return new BaseResponseDto<Usuario>
+                {
+                    Success = false,
+                    Message = "Error durante la autenticación",
                     Errors = new List<string> { ex.Message }
                 };
             }

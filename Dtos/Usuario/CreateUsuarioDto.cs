@@ -10,6 +10,7 @@ namespace pyreApi.DTOs.Usuario
 
         [MaxLength(100)]
         public string? Apellido { get; set; }
+
         [Required]
         public String? Legajo { get; set; }
 
@@ -33,5 +34,8 @@ namespace pyreApi.DTOs.Usuario
         public string? Avatar { get; set; }
 
         public int IdUsuarioCrea { get; set; }
+
+        // Cambiar a Password para recibir la contraseña en texto plano
+        public string? Password { get; set; }
     }
 }

@@ -44,9 +44,9 @@ namespace pyreApi.Models
         public int? IdUsuarioCrea { get; set; }
 
         public int? IdUsuarioModifica { get; set; }
-        [NotMapped]
 
-        public string? PasswordHash { get; set; } // Contraseña encriptada
+        [MaxLength(500)] // Añadir longitud máxima para el hash
+        public string? PasswordHash { get; set; }
 
         [ForeignKey("RolId")]
         public Rol Rol { get; set; } = null!;
