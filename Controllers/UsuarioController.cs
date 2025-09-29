@@ -7,7 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [AllowAnonymous] // Permitir acceso anónimo a todos los endpoints
+    [AllowAnonymous] 
     public class UsuarioController : ControllerBase
     {
         private readonly UsuarioService _usuarioService;

@@ -10,17 +10,14 @@ namespace pyreApi.DTOs.Obra
 
         [Required]
         [MaxLength(150)]
-        public string Nombre { get; set; } = string.Empty;
-
-        [MaxLength(200)]
-        public string? Descripcion { get; set; }
+        public string NombreObra { get; set; } = string.Empty;
 
         [MaxLength(200)]
         public string? Ubicacion { get; set; }
 
-        public DateTime? FechaInicio { get; set; }
+        public DateOnly? FechaInicio { get; set; }
 
-        public DateTime? FechaFinEstimada { get; set; }
+        public DateOnly? FechaFinEstimada { get; set; }
 
         [MaxLength(100)]
         public string? ResponsableObra { get; set; }

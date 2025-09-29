@@ -20,10 +20,9 @@ namespace pyreApi.Models
 
         public DateOnly? FechaInicio { get; set; }
 
-        public DateOnly? FechaFin { get; set; }
+        public DateOnly? FechaFinEstimada { get; set; }
 
-        public bool Activa { get; set; } = true;
-
-        public ICollection<MovimientoHerramienta> MovimientosHerramienta { get; set; } = new List<MovimientoHerramienta>();
+        public string? ResponsableObra { get; set; }
+        // public ICollection<MovimientoHerramienta> MovimientosHerramienta { get; set; } = new List<MovimientoHerramienta>();
     }
 }

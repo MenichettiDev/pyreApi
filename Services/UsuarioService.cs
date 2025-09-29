@@ -363,7 +363,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = $"Error al buscar el usuario con legajo {legajo}. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." + ex.Message }
                 };
             }
         }
@@ -396,7 +396,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "No se pudieron validar las credenciales. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." + ex.Message }
                 };
             }
         }
@@ -419,7 +419,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "No se pudieron cargar los usuarios activos. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." + ex.Message }
                 };
             }
         }

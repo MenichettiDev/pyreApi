@@ -159,7 +159,7 @@ namespace pyreApi.Repositories
             try
             {
                 // Salt fijo (debe coincidir con el usado para hashear)
-                string salt = _configuration["Salt"]; // Lee el salt del archivo de configuración
+                string? salt = _configuration["Salt"]; // Lee el salt del archivo de configuración
                 if (string.IsNullOrEmpty(salt))
                 {
                     _logger.LogError("El valor de 'Salt' no está configurado en appsettings.json");
