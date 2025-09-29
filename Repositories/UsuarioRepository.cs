@@ -26,6 +26,13 @@ namespace pyreApi.Repositories
 
         public async Task<Usuario?> GetByLegajoAsync(string legajo)
         {
+            // Validar longitud del legajo
+            if (!string.IsNullOrEmpty(legajo) && legajo.Length > 5)
+            {
+                _logger.LogWarning("Intento de búsqueda con legajo que excede 5 caracteres: {Legajo}", legajo);
+                return null;
+            }
+
             return await _dbSet.FirstOrDefaultAsync(u => u.Legajo == legajo);
         }
 
@@ -53,37 +60,50 @@ namespace pyreApi.Repositories
         {
             try
             {
-                _logger.LogInformation("Validando credenciales para legajo: {Legajo}", legajo);
+                _logger.LogInformation("Iniciando validación de credenciales para legajo: {Legajo}", legajo);
+
+                if (string.IsNullOrWhiteSpace(legajo) || string.IsNullOrWhiteSpace(password))
+                {
+                    _logger.LogWarning("Intento de validación con legajo o contraseña vacíos");
+                    return false;
+                }
+
+                // Validar longitud del legajo
+                if (legajo.Length > 5)
+                {
+                    _logger.LogWarning("Intento de validación con legajo que excede 5 caracteres: {Legajo}", legajo);
+                    return false;
+                }
 
                 var usuario = await _context.Usuario
                     .FirstOrDefaultAsync(u => u.Legajo == legajo);
 
                 if (usuario == null)
                 {
-                    _logger.LogWarning("Usuario no encontrado para validación de credenciales: {Legajo}", legajo);
+                    _logger.LogWarning("No se encontró usuario con legajo: {Legajo}", legajo);
                     return false;
                 }
 
-                _logger.LogInformation("Usuario encontrado para validación. Password field exists: {HasPassword}",
+                _logger.LogInformation("Usuario encontrado para validación. Tiene contraseña configurada: {HasPassword}",
                     !string.IsNullOrEmpty(usuario.PasswordHash));
 
                 // Check if user has a password set
                 if (string.IsNullOrEmpty(usuario.PasswordHash))
                 {
-                    _logger.LogWarning("Usuario {Legajo} no tiene contraseña configurada", legajo);
+                    _logger.LogWarning("El usuario con legajo {Legajo} no tiene contraseña configurada", legajo);
                     return false;
                 }
 
                 // Verify password using KeyDerivation (matching the hash method)
                 bool isValid = VerifyPasswordWithKeyDerivation(password, usuario.PasswordHash);
 
-                _logger.LogInformation("Validación de credenciales completada para {Legajo}: {IsValid}", legajo, isValid);
+                _logger.LogInformation("Validación de credenciales completada para legajo {Legajo}: {IsValid}", legajo, isValid);
 
                 return isValid;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al validar credenciales para legajo: {Legajo}", legajo);
+                _logger.LogError(ex, "Error crítico al validar credenciales para legajo: {Legajo}", legajo);
                 return false;
             }
         }
@@ -102,20 +122,33 @@ namespace pyreApi.Repositories
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(legajo))
+                {
+                    _logger.LogWarning("Intento de búsqueda con legajo vacío o nulo");
+                    return null;
+                }
+
+                // Validar longitud del legajo
+                if (legajo.Length > 5)
+                {
+                    _logger.LogWarning("Intento de búsqueda con legajo que excede 5 caracteres: {Legajo}", legajo);
+                    return null;
+                }
+
                 _logger.LogInformation("Buscando usuario por legajo: {Legajo}", legajo);
 
                 var usuario = await _context.Usuario
                     .Include(u => u.Rol)
                     .FirstOrDefaultAsync(u => u.Legajo == legajo);
 
-                _logger.LogInformation("Resultado búsqueda por legajo {Legajo}: {Found}",
-                    legajo, usuario != null ? "Encontrado" : "No encontrado");
+                _logger.LogInformation("Resultado de búsqueda por legajo {Legajo}: {Found}",
+                    legajo, usuario != null ? "Usuario encontrado" : "Usuario no encontrado");
 
                 return usuario;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al buscar usuario por legajo: {Legajo}", legajo);
+                _logger.LogError(ex, "Error crítico al buscar usuario por legajo: {Legajo}", legajo);
                 throw;
             }
         }
@@ -129,7 +162,8 @@ namespace pyreApi.Repositories
                 string salt = _configuration["Salt"]; // Lee el salt del archivo de configuración
                 if (string.IsNullOrEmpty(salt))
                 {
-                    throw new InvalidOperationException("El valor de 'Salt' no está configurado en appsettings.json.");
+                    _logger.LogError("El valor de 'Salt' no está configurado en appsettings.json");
+                    throw new InvalidOperationException("Configuración de seguridad incompleta. Contacte al administrador del sistema.");
                 }
 
                 // Hashear la contraseña ingresada con el mismo método
@@ -143,8 +177,9 @@ namespace pyreApi.Repositories
                 // Comparar los hashes
                 return computedHash == hashedPassword;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Error al verificar contraseña con KeyDerivation");
                 return false;
             }
         }

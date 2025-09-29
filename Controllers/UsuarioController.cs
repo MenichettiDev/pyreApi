@@ -31,6 +31,11 @@ namespace pyreApi.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetById(int id)
         {
+            if (id <= 0)
+            {
+                return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
+            }
+
             var response = await _usuarioService.GetUsuarioByIdAsync(id);
             if (response.Success)
                 return Ok(response);
@@ -41,6 +46,11 @@ namespace pyreApi.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetByDni(string dni)
         {
+            if (string.IsNullOrWhiteSpace(dni))
+            {
+                return BadRequest(new { Success = false, Message = "El DNI es requerido y no puede estar vacío." });
+            }
+
             var response = await _usuarioService.GetByDniAsync(dni);
             if (response.Success)
                 return Ok(response);
@@ -61,8 +71,31 @@ namespace pyreApi.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Create([FromBody] CreateUsuarioDto createDto)
         {
+            // Validar longitud del legajo
+            if (!string.IsNullOrEmpty(createDto.Legajo) && createDto.Legajo.Length > 5)
+            {
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = "El legajo no puede tener más de 5 caracteres.",
+                    Errors = new List<string> { "Legajo excede la longitud máxima permitida (5 caracteres)." }
+                });
+            }
+
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = "Los datos proporcionados no son válidos. Por favor, revise la información ingresada.",
+                    Errors = errors
+                });
+            }
 
             var response = await _usuarioService.CreateUsuarioAsync(createDto);
             if (response.Success)
@@ -74,11 +107,29 @@ namespace pyreApi.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateUsuarioDto updateDto)
         {
+            if (id <= 0)
+            {
+                return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
+            }
+
+
             if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = "Los datos proporcionados para la actualización no son válidos. Por favor, revise la información ingresada.",
+                    Errors = errors
+                });
+            }
 
             if (id != updateDto.Id)
-                return BadRequest("ID mismatch");
+                return BadRequest(new { Success = false, Message = "El ID proporcionado en la URL no coincide con el ID del usuario a actualizar." });
 
             var response = await _usuarioService.UpdateUsuarioAsync(updateDto);
             if (response.Success)
@@ -90,6 +141,21 @@ namespace pyreApi.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ValidateCredentials([FromBody] LoginRequestDto loginRequest)
         {
+            if (string.IsNullOrWhiteSpace(loginRequest.Legajo))
+            {
+                return BadRequest(new { Success = false, Message = "El legajo es requerido para la validación de credenciales." });
+            }
+
+            if (loginRequest.Legajo.Length > 5)
+            {
+                return BadRequest(new { Success = false, Message = "El legajo no puede tener más de 5 caracteres." });
+            }
+
+            if (string.IsNullOrWhiteSpace(loginRequest.Password))
+            {
+                return BadRequest(new { Success = false, Message = "La contraseña es requerida para la validación de credenciales." });
+            }
+
             var response = await _usuarioService.ValidateCredentialsAsync(loginRequest.Legajo, loginRequest.Password);
             if (response.Success)
                 return Ok(response);
@@ -100,9 +166,18 @@ namespace pyreApi.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Delete(int id)
         {
+            if (id <= 0)
+            {
+                return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
+            }
+
             var response = await _usuarioService.DeleteAsync(id);
             if (response.Success)
                 return Ok(response);
+
+            if (response.Message?.Contains("no encontrado") == true)
+                return NotFound(response);
+
             return BadRequest(response);
         }
     }
