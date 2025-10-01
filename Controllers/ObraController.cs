@@ -18,46 +18,44 @@ namespace pyreApi.Controllers
             return entity?.IdObra ?? 0;
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateObraDto dto)
+        // [HttpPost("create")]
+        // public async Task<IActionResult> CreateFromDto([FromBody] CreateObraDto dto)
+        // {
+        //     if (!ModelState.IsValid)
+        //         return BadRequest(ModelState);
+
+        //     var obra = new Obra
+        //     {
+        //         Codigo = dto.Codigo,
+        //         NombreObra = dto.NombreObra,
+        //         Ubicacion = dto.Ubicacion,
+        //         FechaInicio = dto.FechaInicio,
+        //         FechaFin = dto.FechaFin,
+        //     };
+
+        //     var response = await _service.AddAsync(obra);
+        //     if (response.Success)
+        //         return CreatedAtAction(nameof(GetById), new { id = response.Data?.IdObra }, response);
+        //     return BadRequest(response);
+        // }
+
+        [HttpPut("update/{id}")]
+        public async Task<IActionResult> UpdateFromDto(int id, [FromBody] UpdateObraDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            // Mapear DTO a entidad
+            if (id != dto.IdObra)
+                return BadRequest("ID mismatch");
+
             var obra = new Obra
             {
+                IdObra = dto.IdObra,
                 Codigo = dto.Codigo,
                 NombreObra = dto.NombreObra,
                 Ubicacion = dto.Ubicacion,
                 FechaInicio = dto.FechaInicio,
-                FechaFinEstimada = dto.FechaFinEstimada,
-                ResponsableObra = dto.ResponsableObra,
-
-            };
-
-            var response = await _service.AddAsync(obra);
-            if (response.Success)
-                return CreatedAtAction(nameof(GetById), new { id = response.Data?.IdObra }, response);
-            return BadRequest(response);
-        }
-
-        [HttpPut]
-        public async Task<IActionResult> Update([FromBody] CreateObraDto dto) // Reusar el mismo DTO
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            // Mapear DTO a entidad (necesitarás obtener el ID de alguna forma)
-            var obra = new Obra
-            {
-                // IdObra = ?, // Necesitarás pasar esto de alguna forma
-                Codigo = dto.Codigo,
-                NombreObra = dto.NombreObra,
-                Ubicacion = dto.Ubicacion,
-                FechaInicio = dto.FechaInicio,
-                FechaFinEstimada = dto.FechaFinEstimada,
-                ResponsableObra = dto.ResponsableObra,
+                FechaFin = dto.FechaFinEstimada,
             };
 
             var response = await _service.UpdateAsync(obra);
@@ -65,11 +63,5 @@ namespace pyreApi.Controllers
                 return Ok(response);
             return BadRequest(response);
         }
-
-        // protected override object GetEntityId(Obra? entity)
-        // {
-        //     return entity?.IdObra ?? 0;
-        // }
     }
-
 }

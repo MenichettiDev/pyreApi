@@ -149,8 +149,10 @@ namespace pyreApi.Services
         {
             try
             {
-                var data = await _repository.GetPagedAsync(page, pageSize);
-                var totalRecords = await _repository.CountAsync();
+                if (page <= 0) page = 1;
+                if (pageSize <= 0) pageSize = 10;
+
+                var (data, totalRecords) = await _repository.GetPagedAsync(page, pageSize);
                 var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
 
                 var paginatedResponse = new PaginatedResponseDto<T>

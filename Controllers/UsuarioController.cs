@@ -7,7 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [AllowAnonymous] 
+    [AllowAnonymous]
     public class UsuarioController : ControllerBase
     {
         private readonly UsuarioService _usuarioService;
@@ -19,7 +19,17 @@ namespace pyreApi.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            var response = await _usuarioService.GetAllUsuariosPaginatedAsync(page, pageSize);
+            if (response.Success)
+                return Ok(response);
+            return BadRequest(response);
+        }
+
+        [HttpGet("all-unpaginated")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllUnpaginated()
         {
             var response = await _usuarioService.GetAllUsuariosAsync();
             if (response.Success)

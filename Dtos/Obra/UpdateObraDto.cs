@@ -2,8 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace pyreApi.DTOs.Obra
 {
-    public class CreateObraDto
+    public class UpdateObraDto
     {
+        [Required]
+        public int IdObra { get; set; }
+
         [Required]
         [MaxLength(20)]
         public string Codigo { get; set; } = string.Empty;
@@ -17,7 +20,9 @@ namespace pyreApi.DTOs.Obra
 
         public DateOnly? FechaInicio { get; set; }
 
-        public DateOnly? FechaFin { get; set; }
+        public DateOnly? FechaFinEstimada { get; set; }
 
+        [MaxLength(100)]
+        public string? ResponsableObra { get; set; }
     }
 }

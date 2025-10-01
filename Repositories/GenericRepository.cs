@@ -64,12 +64,15 @@ namespace pyreApi.Repositories
             return await _dbSet.CountAsync();
         }
 
-        public async Task<IEnumerable<T>> GetPagedAsync(int page, int pageSize)
+        public async Task<(IEnumerable<T> Data, int TotalRecords)> GetPagedAsync(int page, int pageSize)
         {
-            return await _dbSet
+            var totalRecords = await _dbSet.CountAsync();
+            var data = await _dbSet
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
+
+            return (data, totalRecords);
         }
     }
 }

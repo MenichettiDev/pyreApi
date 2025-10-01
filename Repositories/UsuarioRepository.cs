@@ -153,6 +153,18 @@ namespace pyreApi.Repositories
             }
         }
 
+        public async Task<(IEnumerable<Usuario> Data, int TotalRecords)> GetAllWithRolPagedAsync(int page, int pageSize)
+        {
+            var totalRecords = await _dbSet.CountAsync();
+            var data = await _dbSet
+                .Include(u => u.Rol)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (data, totalRecords);
+        }
+
         // Método auxiliar para verificar contraseña usando KeyDerivation
         private bool VerifyPasswordWithKeyDerivation(string password, string hashedPassword)
         {

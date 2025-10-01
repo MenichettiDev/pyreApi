@@ -512,5 +512,46 @@ namespace pyreApi.Services
                 };
             }
         }
+
+        public async Task<BaseResponseDto<PaginatedResponseDto<UsuarioResponseDto>>> GetAllUsuariosPaginatedAsync(int page, int pageSize)
+        {
+            try
+            {
+                if (page <= 0) page = 1;
+                if (pageSize <= 0) pageSize = 10;
+
+                var (usuarios, totalRecords) = await _usuarioRepository.GetAllWithRolPagedAsync(page, pageSize);
+                var usuariosDto = usuarios.Select(MapToResponseDto).ToList();
+                var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+                var paginatedResponse = new PaginatedResponseDto<UsuarioResponseDto>
+                {
+                    Data = usuariosDto,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    HasNextPage = page < totalPages,
+                    HasPreviousPage = page > 1
+                };
+
+                return new BaseResponseDto<PaginatedResponseDto<UsuarioResponseDto>>
+                {
+                    Success = true,
+                    Data = paginatedResponse,
+                    Message = "Usuarios obtenidos correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener usuarios paginados");
+                return new BaseResponseDto<PaginatedResponseDto<UsuarioResponseDto>>
+                {
+                    Success = false,
+                    Message = "No se pudieron cargar los usuarios. Por favor, intente nuevamente.",
+                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                };
+            }
+        }
     }
 }
