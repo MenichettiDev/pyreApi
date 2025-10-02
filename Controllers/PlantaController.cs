@@ -16,5 +16,7 @@ namespace pyreApi.Controllers
         {
             return entity?.IdPlanta ?? 0;
         }
+
+
     }
 }

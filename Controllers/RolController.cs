@@ -31,8 +31,8 @@ namespace pyreApi.Controllers
                 {
                     status = 200,
                     message = "Lista de roles obtenida correctamente.",
-                    totalRoles = roles.Count,
-                    roles
+                    // totalRoles = roles.Count,
+                    data = roles
                 });
             }
             catch (Exception ex)
@@ -68,7 +68,7 @@ namespace pyreApi.Controllers
                 {
                     status = 200,
                     message = "Rol encontrado.",
-                    rol
+                    data = rol
                 });
             }
             catch (Exception ex)
