@@ -4,11 +4,11 @@ namespace pyreApi.DTOs.Rol
 {
     public class UpdateRolDto
     {
-        [Required(ErrorMessage = "El ID del rol es obligatorio")]
-        public int Id { get; set; }
+        [Required]
+        public int IdRol { get; set; }
 
-        [Required(ErrorMessage = "El nombre del rol es obligatorio")]
-        [MaxLength(100, ErrorMessage = "El nombre no puede exceder los 100 caracteres")]
+        [Required(ErrorMessage = "El nombre del rol es requerido")]
+        [StringLength(50, ErrorMessage = "El nombre no puede exceder 50 caracteres")]
         public string NombreRol { get; set; } = string.Empty;
     }
 }

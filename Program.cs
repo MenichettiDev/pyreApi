@@ -101,6 +101,7 @@ builder.Services.AddScoped<EstadoDisponibilidadService>();
 builder.Services.AddScoped<EstadoFisicoHerramientaService>();
 builder.Services.AddScoped<FamiliaHerramientasService>();
 builder.Services.AddScoped<ProveedorService>();
+builder.Services.AddScoped<RolService>();
 
 // Configurar Swagger
 builder.Services.AddSwaggerGen(options =>
