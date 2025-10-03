@@ -99,6 +99,7 @@ builder.Services.AddScoped<AlertaService>();
 builder.Services.AddScoped<PlantaService>();
 builder.Services.AddScoped<EstadoDisponibilidadService>();
 builder.Services.AddScoped<EstadoFisicoHerramientaService>();
+builder.Services.AddScoped<FamiliaHerramientasService>();
 
 // Configurar Swagger
 builder.Services.AddSwaggerGen(options =>
