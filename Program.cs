@@ -102,6 +102,7 @@ builder.Services.AddScoped<EstadoFisicoHerramientaService>();
 builder.Services.AddScoped<FamiliaHerramientasService>();
 builder.Services.AddScoped<ProveedorService>();
 builder.Services.AddScoped<RolService>();
+builder.Services.AddScoped<TipoMovimientoHerramientaService>();
 
 // Configurar Swagger
 builder.Services.AddSwaggerGen(options =>
