@@ -100,6 +100,7 @@ builder.Services.AddScoped<PlantaService>();
 builder.Services.AddScoped<EstadoDisponibilidadService>();
 builder.Services.AddScoped<EstadoFisicoHerramientaService>();
 builder.Services.AddScoped<FamiliaHerramientasService>();
+builder.Services.AddScoped<ProveedorService>();
 
 // Configurar Swagger
 builder.Services.AddSwaggerGen(options =>
