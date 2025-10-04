@@ -49,28 +49,31 @@ namespace pyreApi.Data
             modelBuilder.Entity<TipoMovimientoHerramienta>().ToTable("tipomovimientoherramienta");
             modelBuilder.Entity<Proveedor>().ToTable("proveedor");
 
-            // Configurar relaciones de Herramienta
+            // Herramienta → EstadoFisicoHerramienta
             modelBuilder.Entity<Herramienta>()
                 .HasOne(h => h.EstadoFisico)
                 .WithMany(e => e.Herramientas)
                 .HasForeignKey(h => h.IdEstadoFisico)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Herramienta → EstadoDisponibilidadHerramienta
             modelBuilder.Entity<Herramienta>()
                 .HasOne(h => h.EstadoDisponibilidad)
                 .WithMany(e => e.Herramientas)
                 .HasForeignKey(h => h.IdDisponibilidad)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Herramienta → FamiliaHerramientas
             modelBuilder.Entity<Herramienta>()
                 .HasOne(h => h.Familia)
-                .WithMany()
+                .WithMany(f => f.Herramientas) // 👈 referencia a la colección
                 .HasForeignKey(h => h.IdFamilia)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Herramienta → Planta
             modelBuilder.Entity<Herramienta>()
                 .HasOne(h => h.Planta)
-                .WithMany()
+                .WithMany(p => p.Herramientas) // 👈 agregá la colección en Planta
                 .HasForeignKey(h => h.IdPlanta)
                 .OnDelete(DeleteBehavior.Restrict);
         }

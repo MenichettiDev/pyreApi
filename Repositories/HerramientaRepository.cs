@@ -10,6 +10,25 @@ namespace pyreApi.Repositories
         {
         }
 
+        public override async Task<IEnumerable<Herramienta>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(h => h.Familia)
+                .Include(h => h.EstadoFisico)
+                .Include(h => h.EstadoDisponibilidad)
+                .Include(h => h.Planta)
+                .ToListAsync();
+        }
+
+        public override async Task<Herramienta?> GetByIdAsync(int id)
+        {
+            return await _dbSet
+                .Include(h => h.Familia)
+                .Include(h => h.EstadoFisico)
+                .Include(h => h.EstadoDisponibilidad)
+                .Include(h => h.Planta)
+                .FirstOrDefaultAsync(h => h.IdHerramienta == id);
+        }
         public async Task<IEnumerable<Herramienta>> GetByEstadoAsync(int estadoId)
         {
             return await _dbSet
@@ -51,38 +70,6 @@ namespace pyreApi.Repositories
                 .Include(h => h.EstadoDisponibilidad)
                 .Include(h => h.Planta)
                 .Where(h => h.EstadoDisponibilidad.Descripcion.ToLower().Contains("disponible") && h.Activo == true)
-                .ToListAsync();
-        }
-
-        public async Task<Herramienta?> GetByCodigoAsync(string codigo)
-        {
-            return await _dbSet
-                .Include(h => h.Familia)
-                .Include(h => h.EstadoFisico)
-                .Include(h => h.EstadoDisponibilidad)
-                .Include(h => h.Planta)
-                .FirstOrDefaultAsync(h => h.Codigo == codigo);
-        }
-
-        public async Task<IEnumerable<Herramienta>> GetActiveToolsAsync()
-        {
-            return await _dbSet
-                .Include(h => h.Familia)
-                .Include(h => h.EstadoFisico)
-                .Include(h => h.EstadoDisponibilidad)
-                .Include(h => h.Planta)
-                .Where(h => h.Activo == true)
-                .ToListAsync();
-        }
-
-        public async Task<IEnumerable<Herramienta>> GetByDisponibilidadAsync(int disponibilidadId)
-        {
-            return await _dbSet
-                .Include(h => h.Familia)
-                .Include(h => h.EstadoFisico)
-                .Include(h => h.EstadoDisponibilidad)
-                .Include(h => h.Planta)
-                .Where(h => h.IdDisponibilidad == disponibilidadId)
                 .ToListAsync();
         }
 

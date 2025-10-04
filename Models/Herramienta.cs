@@ -51,15 +51,15 @@ namespace pyreApi.Models
         [Required]
         public int IdDisponibilidad { get; set; }
 
-        [ForeignKey("IdFamilia")]
+        [ForeignKey(nameof(IdFamilia))]
         public FamiliaHerramientas Familia { get; set; } = null!;
 
-        [ForeignKey("IdEstadoFisico")]
+        [ForeignKey(nameof(IdEstadoFisico))]
         public EstadoFisicoHerramienta EstadoFisico { get; set; } = null!;
-        [ForeignKey("IdDisponibilidad")]
+        [ForeignKey(nameof(IdDisponibilidad))]
         public EstadoDisponibilidadHerramienta EstadoDisponibilidad { get; set; } = null!;
 
-        [ForeignKey("IdPlanta")]
+        [ForeignKey(nameof(IdPlanta))]
         public Planta Planta { get; set; } = null!;
 
         public ICollection<MovimientoHerramienta> Movimientos { get; set; } = new List<MovimientoHerramienta>();
