@@ -18,7 +18,64 @@ namespace pyreApi.Services
             _herramientaRepository = herramientaRepository;
         }
 
-        public async Task<BaseResponseDto<MovimientoHerramienta>> CreateMovimientoAsync(CreateMovimientoDto createDto)
+        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetAllMovimientosAsync()
+        {
+            try
+            {
+                var movimientos = await _movimientoRepository.GetAllAsync();
+                var movimientoDtos = movimientos.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
+                {
+                    Success = true,
+                    Data = movimientoDtos,
+                    Message = "Movimientos obtenidos correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener los movimientos",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<MovimientoHerramientaDto>> GetMovimientoByIdAsync(int id)
+        {
+            try
+            {
+                var movimiento = await _movimientoRepository.GetByIdAsync(id);
+                if (movimiento == null)
+                {
+                    return new BaseResponseDto<MovimientoHerramientaDto>
+                    {
+                        Success = false,
+                        Message = "Movimiento no encontrado"
+                    };
+                }
+
+                return new BaseResponseDto<MovimientoHerramientaDto>
+                {
+                    Success = true,
+                    Data = MapToDto(movimiento),
+                    Message = "Movimiento encontrado"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<MovimientoHerramientaDto>
+                {
+                    Success = false,
+                    Message = "Error al buscar el movimiento",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<MovimientoHerramientaDto>> CreateMovimientoAsync(CreateMovimientoDto createDto)
         {
             try
             {
@@ -26,43 +83,26 @@ namespace pyreApi.Services
                 var herramienta = await _herramientaRepository.GetByIdAsync(createDto.IdHerramienta);
                 if (herramienta == null)
                 {
-                    return new BaseResponseDto<MovimientoHerramienta>
+                    return new BaseResponseDto<MovimientoHerramientaDto>
                     {
                         Success = false,
                         Message = "Herramienta no encontrada"
                     };
                 }
 
-                // Validar disponibilidad de la herramienta para egresos
-                // TODO: Implementar lógica de validación según tipo de movimiento
-
-                var movimiento = new MovimientoHerramienta
-                {
-                    IdHerramienta = createDto.IdHerramienta,
-                    IdUsuario = createDto.IdUsuario,
-                    IdTipoMovimiento = createDto.IdTipoMovimiento,
-                    DestinoObra = createDto.DestinoObra,
-                    IdObra = createDto.IdObra,
-                    FechaEstimadaDevolucion = createDto.FechaEstimadaDevolucion,
-                    EstadoHerramientaAlDevolver = createDto.EstadoHerramientaAlDevolver,
-                    Observaciones = createDto.Observaciones,
-                    Fecha = DateTime.UtcNow
-                };
-
+                var movimiento = MapFromCreateDto(createDto);
                 var result = await _movimientoRepository.AddAsync(movimiento);
 
-                // TODO: Actualizar estado de la herramienta según el tipo de movimiento
-
-                return new BaseResponseDto<MovimientoHerramienta>
+                return new BaseResponseDto<MovimientoHerramientaDto>
                 {
                     Success = true,
-                    Data = result,
+                    Data = MapToDto(result),
                     Message = "Movimiento registrado correctamente"
                 };
             }
             catch (Exception ex)
             {
-                return new BaseResponseDto<MovimientoHerramienta>
+                return new BaseResponseDto<MovimientoHerramientaDto>
                 {
                     Success = false,
                     Message = "Error al registrar el movimiento",
@@ -71,21 +111,58 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramienta>>> GetByHerramientaAsync(int herramientaId)
+        public async Task<BaseResponseDto<MovimientoHerramientaDto>> UpdateMovimientoAsync(UpdateMovimientoHerramientaDto updateDto)
+        {
+            try
+            {
+                var existingMovimiento = await _movimientoRepository.GetByIdAsync(updateDto.IdMovimiento);
+                if (existingMovimiento == null)
+                {
+                    return new BaseResponseDto<MovimientoHerramientaDto>
+                    {
+                        Success = false,
+                        Message = "Movimiento no encontrado"
+                    };
+                }
+
+                MapFromUpdateDto(updateDto, existingMovimiento);
+                await _movimientoRepository.UpdateAsync(existingMovimiento);
+
+                return new BaseResponseDto<MovimientoHerramientaDto>
+                {
+                    Success = true,
+                    Data = MapToDto(existingMovimiento),
+                    Message = "Movimiento actualizado correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<MovimientoHerramientaDto>
+                {
+                    Success = false,
+                    Message = "Error al actualizar el movimiento",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetByHerramientaAsync(int herramientaId)
         {
             try
             {
                 var movimientos = await _movimientoRepository.GetByHerramientaAsync(herramientaId);
-                return new BaseResponseDto<IEnumerable<MovimientoHerramienta>>
+                var movimientoDtos = movimientos.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
                 {
                     Success = true,
-                    Data = movimientos,
+                    Data = movimientoDtos,
                     Message = "Historial de movimientos obtenido correctamente"
                 };
             }
             catch (Exception ex)
             {
-                return new BaseResponseDto<IEnumerable<MovimientoHerramienta>>
+                return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
                 {
                     Success = false,
                     Message = "Error al obtener el historial de movimientos",
@@ -94,27 +171,78 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramienta>>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
+        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
             try
             {
                 var movimientos = await _movimientoRepository.GetMovimientosByDateRangeAsync(startDate, endDate);
-                return new BaseResponseDto<IEnumerable<MovimientoHerramienta>>
+                var movimientoDtos = movimientos.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
                 {
                     Success = true,
-                    Data = movimientos,
+                    Data = movimientoDtos,
                     Message = "Movimientos por rango de fechas obtenidos correctamente"
                 };
             }
             catch (Exception ex)
             {
-                return new BaseResponseDto<IEnumerable<MovimientoHerramienta>>
+                return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
                 {
                     Success = false,
                     Message = "Error al obtener movimientos por rango de fechas",
                     Errors = new List<string> { ex.Message }
                 };
             }
+        }
+
+        private MovimientoHerramientaDto MapToDto(MovimientoHerramienta movimiento)
+        {
+            return new MovimientoHerramientaDto
+            {
+                IdMovimiento = movimiento.IdMovimiento,
+                IdHerramienta = movimiento.IdHerramienta,
+                IdUsuario = movimiento.IdUsuario,
+                IdTipoMovimiento = movimiento.IdTipoMovimiento,
+                Fecha = movimiento.Fecha,
+                IdObra = movimiento.IdObra,
+                FechaEstimadaDevolucion = movimiento.FechaEstimadaDevolucion,
+                EstadoHerramientaAlDevolver = movimiento.EstadoHerramientaAlDevolver,
+                Observaciones = movimiento.Observaciones,
+                CodigoHerramienta = movimiento.Herramienta?.Codigo,
+                NombreHerramienta = movimiento.Herramienta?.NombreHerramienta,
+                NombreUsuario = movimiento.Usuario?.Nombre,
+                TipoMovimiento = movimiento.TipoMovimiento?.NombreTipoMovimiento,
+                NombreObra = movimiento.Obra?.NombreObra,
+                EstadoDevolucion = movimiento.EstadoDevolucion?.Descripcion
+            };
+        }
+
+        private MovimientoHerramienta MapFromCreateDto(CreateMovimientoDto createDto)
+        {
+            return new MovimientoHerramienta
+            {
+                IdHerramienta = createDto.IdHerramienta,
+                IdUsuario = createDto.IdUsuario,
+                IdTipoMovimiento = createDto.IdTipoMovimiento,
+                IdObra = createDto.IdObra,
+                FechaEstimadaDevolucion = createDto.FechaEstimadaDevolucion,
+                EstadoHerramientaAlDevolver = createDto.EstadoHerramientaAlDevolver,
+                Observaciones = createDto.Observaciones,
+                Fecha = DateTime.UtcNow
+            };
+        }
+
+        private void MapFromUpdateDto(UpdateMovimientoHerramientaDto updateDto, MovimientoHerramienta movimiento)
+        {
+            movimiento.IdHerramienta = updateDto.IdHerramienta;
+            movimiento.IdUsuario = updateDto.IdUsuario;
+            movimiento.IdTipoMovimiento = updateDto.IdTipoMovimiento;
+            movimiento.Fecha = updateDto.Fecha;
+            movimiento.IdObra = updateDto.IdObra;
+            movimiento.FechaEstimadaDevolucion = updateDto.FechaEstimadaDevolucion;
+            movimiento.EstadoHerramientaAlDevolver = updateDto.EstadoHerramientaAlDevolver;
+            movimiento.Observaciones = updateDto.Observaciones;
         }
     }
 }

@@ -4,7 +4,6 @@ namespace pyreApi.DTOs.MovimientoHerramienta
     {
         public int IdMovimiento { get; set; }
         public DateTime Fecha { get; set; }
-        public string? DestinoObra { get; set; }
         public DateTime? FechaEstimadaDevolucion { get; set; }
         public string? Observaciones { get; set; }
         public string HerramientaCodigo { get; set; } = string.Empty;

@@ -10,9 +10,37 @@ namespace pyreApi.Repositories
         {
         }
 
+        public override async Task<IEnumerable<MovimientoHerramienta>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.Usuario)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
+                .OrderByDescending(m => m.Fecha)
+                .ToListAsync();
+        }
+
+        public override async Task<MovimientoHerramienta?> GetByIdAsync(int id)
+        {
+            return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.Usuario)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
+                .FirstOrDefaultAsync(m => m.IdMovimiento == id);
+        }
+
         public async Task<IEnumerable<MovimientoHerramienta>> GetByHerramientaAsync(int herramientaId)
         {
             return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.Usuario)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
                 .Where(m => m.IdHerramienta == herramientaId)
                 .OrderByDescending(m => m.Fecha)
                 .ToListAsync();
@@ -21,6 +49,11 @@ namespace pyreApi.Repositories
         public async Task<IEnumerable<MovimientoHerramienta>> GetByUsuarioAsync(int usuarioId)
         {
             return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.Usuario)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
                 .Where(m => m.IdUsuario == usuarioId)
                 .OrderByDescending(m => m.Fecha)
                 .ToListAsync();
@@ -29,6 +62,11 @@ namespace pyreApi.Repositories
         public async Task<IEnumerable<MovimientoHerramienta>> GetByTipoMovimientoAsync(int tipoMovimientoId)
         {
             return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.Usuario)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
                 .Where(m => m.IdTipoMovimiento == tipoMovimientoId)
                 .ToListAsync();
         }
@@ -36,6 +74,11 @@ namespace pyreApi.Repositories
         public async Task<IEnumerable<MovimientoHerramienta>> GetMovimientosByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
             return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.Usuario)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
                 .Where(m => m.Fecha >= startDate && m.Fecha <= endDate)
                 .OrderByDescending(m => m.Fecha)
                 .ToListAsync();
@@ -44,6 +87,11 @@ namespace pyreApi.Repositories
         public async Task<MovimientoHerramienta?> GetLastMovimientoByHerramientaAsync(int herramientaId)
         {
             return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.Usuario)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
                 .Where(m => m.IdHerramienta == herramientaId)
                 .OrderByDescending(m => m.Fecha)
                 .FirstOrDefaultAsync();
@@ -52,6 +100,11 @@ namespace pyreApi.Repositories
         public async Task<IEnumerable<MovimientoHerramienta>> GetByObraAsync(int obraId)
         {
             return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.Usuario)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
                 .Where(m => m.IdObra == obraId)
                 .OrderByDescending(m => m.Fecha)
                 .ToListAsync();

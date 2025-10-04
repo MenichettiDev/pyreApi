@@ -20,9 +20,6 @@ namespace pyreApi.Models
         [Required]
         public DateTime Fecha { get; set; }
 
-        [MaxLength(150)]
-        public string? DestinoObra { get; set; }
-
         public int? IdObra { get; set; }
 
         public DateTime? FechaEstimadaDevolucion { get; set; }

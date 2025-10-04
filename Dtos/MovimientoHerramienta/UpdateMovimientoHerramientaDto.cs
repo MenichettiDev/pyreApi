@@ -2,8 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace pyreApi.DTOs.MovimientoHerramienta
 {
-    public class CreateMovimientoDto
+    public class UpdateMovimientoHerramientaDto
     {
+        [Required]
+        public int IdMovimiento { get; set; }
+
         [Required]
         public int IdHerramienta { get; set; }
 
@@ -12,6 +15,9 @@ namespace pyreApi.DTOs.MovimientoHerramienta
 
         [Required]
         public int IdTipoMovimiento { get; set; }
+
+        [Required]
+        public DateTime Fecha { get; set; }
 
         public int? IdObra { get; set; }
 

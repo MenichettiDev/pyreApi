@@ -18,37 +18,29 @@ namespace pyreApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var response = await _movimientoService.GetAllAsync();
-            if (response.Success)
-                return Ok(response);
-            return BadRequest(response);
+            var result = await _movimientoService.GetAllMovimientosAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var response = await _movimientoService.GetByIdAsync(id);
-            if (response.Success)
-                return Ok(response);
-            return NotFound(response);
+            var result = await _movimientoService.GetMovimientoByIdAsync(id);
+            return result.Success ? Ok(result) : NotFound(result);
         }
 
         [HttpGet("herramienta/{herramientaId}")]
         public async Task<IActionResult> GetByHerramienta(int herramientaId)
         {
-            var response = await _movimientoService.GetByHerramientaAsync(herramientaId);
-            if (response.Success)
-                return Ok(response);
-            return BadRequest(response);
+            var result = await _movimientoService.GetByHerramientaAsync(herramientaId);
+            return result.Success ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("daterange")]
         public async Task<IActionResult> GetByDateRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
-            var response = await _movimientoService.GetByDateRangeAsync(startDate, endDate);
-            if (response.Success)
-                return Ok(response);
-            return BadRequest(response);
+            var result = await _movimientoService.GetByDateRangeAsync(startDate, endDate);
+            return result.Success ? Ok(result) : BadRequest(result);
         }
 
         [HttpPost]
@@ -57,19 +49,28 @@ namespace pyreApi.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var response = await _movimientoService.CreateMovimientoAsync(createDto);
-            if (response.Success)
-                return CreatedAtAction(nameof(GetById), new { id = response.Data?.IdMovimiento }, response);
-            return BadRequest(response);
+            var result = await _movimientoService.CreateMovimientoAsync(createDto);
+            return result.Success ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdMovimiento }, result) : BadRequest(result);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateMovimientoHerramientaDto updateDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (id != updateDto.IdMovimiento)
+                return BadRequest("El ID de la URL no coincide con el ID del objeto");
+
+            var result = await _movimientoService.UpdateMovimientoAsync(updateDto);
+            return result.Success ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var response = await _movimientoService.DeleteAsync(id);
-            if (response.Success)
-                return Ok(response);
-            return BadRequest(response);
+            var result = await _movimientoService.DeleteAsync(id);
+            return result.Success ? Ok(result) : BadRequest(result);
         }
     }
 }
