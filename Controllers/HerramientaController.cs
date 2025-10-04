@@ -58,5 +58,53 @@ namespace pyreApi.Controllers
             var result = await _herramientaService.DeleteAsync(id);
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
+        [HttpGet("available")]
+        public async Task<IActionResult> GetAvailable()
+        {
+            var result = await _herramientaService.GetAvailableToolsAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("familia/{familiaId}")]
+        public async Task<IActionResult> GetByFamilia(int familiaId)
+        {
+            var result = await _herramientaService.GetByFamiliaAsync(familiaId);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPaged([FromQuery] PagedRequestDto request)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _herramientaService.GetPagedAsync(request);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPut("status")]
+        public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusDto updateStatusDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var result = await _herramientaService.UpdateStatusAsync(updateStatusDto);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("estado-fisico/{estadoFisicoId}")]
+        public async Task<IActionResult> GetByEstadoFisico(int estadoFisicoId)
+        {
+            var result = await _herramientaService.GetByEstadoFisicoAsync(estadoFisicoId);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("en-reparacion")]
+        public async Task<IActionResult> GetInRepair()
+        {
+            var result = await _herramientaService.GetInRepairAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
     }
 }

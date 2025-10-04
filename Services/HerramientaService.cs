@@ -24,10 +24,6 @@ namespace pyreApi.Services
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
                 {
                     Success = true,
-
-
-
-
                     Data = herramientaDtos,
                     Message = "Herramientas obtenidas correctamente"
                 };
@@ -130,6 +126,192 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al actualizar la herramienta",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetAvailableToolsAsync()
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetAvailableToolsAsync();
+                var herramientaDtos = herramientas.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = true,
+                    Data = herramientaDtos,
+                    Message = "Herramientas disponibles obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las herramientas disponibles",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByFamiliaAsync(int familiaId)
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetByFamiliaAsync(familiaId);
+                var herramientaDtos = herramientas.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = true,
+                    Data = herramientaDtos,
+                    Message = "Herramientas por familia obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las herramientas por familia",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<PagedResponseDto<HerramientaDto>>> GetPagedAsync(PagedRequestDto request)
+        {
+            try
+            {
+                var allHerramientas = await _herramientaRepository.GetAllAsync();
+
+                if (!string.IsNullOrEmpty(request.Search))
+                {
+                    allHerramientas = allHerramientas.Where(h =>
+                        h.NombreHerramienta.Contains(request.Search, StringComparison.OrdinalIgnoreCase) ||
+                        h.Codigo.Contains(request.Search, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var totalRecords = allHerramientas.Count();
+                var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+
+                var pagedHerramientas = allHerramientas
+                    .Skip((request.Page - 1) * request.PageSize)
+                    .Take(request.PageSize);
+
+                var herramientaDtos = pagedHerramientas.Select(MapToDto);
+
+                var pagedResponse = new PagedResponseDto<HerramientaDto>
+                {
+                    Data = herramientaDtos,
+                    TotalRecords = totalRecords,
+                    Page = request.Page,
+                    PageSize = request.PageSize,
+                    TotalPages = totalPages,
+                    HasNextPage = request.Page < totalPages,
+                    HasPreviousPage = request.Page > 1
+                };
+
+                return new BaseResponseDto<PagedResponseDto<HerramientaDto>>
+                {
+                    Success = true,
+                    Data = pagedResponse,
+                    Message = "Herramientas paginadas obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<PagedResponseDto<HerramientaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las herramientas paginadas",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<HerramientaDto>> UpdateStatusAsync(UpdateStatusDto updateStatusDto)
+        {
+            try
+            {
+                var existingHerramienta = await _repository.GetByIdAsync(updateStatusDto.IdHerramienta);
+                if (existingHerramienta == null)
+                {
+                    return new BaseResponseDto<HerramientaDto>
+                    {
+                        Success = false,
+                        Message = "Herramienta no encontrada"
+                    };
+                }
+
+                existingHerramienta.Activo = updateStatusDto.Activo;
+                await _repository.UpdateAsync(existingHerramienta);
+
+                return new BaseResponseDto<HerramientaDto>
+                {
+                    Success = true,
+                    Data = MapToDto(existingHerramienta),
+                    Message = "Estado de la herramienta actualizado correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<HerramientaDto>
+                {
+                    Success = false,
+                    Message = "Error al actualizar el estado de la herramienta",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByEstadoFisicoAsync(int estadoFisicoId)
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetByEstadoAsync(estadoFisicoId);
+                var herramientaDtos = herramientas.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = true,
+                    Data = herramientaDtos,
+                    Message = "Herramientas por estado físico obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las herramientas por estado físico",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetInRepairAsync()
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetInRepairAsync();
+                var herramientaDtos = herramientas.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = true,
+                    Data = herramientaDtos,
+                    Message = "Herramientas en reparación obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las herramientas en reparación",
                     Errors = new List<string> { ex.Message }
                 };
             }
