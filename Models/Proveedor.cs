@@ -27,6 +27,5 @@ namespace pyreApi.Models
 
         public bool Activo { get; set; } = true;
 
-        public ICollection<ReparacionHerramienta> Reparaciones { get; set; } = new List<ReparacionHerramienta>();
     }
 }

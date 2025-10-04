@@ -21,6 +21,7 @@ namespace pyreApi.Models
         public DateTime Fecha { get; set; }
 
         public int? IdObra { get; set; }
+        public int? IdProveedor { get; set; }
 
         public DateTime? FechaEstimadaDevolucion { get; set; }
 
@@ -39,6 +40,8 @@ namespace pyreApi.Models
 
         [ForeignKey("IdObra")]
         public Obra? Obra { get; set; }
+        [ForeignKey("IdProveedor")]
+        public Proveedor? Proveedor { get; set; }
 
         [ForeignKey("EstadoHerramientaAlDevolver")]
         public EstadoFisicoHerramienta? EstadoDevolucion { get; set; }

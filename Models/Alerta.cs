@@ -24,9 +24,6 @@ namespace pyreApi.Models
         [ForeignKey("IdHerramienta")]
         public Herramienta Herramienta { get; set; } = null!;
 
-        [ForeignKey("IdReparacion")]
-        public ReparacionHerramienta? Reparacion { get; set; }
-
         [ForeignKey("IdTipoAlerta")]
         public TipoAlerta TipoAlerta { get; set; } = null!;
     }

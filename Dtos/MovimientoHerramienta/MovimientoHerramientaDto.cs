@@ -8,6 +8,7 @@ namespace pyreApi.DTOs.MovimientoHerramienta
         public int IdTipoMovimiento { get; set; }
         public DateTime Fecha { get; set; }
         public int? IdObra { get; set; }
+        public int? IdProveedor { get; set; }
         public DateTime? FechaEstimadaDevolucion { get; set; }
         public int? EstadoHerramientaAlDevolver { get; set; }
         public string? Observaciones { get; set; }

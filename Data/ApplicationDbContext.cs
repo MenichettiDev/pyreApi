@@ -19,7 +19,6 @@ namespace pyreApi.Data
         public DbSet<Obra> Obra { get; set; }
         public DbSet<Herramienta> Herramienta { get; set; }
         public DbSet<MovimientoHerramienta> MovimientoHerramienta { get; set; }
-        public DbSet<ReparacionHerramienta> ReparacionHerramienta { get; set; }
         public DbSet<Alerta> Alerta { get; set; }
         public DbSet<AuditorGeneral> AuditorGeneral { get; set; }
         public DbSet<TipoAlerta> TipoAlerta { get; set; }
@@ -42,7 +41,6 @@ namespace pyreApi.Data
             modelBuilder.Entity<Obra>().ToTable("obra");
             modelBuilder.Entity<Herramienta>().ToTable("herramienta");
             modelBuilder.Entity<MovimientoHerramienta>().ToTable("movimientoherramienta");
-            modelBuilder.Entity<ReparacionHerramienta>().ToTable("reparacionherramienta");
             modelBuilder.Entity<Alerta>().ToTable("alerta");
             modelBuilder.Entity<AuditorGeneral>().ToTable("auditorgeneral");
             modelBuilder.Entity<TipoAlerta>().ToTable("tipoalerta");

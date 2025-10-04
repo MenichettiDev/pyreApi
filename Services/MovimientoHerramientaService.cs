@@ -206,6 +206,7 @@ namespace pyreApi.Services
                 IdTipoMovimiento = movimiento.IdTipoMovimiento,
                 Fecha = movimiento.Fecha,
                 IdObra = movimiento.IdObra,
+                IdProveedor = movimiento.IdProveedor,
                 FechaEstimadaDevolucion = movimiento.FechaEstimadaDevolucion,
                 EstadoHerramientaAlDevolver = movimiento.EstadoHerramientaAlDevolver,
                 Observaciones = movimiento.Observaciones,
@@ -226,6 +227,7 @@ namespace pyreApi.Services
                 IdUsuario = createDto.IdUsuario,
                 IdTipoMovimiento = createDto.IdTipoMovimiento,
                 IdObra = createDto.IdObra,
+                IdProveedor = createDto.IdProveedor,
                 FechaEstimadaDevolucion = createDto.FechaEstimadaDevolucion,
                 EstadoHerramientaAlDevolver = createDto.EstadoHerramientaAlDevolver,
                 Observaciones = createDto.Observaciones,
@@ -240,6 +242,7 @@ namespace pyreApi.Services
             movimiento.IdTipoMovimiento = updateDto.IdTipoMovimiento;
             movimiento.Fecha = updateDto.Fecha;
             movimiento.IdObra = updateDto.IdObra;
+            movimiento.IdProveedor = updateDto.IdProveedor;
             movimiento.FechaEstimadaDevolucion = updateDto.FechaEstimadaDevolucion;
             movimiento.EstadoHerramientaAlDevolver = updateDto.EstadoHerramientaAlDevolver;
             movimiento.Observaciones = updateDto.Observaciones;

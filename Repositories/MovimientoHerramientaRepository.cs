@@ -109,5 +109,18 @@ namespace pyreApi.Repositories
                 .OrderByDescending(m => m.Fecha)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<MovimientoHerramienta>> GetByProveedorAsync(int proveedorId)
+        {
+            return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.Usuario)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
+                .Where(m => m.IdProveedor == proveedorId)
+                .OrderByDescending(m => m.Fecha)
+                .ToListAsync();
+        }
     }
 }

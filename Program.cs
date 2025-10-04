@@ -94,7 +94,6 @@ builder.Services.AddScoped(typeof(GenericService<>));
 builder.Services.AddScoped<UsuarioService>();
 builder.Services.AddScoped<HerramientaService>();
 builder.Services.AddScoped<MovimientoHerramientaService>();
-builder.Services.AddScoped<ReparacionHerramientaService>();
 builder.Services.AddScoped<AlertaService>();
 builder.Services.AddScoped<PlantaService>();
 builder.Services.AddScoped<EstadoDisponibilidadService>();

@@ -63,7 +63,6 @@ namespace pyreApi.Models
         public Planta Planta { get; set; } = null!;
 
         public ICollection<MovimientoHerramienta> Movimientos { get; set; } = new List<MovimientoHerramienta>();
-        public ICollection<ReparacionHerramienta> Reparaciones { get; set; } = new List<ReparacionHerramienta>();
         public ICollection<Alerta> Alertas { get; set; } = new List<Alerta>();
     }
 }
