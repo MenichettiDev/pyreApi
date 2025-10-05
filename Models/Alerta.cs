@@ -11,8 +11,6 @@ namespace pyreApi.Models
         [Required]
         public int IdHerramienta { get; set; }
 
-        public int? IdReparacion { get; set; }
-
         [Required]
         public int IdTipoAlerta { get; set; }
 

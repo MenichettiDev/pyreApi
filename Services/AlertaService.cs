@@ -22,7 +22,6 @@ namespace pyreApi.Services
                 {
                     IdTipoAlerta = createDto.IdTipoAlerta,
                     IdHerramienta = createDto.IdHerramienta ?? 0,
-                    IdReparacion = createDto.IdMovimiento, // Using IdMovimiento as IdReparacion
                     FechaGeneracion = DateTime.UtcNow,
                     Leida = false
                 };

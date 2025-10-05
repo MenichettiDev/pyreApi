@@ -50,6 +50,7 @@ namespace pyreApi.Models
 
         [Required]
         public int IdDisponibilidad { get; set; }
+        public int DiasAlerta { get; set; } = 5; //por defecto 5 dias en la db 
 
         [ForeignKey(nameof(IdFamilia))]
         public FamiliaHerramientas Familia { get; set; } = null!;

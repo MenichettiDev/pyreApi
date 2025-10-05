@@ -182,6 +182,9 @@ builder.Services.AddAuthorization(); // esto lo q hace es configurar autorizaci√
 // Registrar servicios de negocio
 builder.Services.AddSingleton(builder.Configuration);
 
+// Registrar el background service para alertas de herramientas
+builder.Services.AddHostedService<HerramientaAlertBackgroundService>();
+
 // Registrar servicios de acceso a datos
 var app = builder.Build();
 
@@ -244,6 +247,8 @@ app.MapControllers(); // esto es para habilitar los enroutadores de los controla
 // app.Run();
 //Cambio
 app.Run("http://localhost:5000");
+
+
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
