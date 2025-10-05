@@ -19,10 +19,10 @@ namespace pyreApi.Models
 
         public bool Leida { get; set; } = false;
 
-        [ForeignKey("IdHerramienta")]
+        [ForeignKey(nameof(IdHerramienta))]
         public Herramienta Herramienta { get; set; } = null!;
 
-        [ForeignKey("IdTipoAlerta")]
+        [ForeignKey(nameof(IdTipoAlerta))]
         public TipoAlerta TipoAlerta { get; set; } = null!;
     }
 }

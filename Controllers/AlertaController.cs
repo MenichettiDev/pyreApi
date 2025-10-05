@@ -18,28 +18,15 @@ namespace pyreApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var response = await _alertaService.GetAllAsync();
-            if (response.Success)
-                return Ok(response);
-            return BadRequest(response);
+            var result = await _alertaService.GetAllAlertasAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
-            var response = await _alertaService.GetByIdAsync(id);
-            if (response.Success)
-                return Ok(response);
-            return NotFound(response);
-        }
-
-        [HttpGet("active")]
-        public async Task<IActionResult> GetActiveAlerts()
-        {
-            var response = await _alertaService.GetActiveAlertsAsync();
-            if (response.Success)
-                return Ok(response);
-            return BadRequest(response);
+            var result = await _alertaService.GetAlertaByIdAsync(id);
+            return result.Success ? Ok(result) : NotFound(result);
         }
 
         [HttpPost]
@@ -48,28 +35,56 @@ namespace pyreApi.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var response = await _alertaService.CreateAlertaAsync(createDto);
-            if (response.Success)
-                return CreatedAtAction(nameof(GetById), new { id = response.Data?.IdAlerta }, response);
-            return BadRequest(response);
+            var result = await _alertaService.CreateAlertaAsync(createDto);
+            return result.Success ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdAlerta }, result) : BadRequest(result);
         }
 
-        [HttpPut("{id}/read")]
-        public async Task<IActionResult> MarkAsRead(int id)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateAlertaDto updateDto)
         {
-            var response = await _alertaService.MarkAsReadAsync(id);
-            if (response.Success)
-                return Ok(response);
-            return BadRequest(response);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (id != updateDto.IdAlerta)
+                return BadRequest("El ID de la URL no coincide con el ID del objeto");
+
+            var result = await _alertaService.UpdateAlertaAsync(updateDto);
+            return result.Success ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var response = await _alertaService.DeleteAsync(id);
-            if (response.Success)
-                return Ok(response);
-            return BadRequest(response);
+            var result = await _alertaService.DeleteAsync(id);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("herramienta/{idHerramienta}")]
+        public async Task<IActionResult> GetByHerramienta(int idHerramienta)
+        {
+            var result = await _alertaService.GetAlertasByHerramientaAsync(idHerramienta);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("unread")]
+        public async Task<IActionResult> GetUnread()
+        {
+            var result = await _alertaService.GetUnreadAlertasAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPatch("{id}/mark-read")]
+        public async Task<IActionResult> MarkAsRead(int id)
+        {
+            var result = await _alertaService.MarkAlertaAsReadAsync(id);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("tipo-alerta/{idTipoAlerta}")]
+        public async Task<IActionResult> GetByTipoAlerta(int idTipoAlerta)
+        {
+            var result = await _alertaService.GetByTipoAlertaAsync(idTipoAlerta);
+            return result.Success ? Ok(result) : BadRequest(result);
         }
     }
 }

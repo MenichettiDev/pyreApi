@@ -64,16 +64,32 @@ namespace pyreApi.Data
             // Herramienta → FamiliaHerramientas
             modelBuilder.Entity<Herramienta>()
                 .HasOne(h => h.Familia)
-                .WithMany(f => f.Herramientas) // 👈 referencia a la colección
+                .WithMany(f => f.Herramientas)
                 .HasForeignKey(h => h.IdFamilia)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Herramienta → Planta
             modelBuilder.Entity<Herramienta>()
                 .HasOne(h => h.Planta)
-                .WithMany(p => p.Herramientas) // 👈 agregá la colección en Planta
+                .WithMany(p => p.Herramientas)
                 .HasForeignKey(h => h.IdPlanta)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Alerta → Herramienta
+            modelBuilder.Entity<Alerta>()
+                .HasOne(a => a.Herramienta)
+                .WithMany(h => h.Alertas)
+                .HasForeignKey(a => a.IdHerramienta)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Alerta → TipoAlerta
+            modelBuilder.Entity<Alerta>()
+                .HasOne(a => a.TipoAlerta)
+                .WithMany(t => t.Alertas)
+                .HasForeignKey(a => a.IdTipoAlerta)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
         }
     }
 }

@@ -88,6 +88,7 @@ builder.Services.AddScoped(typeof(GenericRepository<>));
 builder.Services.AddScoped<UsuarioRepository>();
 builder.Services.AddScoped<HerramientaRepository>();
 builder.Services.AddScoped<MovimientoHerramientaRepository>();
+builder.Services.AddScoped<AlertaRepository>();
 
 //Services
 builder.Services.AddScoped(typeof(GenericService<>));
@@ -103,6 +104,7 @@ builder.Services.AddScoped<ProveedorService>();
 builder.Services.AddScoped<RolService>();
 builder.Services.AddScoped<TipoMovimientoHerramientaService>();
 builder.Services.AddScoped<TipoAlertaService>();
+builder.Services.AddScoped<AlertaService>();
 
 // Configurar Swagger
 builder.Services.AddSwaggerGen(options =>

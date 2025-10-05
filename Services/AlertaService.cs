@@ -7,36 +7,87 @@ namespace pyreApi.Services
 {
     public class AlertaService : GenericService<Alerta>
     {
-        private readonly GenericRepository<Alerta> _alertaRepository;
+        private readonly AlertaRepository _alertaRepository;
 
-        public AlertaService(GenericRepository<Alerta> alertaRepository) : base(alertaRepository)
+        public AlertaService(AlertaRepository repository) : base(repository)
         {
-            _alertaRepository = alertaRepository;
+            _alertaRepository = repository;
         }
 
-        public async Task<BaseResponseDto<Alerta>> CreateAlertaAsync(CreateAlertaDto createDto)
+        public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetAllAlertasAsync()
         {
             try
             {
-                var alerta = new Alerta
-                {
-                    IdTipoAlerta = createDto.IdTipoAlerta,
-                    IdHerramienta = createDto.IdHerramienta ?? 0,
-                    FechaGeneracion = DateTime.UtcNow,
-                    Leida = false
-                };
+                var alertas = await _repository.GetAllAsync();
+                var alertaDtos = alertas.Select(MapToDto);
 
-                var result = await _alertaRepository.AddAsync(alerta);
-                return new BaseResponseDto<Alerta>
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
                 {
                     Success = true,
-                    Data = result,
+                    Data = alertaDtos,
+                    Message = "Alertas obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las alertas",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<AlertaDto>> GetAlertaByIdAsync(int id)
+        {
+            try
+            {
+                var alerta = await _repository.GetByIdAsync(id);
+                if (alerta == null)
+                {
+                    return new BaseResponseDto<AlertaDto>
+                    {
+                        Success = false,
+                        Message = "Alerta no encontrada"
+                    };
+                }
+
+                return new BaseResponseDto<AlertaDto>
+                {
+                    Success = true,
+                    Data = MapToDto(alerta),
+                    Message = "Alerta encontrada"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<AlertaDto>
+                {
+                    Success = false,
+                    Message = "Error al buscar la alerta",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<AlertaDto>> CreateAlertaAsync(CreateAlertaDto createDto)
+        {
+            try
+            {
+                var alerta = MapFromCreateDto(createDto);
+                var result = await _repository.AddAsync(alerta);
+
+                return new BaseResponseDto<AlertaDto>
+                {
+                    Success = true,
+                    Data = MapToDto(result),
                     Message = "Alerta creada correctamente"
                 };
             }
             catch (Exception ex)
             {
-                return new BaseResponseDto<Alerta>
+                return new BaseResponseDto<AlertaDto>
                 {
                     Success = false,
                     Message = "Error al crear la alerta",
@@ -45,37 +96,99 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<Alerta>>> GetActiveAlertsAsync()
+        public async Task<BaseResponseDto<AlertaDto>> UpdateAlertaAsync(UpdateAlertaDto updateDto)
         {
             try
             {
-                var alerts = await _alertaRepository.FindAsync(a => !a.Leida);
-                return new BaseResponseDto<IEnumerable<Alerta>>
+                var existingAlerta = await _repository.GetByIdAsync(updateDto.IdAlerta);
+                if (existingAlerta == null)
+                {
+                    return new BaseResponseDto<AlertaDto>
+                    {
+                        Success = false,
+                        Message = "Alerta no encontrada"
+                    };
+                }
+
+                MapFromUpdateDto(updateDto, existingAlerta);
+                await _repository.UpdateAsync(existingAlerta);
+
+                return new BaseResponseDto<AlertaDto>
                 {
                     Success = true,
-                    Data = alerts,
-                    Message = "Alertas activas obtenidas correctamente"
+                    Data = MapToDto(existingAlerta),
+                    Message = "Alerta actualizada correctamente"
                 };
             }
             catch (Exception ex)
             {
-                return new BaseResponseDto<IEnumerable<Alerta>>
+                return new BaseResponseDto<AlertaDto>
                 {
                     Success = false,
-                    Message = "Error al obtener alertas activas",
+                    Message = "Error al actualizar la alerta",
                     Errors = new List<string> { ex.Message }
                 };
             }
         }
 
-        public async Task<BaseResponseDto> MarkAsReadAsync(int alertaId)
+        public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetAlertasByHerramientaAsync(int idHerramienta)
         {
             try
             {
-                var alerta = await _alertaRepository.GetByIdAsync(alertaId);
+                var alertas = await _alertaRepository.GetByHerramientaAsync(idHerramienta);
+                var alertaDtos = alertas.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = true,
+                    Data = alertaDtos,
+                    Message = "Alertas obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las alertas de la herramienta",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetUnreadAlertasAsync()
+        {
+            try
+            {
+                var alertas = await _alertaRepository.GetUnreadAsync();
+                var alertaDtos = alertas.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = true,
+                    Data = alertaDtos,
+                    Message = "Alertas no leídas obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las alertas no leídas",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<bool>> MarkAlertaAsReadAsync(int id)
+        {
+            try
+            {
+                var alerta = await _repository.GetByIdAsync(id);
                 if (alerta == null)
                 {
-                    return new BaseResponseDto
+                    return new BaseResponseDto<bool>
                     {
                         Success = false,
                         Message = "Alerta no encontrada"
@@ -83,23 +196,78 @@ namespace pyreApi.Services
                 }
 
                 alerta.Leida = true;
-                await _alertaRepository.UpdateAsync(alerta);
+                await _repository.UpdateAsync(alerta);
 
-                return new BaseResponseDto
+                return new BaseResponseDto<bool>
                 {
                     Success = true,
+                    Data = true,
                     Message = "Alerta marcada como leída"
                 };
             }
             catch (Exception ex)
             {
-                return new BaseResponseDto
+                return new BaseResponseDto<bool>
                 {
                     Success = false,
                     Message = "Error al marcar la alerta como leída",
                     Errors = new List<string> { ex.Message }
                 };
             }
+        }
+
+        public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetByTipoAlertaAsync(int idTipoAlerta)
+        {
+            try
+            {
+                var alertas = await _alertaRepository.GetByTipoAlertaAsync(idTipoAlerta);
+                var alertaDtos = alertas.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = true,
+                    Data = alertaDtos,
+                    Message = "Alertas por tipo obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las alertas por tipo",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        private AlertaDto MapToDto(Alerta alerta)
+        {
+            return new AlertaDto
+            {
+                IdAlerta = alerta.IdAlerta,
+                IdHerramienta = alerta.IdHerramienta,
+                NombreHerramienta = alerta.Herramienta?.NombreHerramienta ?? string.Empty,
+                IdTipoAlerta = alerta.IdTipoAlerta,
+                NombreTipoAlerta = alerta.TipoAlerta?.NombreTipoAlerta ?? string.Empty,
+                FechaGeneracion = alerta.FechaGeneracion,
+                Leida = alerta.Leida
+            };
+        }
+
+        private Alerta MapFromCreateDto(CreateAlertaDto createDto)
+        {
+            return new Alerta
+            {
+                IdHerramienta = createDto.IdHerramienta,
+                IdTipoAlerta = createDto.IdTipoAlerta
+            };
+        }
+
+        private void MapFromUpdateDto(UpdateAlertaDto updateDto, Alerta alerta)
+        {
+            alerta.IdHerramienta = updateDto.IdHerramienta;
+            alerta.Leida = updateDto.Leida;
         }
     }
 }
