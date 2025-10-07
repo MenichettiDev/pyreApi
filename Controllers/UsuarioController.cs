@@ -190,6 +190,25 @@ namespace pyreApi.Controllers
 
             return BadRequest(response);
         }
+
+        [HttpPatch("{id}/toggle-activo")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ToggleActivo(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
+            }
+
+            var response = await _usuarioService.ToggleActivoAsync(id);
+            if (response.Success)
+                return Ok(response);
+
+            if (response.Message?.Contains("No se encontró") == true || response.Message?.Contains("no encontrado") == true)
+                return NotFound(response);
+
+            return BadRequest(response);
+        }
     }
 
     // Clase única para login por legajo

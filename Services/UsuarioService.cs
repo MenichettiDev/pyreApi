@@ -553,5 +553,52 @@ namespace pyreApi.Services
                 };
             }
         }
+
+        public async Task<BaseResponseDto<Usuario>> ToggleActivoAsync(int id)
+        {
+            try
+            {
+                if (id <= 0)
+                {
+                    return new BaseResponseDto<Usuario>
+                    {
+                        Success = false,
+                        Message = "El ID del usuario debe ser un número válido mayor a 0."
+                    };
+                }
+
+                var existingUser = await _usuarioRepository.GetByIdAsync(id);
+                if (existingUser == null)
+                {
+                    return new BaseResponseDto<Usuario>
+                    {
+                        Success = false,
+                        Message = $"No se encontró un usuario con el ID {id}."
+                    };
+                }
+
+                existingUser.Activo = !existingUser.Activo;
+                existingUser.FechaModificacion = DateTime.UtcNow;
+
+                await _usuarioRepository.UpdateAsync(existingUser);
+
+                return new BaseResponseDto<Usuario>
+                {
+                    Success = true,
+                    Data = existingUser,
+                    Message = existingUser.Activo ? "Usuario activado correctamente." : "Usuario desactivado correctamente."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cambiar el estado activo del usuario: {Id}", id);
+                return new BaseResponseDto<Usuario>
+                {
+                    Success = false,
+                    Message = "No se pudo cambiar el estado del usuario. Por favor, intente nuevamente.",
+                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                };
+            }
+        }
     }
 }
