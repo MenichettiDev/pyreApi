@@ -19,9 +19,27 @@ namespace pyreApi.Controllers
 
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? legajo = null,
+            [FromQuery] bool? estado = null,
+            [FromQuery] string? nombre = null,
+            [FromQuery] string? apellido = null,
+            [FromQuery(Name = "rol")] int? rolId = null)
         {
-            var response = await _usuarioService.GetAllUsuariosPaginatedAsync(page, pageSize);
+            // Validar longitud del legajo si se proporcionó
+            if (!string.IsNullOrWhiteSpace(legajo) && legajo.Length > 5)
+            {
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = "El legajo no puede tener más de 5 caracteres.",
+                    Errors = new List<string> { "Legajo excede la longitud máxima permitida (5 caracteres)." }
+                });
+            }
+
+            var response = await _usuarioService.GetAllUsuariosPaginatedAsync(page, pageSize, legajo, estado, nombre, apellido, rolId);
             if (response.Success)
                 return Ok(response);
             return BadRequest(response);

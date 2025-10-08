@@ -36,7 +36,7 @@ namespace pyreApi.Services
                 try
                 {
                     await ProcessHerramientaAlertsAsync();
-                    _logger.LogInformation("Proceso de alertas de herramientas completado a las {Time}", DateTime.UtcNow);
+                    // _logger.LogInformation("Proceso de alertas de herramientas completado a las {Time}", DateTime.UtcNow);
                 }
                 catch (Exception ex)
                 {
@@ -64,7 +64,7 @@ namespace pyreApi.Services
             var herramientasActivas = await herramientaRepository.FindAsync(h =>
                 h.Activo && (h.IdDisponibilidad == 2 || h.IdDisponibilidad == 3));
 
-            _logger.LogInformation("Procesando {Count} herramientas activas en estado Prestada o Mantenimiento", herramientasActivas.Count());
+            // _logger.LogInformation("Procesando {Count} herramientas activas en estado Prestada o Mantenimiento", herramientasActivas.Count());
 
             foreach (var herramienta in herramientasActivas)
             {
@@ -95,8 +95,8 @@ namespace pyreApi.Services
 
             if (ultimoMovimiento?.FechaEstimadaDevolucion == null)
             {
-                _logger.LogInformation("Herramienta {HerramientaId} no tiene movimientos con fecha estimada de devolución",
-                    herramienta.IdHerramienta);
+                // _logger.LogInformation("Herramienta {HerramientaId} no tiene movimientos con fecha estimada de devolución",
+                // herramienta.IdHerramienta);
                 return;
             }
 
@@ -110,10 +110,10 @@ namespace pyreApi.Services
             var diasRestantesVencimiento = (fechaVencimiento - DateTime.UtcNow).Days;
             var diasRestantesWarning = (fechaWarning - DateTime.UtcNow).Days;
 
-            _logger.LogInformation("Herramienta {HerramientaId}: Vencimiento={FechaVencimiento}, Warning={FechaWarning}, DíasRestantesVencimiento={DiasVencimiento}",
-                herramienta.IdHerramienta, fechaVencimiento, fechaWarning, diasRestantesVencimiento);
-            _logger.LogInformation("Herramienta {HerramientaId}: FechaVencimiento={FechaVencimiento}, FechaActual={FechaActual}, DíasRestantes={DiasRestantes}",
-                herramienta.IdHerramienta, fechaVencimiento, DateTime.UtcNow, diasRestantesVencimiento);
+            // _logger.LogInformation("Herramienta {HerramientaId}: Vencimiento={FechaVencimiento}, Warning={FechaWarning}, DíasRestantesVencimiento={DiasVencimiento}",
+            //     herramienta.IdHerramienta, fechaVencimiento, fechaWarning, diasRestantesVencimiento);
+            // _logger.LogInformation("Herramienta {HerramientaId}: FechaVencimiento={FechaVencimiento}, FechaActual={FechaActual}, DíasRestantes={DiasRestantes}",
+            //     herramienta.IdHerramienta, fechaVencimiento, DateTime.UtcNow, diasRestantesVencimiento);
 
 
             // Verificar si ya existe una alerta no leída para esta herramienta
@@ -123,8 +123,8 @@ namespace pyreApi.Services
             // Lógica de generación de alertas basada en fechas
             if (diasRestantesVencimiento <= 0)
             {
-                _logger.LogInformation("Herramienta {HerramientaId} está VENCIDA - días restantes: {Dias}",
-       herramienta.IdHerramienta, diasRestantesVencimiento);
+                //             _logger.LogInformation("Herramienta {HerramientaId} está VENCIDA - días restantes: {Dias}",
+                //    herramienta.IdHerramienta, diasRestantesVencimiento);
                 // Caso 1: Herramienta vencida (fecha de devolución ya pasó)
                 // Generar alerta tipo 2 (Vencido)
                 await CreateAlertIfNotExists(alertaExistente, herramienta.IdHerramienta, 2, alertaService, "vencida");
@@ -174,8 +174,8 @@ namespace pyreApi.Services
 
                 if (result.Success)
                 {
-                    _logger.LogInformation("Alerta creada para herramienta {HerramientaId} ({Estado}), tipo {TipoAlerta}",
-                        idHerramienta, descripcionEstado, tipoAlerta);
+                    // _logger.LogInformation("Alerta creada para herramienta {HerramientaId} ({Estado}), tipo {TipoAlerta}",
+                    //     idHerramienta, descripcionEstado, tipoAlerta);
                 }
                 else
                 {

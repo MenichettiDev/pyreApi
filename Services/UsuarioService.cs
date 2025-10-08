@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using System.Text;
+using System.Linq; // agregado
 
 namespace pyreApi.Services
 {
@@ -513,15 +514,60 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<PaginatedResponseDto<UsuarioResponseDto>>> GetAllUsuariosPaginatedAsync(int page, int pageSize)
+        public async Task<BaseResponseDto<PaginatedResponseDto<UsuarioResponseDto>>> GetAllUsuariosPaginatedAsync(
+            int page,
+            int pageSize,
+            string? legajo = null,
+            bool? estado = null,
+            string? nombre = null,
+            string? apellido = null,
+            int? rolId = null)
         {
             try
             {
                 if (page <= 0) page = 1;
                 if (pageSize <= 0) pageSize = 10;
 
-                var (usuarios, totalRecords) = await _usuarioRepository.GetAllWithRolPagedAsync(page, pageSize);
-                var usuariosDto = usuarios.Select(MapToResponseDto).ToList();
+                // Obtener todos con rol y aplicar filtros en memoria (si vienen)
+                var usuarios = await _usuarioRepository.GetAllWithRolAsync();
+                IEnumerable<Usuario> filtered = usuarios;
+
+                if (!string.IsNullOrWhiteSpace(legajo))
+                {
+                    var legajoTrim = legajo.Trim();
+                    filtered = filtered.Where(u => string.Equals(u.Legajo?.Trim(), legajoTrim, StringComparison.OrdinalIgnoreCase));
+                }
+
+                if (estado.HasValue)
+                {
+                    filtered = filtered.Where(u => u.Activo == estado.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(nombre))
+                {
+                    var nombreTrim = nombre.Trim().ToLowerInvariant();
+                    filtered = filtered.Where(u => (u.Nombre ?? string.Empty).ToLowerInvariant().Contains(nombreTrim));
+                }
+
+                if (!string.IsNullOrWhiteSpace(apellido))
+                {
+                    var apellidoTrim = apellido.Trim().ToLowerInvariant();
+                    filtered = filtered.Where(u => (u.Apellido ?? string.Empty).ToLowerInvariant().Contains(apellidoTrim));
+                }
+
+                if (rolId.HasValue)
+                {
+                    filtered = filtered.Where(u => u.RolId == rolId.Value);
+                }
+
+                var totalRecords = filtered.Count();
+
+                var usuariosPage = filtered
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                var usuariosDto = usuariosPage.Select(MapToResponseDto).ToList();
                 var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
 
                 var paginatedResponse = new PaginatedResponseDto<UsuarioResponseDto>
