@@ -30,7 +30,7 @@ namespace pyreApi.Models
         [Required]
         public int RolId { get; set; }
 
-        public bool AccedeAlSistema { get; set; } = false;
+        public bool AccedeAlSistema { get; set; } = true;
 
         public bool Activo { get; set; } = true;
 

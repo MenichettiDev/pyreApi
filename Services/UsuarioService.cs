@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using System.Text;
 using System.Linq; // agregado
+using System; // agregado
 
 namespace pyreApi.Services
 {
@@ -235,6 +236,37 @@ namespace pyreApi.Services
                         Message = $"No se encontró un usuario con el ID {updateDto.Id} para actualizar."
                     };
                 }
+
+                // --- Nuevas validaciones ---
+
+                // Id del usuario que realiza la modificación (se espera que venga en el DTO)
+                var modifierId = updateDto.IdUsuarioModifica;
+
+                // 1) Un usuario no puede cambiar su propio rol
+                if (modifierId == existingUser.Id && updateDto.RolId.HasValue && updateDto.RolId.Value != existingUser.RolId)
+                {
+                    return new BaseResponseDto<Usuario>
+                    {
+                        Success = false,
+                        Message = "No está permitido que un usuario cambie su propio rol."
+                    };
+                }
+
+                // 2) Un SuperAdmin no puede darse de baja a sí mismo mediante la edición (quitar AccedeAlSistema)
+                if (modifierId == existingUser.Id && updateDto.AccedeAlSistema.HasValue && updateDto.AccedeAlSistema.Value == true)
+                {
+                    var rolNombre = existingUser.Rol?.NombreRol ?? string.Empty;
+                    if (string.Equals(rolNombre, "superadmin", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return new BaseResponseDto<Usuario>
+                        {
+                            Success = false,
+                            Message = "Un SuperAdmin no puede darse de baja a sí mismo."
+                        };
+                    }
+                }
+
+                // --- Fin de nuevas validaciones ---
 
                 // Validar email único si se proporciona uno nuevo
                 if (!string.IsNullOrEmpty(updateDto.Email) && updateDto.Email != existingUser.Email)
