@@ -7,22 +7,19 @@ namespace pyreApi.DTOs.Obra
         [Required]
         public int IdObra { get; set; }
 
-        [Required]
-        [MaxLength(20)]
+        [Required(ErrorMessage = "El código es requerido")]
+        [MaxLength(20, ErrorMessage = "El código no puede exceder 20 caracteres")]
         public string Codigo { get; set; } = string.Empty;
 
-        [Required]
-        [MaxLength(150)]
+        [Required(ErrorMessage = "El nombre de la obra es requerido")]
+        [MaxLength(150, ErrorMessage = "El nombre de la obra no puede exceder 150 caracteres")]
         public string NombreObra { get; set; } = string.Empty;
 
-        [MaxLength(200)]
+        [MaxLength(200, ErrorMessage = "La ubicación no puede exceder 200 caracteres")]
         public string? Ubicacion { get; set; }
 
         public DateOnly? FechaInicio { get; set; }
 
-        public DateOnly? FechaFinEstimada { get; set; }
-
-        [MaxLength(100)]
-        public string? ResponsableObra { get; set; }
+        public DateOnly? FechaFin { get; set; }
     }
 }

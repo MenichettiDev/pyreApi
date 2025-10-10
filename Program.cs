@@ -105,6 +105,7 @@ builder.Services.AddScoped<RolService>();
 builder.Services.AddScoped<TipoMovimientoHerramientaService>();
 builder.Services.AddScoped<TipoAlertaService>();
 builder.Services.AddScoped<AlertaService>();
+builder.Services.AddScoped<ObraService>();
 
 // Configurar Swagger
 builder.Services.AddSwaggerGen(options =>

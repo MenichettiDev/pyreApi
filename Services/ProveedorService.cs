@@ -128,6 +128,76 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<PaginatedResponseDto<ProveedorDto>>> GetAllProveedoresPaginatedAsync(
+            int page,
+            int pageSize,
+            string? nombre = null,
+            string? cuit = null,
+            bool? activo = null)
+        {
+            try
+            {
+                if (page <= 0) page = 1;
+                if (pageSize <= 0) pageSize = 10;
+
+                var proveedores = await _repository.GetAllAsync();
+                IEnumerable<Proveedor> filtered = proveedores;
+
+                if (!string.IsNullOrWhiteSpace(nombre))
+                {
+                    var nombreTrim = nombre.Trim().ToLowerInvariant();
+                    filtered = filtered.Where(p => (p.NombreProveedor ?? string.Empty).ToLowerInvariant().Contains(nombreTrim));
+                }
+
+                if (!string.IsNullOrWhiteSpace(cuit))
+                {
+                    var cuitTrim = cuit.Trim();
+                    filtered = filtered.Where(p => (p.Cuit ?? string.Empty).Contains(cuitTrim));
+                }
+
+                if (activo.HasValue)
+                {
+                    filtered = filtered.Where(p => p.Activo == activo.Value);
+                }
+
+                var totalRecords = filtered.Count();
+                var proveedoresPage = filtered
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                var proveedorDtos = proveedoresPage.Select(MapToDto).ToList();
+                var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+                var paginatedResponse = new PaginatedResponseDto<ProveedorDto>
+                {
+                    Data = proveedorDtos,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    HasNextPage = page < totalPages,
+                    HasPreviousPage = page > 1
+                };
+
+                return new BaseResponseDto<PaginatedResponseDto<ProveedorDto>>
+                {
+                    Success = true,
+                    Data = paginatedResponse,
+                    Message = "Proveedores obtenidos correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<PaginatedResponseDto<ProveedorDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener los proveedores",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
         private ProveedorDto MapToDto(Proveedor proveedor)
         {
             return new ProveedorDto

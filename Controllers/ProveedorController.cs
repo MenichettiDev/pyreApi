@@ -16,9 +16,14 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? nombre = null,
+            [FromQuery] string? cuit = null,
+            [FromQuery] bool? activo = null)
         {
-            var result = await _proveedorService.GetAllProveedoresAsync();
+            var result = await _proveedorService.GetAllProveedoresPaginatedAsync(page, pageSize, nombre, cuit, activo);
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
