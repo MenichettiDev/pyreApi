@@ -140,6 +140,16 @@ namespace pyreApi.Controllers
                 return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
             }
 
+            // Obtener el ID del usuario autenticado
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            int idUsuarioModifica = userIdClaim != null ? int.Parse(userIdClaim.Value) : 0;
+            updateDto.IdUsuarioModifica = idUsuarioModifica;
+
+            // Evitar que el usuario cambie su propio rol
+            if (idUsuarioModifica == id && updateDto.RolId.HasValue)
+            {
+                return BadRequest(new { Success = false, Message = "No está permitido que un usuario cambie su propio rol." });
+            }
 
             if (!ModelState.IsValid)
             {
@@ -158,6 +168,8 @@ namespace pyreApi.Controllers
 
             if (id != updateDto.Id)
                 return BadRequest(new { Success = false, Message = "El ID proporcionado en la URL no coincide con el ID del usuario a actualizar." });
+
+            updateDto.IdUsuarioModifica = idUsuarioModifica;
 
             var response = await _usuarioService.UpdateUsuarioAsync(updateDto);
             if (response.Success)
@@ -199,6 +211,16 @@ namespace pyreApi.Controllers
                 return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
             }
 
+            // Obtener el ID del usuario autenticado
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            int idUsuarioActual = userIdClaim != null ? int.Parse(userIdClaim.Value) : 0;
+
+            // Evitar que el usuario se elimine a sí mismo
+            if (idUsuarioActual == id)
+            {
+                return BadRequest(new { Success = false, Message = "No está permitido que un usuario se elimine a sí mismo." });
+            }
+
             var response = await _usuarioService.DeleteAsync(id);
             if (response.Success)
                 return Ok(response);
@@ -216,6 +238,16 @@ namespace pyreApi.Controllers
             if (id <= 0)
             {
                 return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
+            }
+
+            // Obtener el ID del usuario autenticado
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            int idUsuarioActual = userIdClaim != null ? int.Parse(userIdClaim.Value) : 0;
+
+            // Evitar que el usuario cambie su propio estado activo
+            if (idUsuarioActual == id)
+            {
+                return BadRequest(new { Success = false, Message = "No está permitido que un usuario cambie su propio estado activo." });
             }
 
             var response = await _usuarioService.ToggleActivoAsync(id);

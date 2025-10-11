@@ -226,7 +226,6 @@ namespace pyreApi.Services
         {
             try
             {
-
                 var existingUser = await _usuarioRepository.GetByIdAsync(updateDto.Id);
                 if (existingUser == null)
                 {
@@ -654,6 +653,8 @@ namespace pyreApi.Services
                         Message = $"No se encontró un usuario con el ID {id}."
                     };
                 }
+
+
 
                 existingUser.Activo = !existingUser.Activo;
                 existingUser.FechaModificacion = DateTime.UtcNow;
