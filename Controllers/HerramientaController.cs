@@ -106,5 +106,32 @@ namespace pyreApi.Controllers
             var result = await _herramientaService.GetInRepairAsync();
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
+        [HttpGet("herramientas-totales")]
+        public async Task<IActionResult> GetTotalHerramientas()
+        {
+            var result = await _herramientaService.GetTotalHerramientasAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("herramientas-disponibles")]
+        public async Task<IActionResult> GetTotalHerramientasDisponibles()
+        {
+            var result = await _herramientaService.GetTotalHerramientasDisponiblesAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("herramientas-en-prestamo")]
+        public async Task<IActionResult> GetTotalHerramientasEnPrestamo()
+        {
+            var result = await _herramientaService.GetTotalHerramientasEnPrestamoAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+        [HttpGet("herramientas-en-reparacion")]
+        public async Task<IActionResult> GetTotalHerramientasEnReparacion()
+        {
+            var result = await _herramientaService.GetTotalHerramientasEnReparacionAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
     }
 }

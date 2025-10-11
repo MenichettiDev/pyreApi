@@ -317,6 +317,108 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<int>> GetTotalHerramientasAsync()
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetAllAsync();
+                int total = herramientas.Count();
+
+                return new BaseResponseDto<int>
+                {
+                    Success = true,
+                    Data = total,
+                    Message = "Total de herramientas obtenido correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<int>
+                {
+                    Success = false,
+                    Message = "Error al obtener el total de herramientas",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<int>> GetTotalHerramientasDisponiblesAsync()
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetAllAsync();
+                // Ajusta el valor de IdDisponibilidad según tu lógica de disponibilidad
+                int totalDisponibles = herramientas.Count(h => h.IdDisponibilidad == 1);
+
+                return new BaseResponseDto<int>
+                {
+                    Success = true,
+                    Data = totalDisponibles,
+                    Message = "Total de herramientas disponibles obtenido correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<int>
+                {
+                    Success = false,
+                    Message = "Error al obtener el total de herramientas disponibles",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<int>> GetTotalHerramientasEnPrestamoAsync()
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetAllAsync();
+                // Ajusta el valor de IdDisponibilidad según tu lógica de préstamo
+                int totalEnPrestamo = herramientas.Count(h => h.IdDisponibilidad == 2);
+
+                return new BaseResponseDto<int>
+                {
+                    Success = true,
+                    Data = totalEnPrestamo,
+                    Message = "Total de herramientas en préstamo obtenido correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<int>
+                {
+                    Success = false,
+                    Message = "Error al obtener el total de herramientas en préstamo",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<int>> GetTotalHerramientasEnReparacionAsync()
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetAllAsync();
+                // Ajusta el valor de IdDisponibilidad según tu lógica de reparación
+                int totalEnReparacion = herramientas.Count(h => h.IdDisponibilidad == 3);
+
+                return new BaseResponseDto<int>
+                {
+                    Success = true,
+                    Data = totalEnReparacion,
+                    Message = "Total de herramientas en reparación obtenido correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<int>
+                {
+                    Success = false,
+                    Message = "Error al obtener el total de herramientas en reparación",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
         private HerramientaDto MapToDto(Herramienta herramienta)
         {
             return new HerramientaDto

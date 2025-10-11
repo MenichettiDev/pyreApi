@@ -241,6 +241,118 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetAlertasPendientesAsync()
+        {
+            try
+            {
+                var alertas = await _alertaRepository.GetAllAsync();
+                var pendientes = alertas
+                    .Where(a => a.IdTipoAlerta == 1 && a.Herramienta != null &&
+                        a.FechaGeneracion.AddDays(a.Herramienta.DiasAlerta) > DateTime.Now)
+                    .Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = true,
+                    Data = pendientes,
+                    Message = "Alertas pendientes obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las alertas pendientes",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetAlertasVencidasAsync()
+        {
+            try
+            {
+                var alertas = await _alertaRepository.GetAllAsync();
+                var vencidas = alertas
+                    .Where(a => a.IdTipoAlerta == 2 && a.Herramienta != null &&
+                        a.FechaGeneracion.AddDays(a.Herramienta.DiasAlerta) <= DateTime.Now)
+                    .Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = true,
+                    Data = vencidas,
+                    Message = "Alertas vencidas obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<AlertaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las alertas vencidas",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<int>> GetCountAlertasPendientesAsync()
+        {
+            try
+            {
+                var alertas = await _alertaRepository.GetAllAsync();
+                int count = alertas
+                    .Where(a => a.IdTipoAlerta == 1 && a.Herramienta != null &&
+                        a.FechaGeneracion.AddDays(a.Herramienta.DiasAlerta) > DateTime.Now)
+                    .Count();
+
+                return new BaseResponseDto<int>
+                {
+                    Success = true,
+                    Data = count,
+                    Message = "Cantidad de alertas pendientes obtenida correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<int>
+                {
+                    Success = false,
+                    Message = "Error al obtener la cantidad de alertas pendientes",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<int>> GetCountAlertasVencidasAsync()
+        {
+            try
+            {
+                var alertas = await _alertaRepository.GetAllAsync();
+                int count = alertas
+                    .Where(a => a.IdTipoAlerta == 2 && a.Herramienta != null &&
+                        a.FechaGeneracion.AddDays(a.Herramienta.DiasAlerta) <= DateTime.Now)
+                    .Count();
+
+                return new BaseResponseDto<int>
+                {
+                    Success = true,
+                    Data = count,
+                    Message = "Cantidad de alertas vencidas obtenida correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<int>
+                {
+                    Success = false,
+                    Message = "Error al obtener la cantidad de alertas vencidas",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
         private AlertaDto MapToDto(Alerta alerta)
         {
             return new AlertaDto

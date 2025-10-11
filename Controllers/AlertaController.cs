@@ -86,5 +86,19 @@ namespace pyreApi.Controllers
             var result = await _alertaService.GetByTipoAlertaAsync(idTipoAlerta);
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
+        [HttpGet("alertas-pendientes")]
+        public async Task<IActionResult> GetAlertasPendientes()
+        {
+            var result = await _alertaService.GetCountAlertasPendientesAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("alertas-vencidas")]
+        public async Task<IActionResult> GetAlertasVencidas()
+        {
+            var result = await _alertaService.GetCountAlertasVencidasAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
     }
 }
