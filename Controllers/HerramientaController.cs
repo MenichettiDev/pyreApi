@@ -107,27 +107,28 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
-        [HttpGet("herramientas-totales")]
+        [HttpGet("count-herramientas-totales")]
         public async Task<IActionResult> GetTotalHerramientas()
         {
             var result = await _herramientaService.GetTotalHerramientasAsync();
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
-        [HttpGet("herramientas-disponibles")]
+        [HttpGet("count-herramientas-disponibles")]
         public async Task<IActionResult> GetTotalHerramientasDisponibles()
         {
             var result = await _herramientaService.GetTotalHerramientasDisponiblesAsync();
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
-        [HttpGet("herramientas-en-prestamo")]
+        [HttpGet("count-herramientas-en-prestamo")]
         public async Task<IActionResult> GetTotalHerramientasEnPrestamo()
         {
             var result = await _herramientaService.GetTotalHerramientasEnPrestamoAsync();
             return result.Success ? Ok(result) : BadRequest(result);
         }
         [HttpGet("herramientas-en-reparacion")]
+        [HttpGet("count-herramientas-en-reparacion")]
         public async Task<IActionResult> GetTotalHerramientasEnReparacion()
         {
             var result = await _herramientaService.GetTotalHerramientasEnReparacionAsync();

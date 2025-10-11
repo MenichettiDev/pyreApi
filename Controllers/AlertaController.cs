@@ -87,15 +87,15 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
-        [HttpGet("alertas-pendientes")]
-        public async Task<IActionResult> GetAlertasPendientes()
+        [HttpGet("count-alertas-pendientes")]
+        public async Task<IActionResult> GetCountAlertasPendientes()
         {
             var result = await _alertaService.GetCountAlertasPendientesAsync();
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
-        [HttpGet("alertas-vencidas")]
-        public async Task<IActionResult> GetAlertasVencidas()
+        [HttpGet("count-alertas-vencidas")]
+        public async Task<IActionResult> GetCountAlertasVencidas()
         {
             var result = await _alertaService.GetCountAlertasVencidasAsync();
             return result.Success ? Ok(result) : BadRequest(result);
