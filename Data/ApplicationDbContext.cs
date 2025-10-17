@@ -24,7 +24,7 @@ namespace pyreApi.Data
         public DbSet<TipoAlerta> TipoAlerta { get; set; }
         public DbSet<TipoMovimientoHerramienta> TipoMovimientoHerramienta { get; set; }
         public DbSet<Proveedor> Proveedor { get; set; }
-
+        public DbSet<Usuario> Usuarios { get; set; } // Agregar esta línea para mapear la entidad Usuario
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) // Mapeo de tablas y relaciones
         {

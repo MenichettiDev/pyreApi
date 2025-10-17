@@ -28,7 +28,7 @@ namespace pyreApi.Services
         private string HashPassword(string password)
         {
             // Salt fijo (a modo de aprendizaje)
-            string salt = _configuration["Salt"]; // Lee el salt del archivo de configuración
+            string salt = _configuration["Salt"] ?? string.Empty; // Asegura que no sea nulo
             if (string.IsNullOrEmpty(salt))
             {
                 throw new InvalidOperationException("El valor de 'Salt' no está configurado en appsettings.json.");
@@ -61,7 +61,7 @@ namespace pyreApi.Services
                 Activo = usuario.Activo,
                 Avatar = usuario.Avatar,
                 FechaRegistro = usuario.FechaRegistro,
-                FechaModificacion = usuario.FechaModificacion,
+                FechaModificacion = usuario.FechaModificacion ?? DateTime.MinValue, // Manejo explícito de nulos
                 RolNombre = usuario.Rol?.NombreRol ?? string.Empty
             };
         }
@@ -347,7 +347,7 @@ namespace pyreApi.Services
                     Message = "Usuario encontrado correctamente."
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new BaseResponseDto<Usuario>
                 {

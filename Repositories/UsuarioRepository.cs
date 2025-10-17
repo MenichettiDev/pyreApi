@@ -48,7 +48,35 @@ namespace pyreApi.Repositories
 
         public async Task<IEnumerable<Usuario>> GetAllWithRolAsync()
         {
-            return await _dbSet.Include(u => u.Rol).ToListAsync();
+            try
+            {
+                var usuarios = await _context.Usuarios
+                    .Include(u => u.Rol)
+                    .Select(u => new Usuario
+                    {
+                        Id = u.Id,
+                        Nombre = u.Nombre,
+                        Apellido = u.Apellido,
+                        Legajo = u.Legajo,
+                        Dni = u.Dni,
+                        Email = u.Email,
+                        Telefono = u.Telefono,
+                        AccedeAlSistema = u.AccedeAlSistema,
+                        Activo = u.Activo,
+                        Avatar = u.Avatar,
+                        FechaRegistro = u.FechaRegistro,
+                        FechaModificacion = u.FechaModificacion ?? DateTime.MinValue, // Manejo de nulos
+                        Rol = u.Rol
+                    })
+                    .ToListAsync();
+
+                return usuarios;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener usuarios con roles");
+                throw;
+            }
         }
 
         public async Task<Usuario?> GetByIdWithRolAsync(int id)
@@ -75,7 +103,7 @@ namespace pyreApi.Repositories
                     return false;
                 }
 
-                var usuario = await _context.Usuario
+                var usuario = await _context.Usuarios // Cambiar Usuario por Usuarios
                     .FirstOrDefaultAsync(u => u.Legajo == legajo);
 
                 if (usuario == null)
@@ -137,7 +165,7 @@ namespace pyreApi.Repositories
 
                 _logger.LogInformation("Buscando usuario por legajo: {Legajo}", legajo);
 
-                var usuario = await _context.Usuario
+                var usuario = await _context.Usuarios // Cambiar Usuario por Usuarios
                     .Include(u => u.Rol)
                     .FirstOrDefaultAsync(u => u.Legajo == legajo);
 
