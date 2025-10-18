@@ -62,7 +62,7 @@ namespace pyreApi.Services
                 Avatar = usuario.Avatar,
                 FechaRegistro = usuario.FechaRegistro,
                 FechaModificacion = usuario.FechaModificacion ?? DateTime.MinValue, // Manejo explícito de nulos
-                RolNombre = usuario.Rol?.NombreRol ?? string.Empty
+                RolNombre = usuario.Rol?.NombreRol ?? string.Empty // Asegurarse de incluir el nombre del rol
             };
         }
 
@@ -559,41 +559,12 @@ namespace pyreApi.Services
                 if (page <= 0) page = 1;
                 if (pageSize <= 0) pageSize = 10;
 
-                // Obtener todos con rol y aplicar filtros en memoria (si vienen)
-                var usuarios = await _usuarioRepository.GetAllWithRolAsync();
-                IEnumerable<Usuario> filtered = usuarios;
+                // Obtener usuarios con filtros aplicados directamente en la base de datos
+                var usuarios = await _usuarioRepository.GetFilteredUsuariosAsync(legajo, estado, nombre, apellido, rolId);
 
-                if (!string.IsNullOrWhiteSpace(legajo))
-                {
-                    var legajoTrim = legajo.Trim();
-                    filtered = filtered.Where(u => string.Equals(u.Legajo?.Trim(), legajoTrim, StringComparison.OrdinalIgnoreCase));
-                }
+                var totalRecords = usuarios.Count();
 
-                if (estado.HasValue)
-                {
-                    filtered = filtered.Where(u => u.Activo == estado.Value);
-                }
-
-                if (!string.IsNullOrWhiteSpace(nombre))
-                {
-                    var nombreTrim = nombre.Trim().ToLowerInvariant();
-                    filtered = filtered.Where(u => (u.Nombre ?? string.Empty).ToLowerInvariant().Contains(nombreTrim));
-                }
-
-                if (!string.IsNullOrWhiteSpace(apellido))
-                {
-                    var apellidoTrim = apellido.Trim().ToLowerInvariant();
-                    filtered = filtered.Where(u => (u.Apellido ?? string.Empty).ToLowerInvariant().Contains(apellidoTrim));
-                }
-
-                if (rolId.HasValue)
-                {
-                    filtered = filtered.Where(u => u.RolId == rolId.Value);
-                }
-
-                var totalRecords = filtered.Count();
-
-                var usuariosPage = filtered
+                var usuariosPage = usuarios
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToList();

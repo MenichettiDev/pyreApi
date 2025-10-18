@@ -12,11 +12,13 @@ namespace pyreApi.Repositories
     {
         private readonly ILogger<UsuarioRepository> _logger;
         private readonly IConfiguration _configuration;
+        private readonly ApplicationDbContext _dbContext; // Agregado el contexto de base de datos
 
         public UsuarioRepository(ApplicationDbContext context, ILogger<UsuarioRepository> logger, IConfiguration configuration) : base(context)
         {
             _logger = logger;
             _configuration = configuration;
+            _dbContext = context; // Inicializando el contexto
         }
 
         public async Task<Usuario?> GetByEmailAsync(string email)
@@ -191,6 +193,31 @@ namespace pyreApi.Repositories
                 .ToListAsync();
 
             return (data, totalRecords);
+        }
+
+        public async Task<IEnumerable<Usuario>> GetFilteredUsuariosAsync(
+            string? legajo, bool? estado, string? nombre, string? apellido, int? rolId)
+        {
+            var query = _dbContext.Set<Usuario>()
+                .Include(u => u.Rol) // Asegurarse de incluir la relación con Rol
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(legajo))
+                query = query.Where(u => u.Legajo != null && u.Legajo == legajo); // Validar que Legajo no sea null
+
+            if (estado.HasValue)
+                query = query.Where(u => u.Activo == estado.Value);
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+                query = query.Where(u => u.Nombre != null && u.Nombre.Contains(nombre)); // Validar que Nombre no sea null
+
+            if (!string.IsNullOrWhiteSpace(apellido))
+                query = query.Where(u => u.Apellido != null && u.Apellido.Contains(apellido)); // Validar que Apellido no sea null
+
+            if (rolId.HasValue)
+                query = query.Where(u => u.RolId == rolId.Value);
+
+            return await query.ToListAsync();
         }
 
         // Método auxiliar para verificar contraseña usando KeyDerivation
