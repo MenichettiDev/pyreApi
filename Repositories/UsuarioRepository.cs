@@ -203,21 +203,22 @@ namespace pyreApi.Repositories
                 .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(legajo))
-                query = query.Where(u => u.Legajo != null && u.Legajo == legajo); // Validar que Legajo no sea null
+                query = query.Where(u => u.Legajo != null && u.Legajo == legajo);
 
             if (estado.HasValue)
                 query = query.Where(u => u.Activo == estado.Value);
 
             if (!string.IsNullOrWhiteSpace(nombre))
-                query = query.Where(u => u.Nombre != null && u.Nombre.Contains(nombre)); // Validar que Nombre no sea null
+                query = query.Where(u => u.Nombre != null && u.Nombre.Contains(nombre));
 
             if (!string.IsNullOrWhiteSpace(apellido))
-                query = query.Where(u => u.Apellido != null && u.Apellido.Contains(apellido)); // Validar que Apellido no sea null
+                query = query.Where(u => u.Apellido != null && u.Apellido.Contains(apellido));
 
             if (rolId.HasValue)
                 query = query.Where(u => u.RolId == rolId.Value);
 
-            return await query.ToListAsync();
+            // Ordenar siempre por Id
+            return await query.OrderBy(u => u.Id).ToListAsync();
         }
 
         // Método auxiliar para verificar contraseña usando KeyDerivation
