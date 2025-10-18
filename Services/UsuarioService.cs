@@ -562,9 +562,12 @@ namespace pyreApi.Services
                 // Obtener usuarios con filtros aplicados directamente en la base de datos
                 var usuarios = await _usuarioRepository.GetFilteredUsuariosAsync(legajo, estado, nombre, apellido, rolId);
 
-                var totalRecords = usuarios.Count();
+                // Ordenar por Id antes de aplicar la paginación
+                var usuariosOrdenados = usuarios.OrderBy(u => u.Id);
 
-                var usuariosPage = usuarios
+                var totalRecords = usuariosOrdenados.Count();
+
+                var usuariosPage = usuariosOrdenados
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToList();
