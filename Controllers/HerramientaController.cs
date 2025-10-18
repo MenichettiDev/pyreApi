@@ -134,5 +134,13 @@ namespace pyreApi.Controllers
             var result = await _herramientaService.GetTotalHerramientasEnReparacionAsync();
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
+        [HttpGet("disponibilidad/{disponibilidadId}")]
+        public async Task<IActionResult> GetByDisponibilidad(int disponibilidadId)
+        {
+            var result = await _herramientaService.GetByDisponibilidadAsync(disponibilidadId);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
     }
 }

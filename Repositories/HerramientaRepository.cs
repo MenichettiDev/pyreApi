@@ -83,5 +83,16 @@ namespace pyreApi.Repositories
                 .Where(h => h.EstadoDisponibilidad.Id == 3)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Herramienta>> GetByDisponibilidadAsync(int disponibilidadId)
+        {
+            return await _dbSet
+                .Include(h => h.Familia)
+                .Include(h => h.EstadoFisico)
+                .Include(h => h.EstadoDisponibilidad)
+                .Include(h => h.Planta)
+                .Where(h => h.IdDisponibilidad == disponibilidadId)
+                .ToListAsync();
+        }
     }
 }
