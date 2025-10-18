@@ -445,6 +445,42 @@ namespace pyreApi.Services
             }
         }
 
+        //Lo usamos al generar el movimiento de una herramienta para actualizar su disponibilidad
+        public async Task<BaseResponseDto<HerramientaDto>> UpdateDisponibilidadAsync(int herramientaId, int nuevaDisponibilidad)
+        {
+            try
+            {
+                var existingHerramienta = await _repository.GetByIdAsync(herramientaId);
+                if (existingHerramienta == null)
+                {
+                    return new BaseResponseDto<HerramientaDto>
+                    {
+                        Success = false,
+                        Message = "Herramienta no encontrada"
+                    };
+                }
+
+                existingHerramienta.IdDisponibilidad = nuevaDisponibilidad;
+                await _repository.UpdateAsync(existingHerramienta);
+
+                return new BaseResponseDto<HerramientaDto>
+                {
+                    Success = true,
+                    Data = MapToDto(existingHerramienta),
+                    Message = "Estado de disponibilidad actualizado correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<HerramientaDto>
+                {
+                    Success = false,
+                    Message = "Error al actualizar el estado de disponibilidad",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
         private HerramientaDto MapToDto(Herramienta herramienta)
         {
             return new HerramientaDto

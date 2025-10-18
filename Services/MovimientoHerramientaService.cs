@@ -2,6 +2,8 @@ using pyreApi.DTOs.Common;
 using pyreApi.DTOs.MovimientoHerramienta;
 using pyreApi.Models;
 using pyreApi.Repositories;
+using pyreApi.Data;
+
 
 namespace pyreApi.Services
 {
@@ -9,13 +11,16 @@ namespace pyreApi.Services
     {
         private readonly MovimientoHerramientaRepository _movimientoRepository;
         private readonly HerramientaRepository _herramientaRepository;
+        private readonly ApplicationDbContext _context;
 
         public MovimientoHerramientaService(
             MovimientoHerramientaRepository movimientoRepository,
-            HerramientaRepository herramientaRepository) : base(movimientoRepository)
+            HerramientaRepository herramientaRepository,
+            ApplicationDbContext context) : base(movimientoRepository)
         {
             _movimientoRepository = movimientoRepository;
             _herramientaRepository = herramientaRepository;
+            _context = context;
         }
 
         public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetAllMovimientosAsync()
@@ -77,6 +82,7 @@ namespace pyreApi.Services
 
         public async Task<BaseResponseDto<MovimientoHerramientaDto>> CreateMovimientoAsync(CreateMovimientoDto createDto)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // Validar que la herramienta existe
@@ -90,8 +96,26 @@ namespace pyreApi.Services
                     };
                 }
 
+                // Validar que la transición de estado es válida
+                if (!IsValidStateTransition(herramienta.IdDisponibilidad, createDto.IdTipoMovimiento))
+                {
+                    return new BaseResponseDto<MovimientoHerramientaDto>
+                    {
+                        Success = false,
+                        Message = GetStateTransitionErrorMessage(herramienta.IdDisponibilidad, createDto.IdTipoMovimiento)
+                    };
+                }
+
                 var movimiento = MapFromCreateDto(createDto);
                 var result = await _movimientoRepository.AddAsync(movimiento);
+
+                // Determinar y actualizar el nuevo estado de disponibilidad
+                var nuevoEstadoDisponibilidad = DetermineNewAvailabilityStatus(createDto.IdTipoMovimiento);
+                herramienta.IdDisponibilidad = nuevoEstadoDisponibilidad;
+                await _herramientaRepository.UpdateAsync(herramienta);
+
+                // Confirmar la transacción
+                await transaction.CommitAsync();
 
                 return new BaseResponseDto<MovimientoHerramientaDto>
                 {
@@ -102,6 +126,7 @@ namespace pyreApi.Services
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 return new BaseResponseDto<MovimientoHerramientaDto>
                 {
                     Success = false,
@@ -194,6 +219,75 @@ namespace pyreApi.Services
                     Errors = new List<string> { ex.Message }
                 };
             }
+        }
+
+        private int DetermineNewAvailabilityStatus(int tipoMovimientoId)
+        {
+            return tipoMovimientoId switch
+            {
+                1 => 2, // Préstamo -> Prestada
+                2 => 1, // Devolución -> Disponible
+                3 => 3, // Envío Reparación -> Mantenimiento
+                4 => 4, // Baja -> Extraviada (o podrías crear otro estado)
+                5 => 1, // Alta -> Disponible
+                _ => throw new ArgumentException($"Tipo de movimiento no válido: {tipoMovimientoId}")
+            };
+        }
+        private bool IsValidStateTransition(int estadoActual, int tipoMovimiento)
+        {
+            return (estadoActual, tipoMovimiento) switch
+            {
+                // Desde Disponible (1)
+                (1, 1) => true,  // Disponible -> Préstamo
+                (1, 3) => true,  // Disponible -> Envío Reparación
+                (1, 4) => true,  // Disponible -> Baja
+
+                // Desde Prestada (2)
+                (2, 2) => true,  // Prestada -> Devolución
+                (2, 4) => true,  // Prestada -> Baja (en caso de extravío)
+
+                // Desde Mantenimiento (3)
+                (3, 2) => true,  // Mantenimiento -> Devolución (finalizar reparación)
+                (3, 4) => true,  // Mantenimiento -> Baja (no se puede reparar)
+
+                // Desde Extraviada (4)
+                (4, 5) => true,  // Extraviada -> Alta (si se recupera)
+
+                _ => false
+            };
+        }
+
+        private string GetStateTransitionErrorMessage(int estadoActual, int tipoMovimiento)
+        {
+            var estadoNombre = GetEstadoName(estadoActual);
+            var movimientoNombre = GetTipoMovimientoName(tipoMovimiento);
+
+            return $"No se puede realizar el movimiento '{movimientoNombre}' cuando la herramienta está en estado '{estadoNombre}'";
+        }
+
+        private string GetEstadoName(int estadoId)
+        {
+            return estadoId switch
+            {
+                1 => "Disponible",
+                2 => "Prestada",
+                3 => "Mantenimiento",
+                4 => "Extraviada",
+                _ => "Desconocido"
+            };
+        }
+
+        private string GetTipoMovimientoName(int tipoId)
+        {
+            return tipoId switch
+            {
+                1 => "Préstamo",
+                2 => "Devolución",
+                3 => "Envío Reparación",
+                4 => "Baja",
+                5 => "Alta",
+                _ => "Desconocido"
+            };
         }
 
         private MovimientoHerramientaDto MapToDto(MovimientoHerramienta movimiento)
