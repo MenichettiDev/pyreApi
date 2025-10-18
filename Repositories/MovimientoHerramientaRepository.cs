@@ -14,7 +14,8 @@ namespace pyreApi.Repositories
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
-                .Include(m => m.Usuario)
+                .Include(m => m.IdUsuarioGenera)
+                .Include(m => m.IdUsuarioResponsable)
                 .Include(m => m.TipoMovimiento)
                 .Include(m => m.Obra)
                 .Include(m => m.EstadoDevolucion)
@@ -26,7 +27,8 @@ namespace pyreApi.Repositories
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
-                .Include(m => m.Usuario)
+                .Include(m => m.IdUsuarioGenera)
+                .Include(m => m.IdUsuarioResponsable)
                 .Include(m => m.TipoMovimiento)
                 .Include(m => m.Obra)
                 .Include(m => m.EstadoDevolucion)
@@ -37,7 +39,8 @@ namespace pyreApi.Repositories
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
-                .Include(m => m.Usuario)
+                .Include(m => m.IdUsuarioGenera)
+                .Include(m => m.IdUsuarioResponsable)
                 .Include(m => m.TipoMovimiento)
                 .Include(m => m.Obra)
                 .Include(m => m.EstadoDevolucion)
@@ -46,15 +49,16 @@ namespace pyreApi.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<MovimientoHerramienta>> GetByUsuarioAsync(int usuarioId)
+        public async Task<IEnumerable<MovimientoHerramienta>> GetByUsuarioResponsableAsync(int usuarioId)
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
-                .Include(m => m.Usuario)
+                .Include(m => m.IdUsuarioGenera)
+                .Include(m => m.IdUsuarioResponsable)
                 .Include(m => m.TipoMovimiento)
                 .Include(m => m.Obra)
                 .Include(m => m.EstadoDevolucion)
-                .Where(m => m.IdUsuario == usuarioId)
+                .Where(m => m.IdUsuarioResponsable == usuarioId)
                 .OrderByDescending(m => m.Fecha)
                 .ToListAsync();
         }
@@ -63,7 +67,8 @@ namespace pyreApi.Repositories
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
-                .Include(m => m.Usuario)
+                .Include(m => m.IdUsuarioGenera)
+                .Include(m => m.IdUsuarioResponsable)
                 .Include(m => m.TipoMovimiento)
                 .Include(m => m.Obra)
                 .Include(m => m.EstadoDevolucion)
@@ -75,7 +80,8 @@ namespace pyreApi.Repositories
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
-                .Include(m => m.Usuario)
+                .Include(m => m.IdUsuarioGenera)
+                .Include(m => m.IdUsuarioResponsable)
                 .Include(m => m.TipoMovimiento)
                 .Include(m => m.Obra)
                 .Include(m => m.EstadoDevolucion)
@@ -88,7 +94,8 @@ namespace pyreApi.Repositories
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
-                .Include(m => m.Usuario)
+                .Include(m => m.IdUsuarioGenera)
+                .Include(m => m.IdUsuarioResponsable)
                 .Include(m => m.TipoMovimiento)
                 .Include(m => m.Obra)
                 .Include(m => m.EstadoDevolucion)
@@ -101,7 +108,8 @@ namespace pyreApi.Repositories
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
-                .Include(m => m.Usuario)
+                .Include(m => m.IdUsuarioGenera)
+                .Include(m => m.IdUsuarioResponsable)
                 .Include(m => m.TipoMovimiento)
                 .Include(m => m.Obra)
                 .Include(m => m.EstadoDevolucion)
@@ -114,7 +122,8 @@ namespace pyreApi.Repositories
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
-                .Include(m => m.Usuario)
+                .Include(m => m.IdUsuarioGenera)
+                .Include(m => m.IdUsuarioResponsable)
                 .Include(m => m.TipoMovimiento)
                 .Include(m => m.Obra)
                 .Include(m => m.EstadoDevolucion)

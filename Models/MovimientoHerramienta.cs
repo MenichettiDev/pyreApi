@@ -12,7 +12,9 @@ namespace pyreApi.Models
         public int IdHerramienta { get; set; }
 
         [Required]
-        public int IdUsuario { get; set; }
+        public int IdUsuarioGenera { get; set; }
+        [Required]
+        public int IdUsuarioResponsable { get; set; }
 
         [Required]
         public int IdTipoMovimiento { get; set; }
@@ -32,8 +34,11 @@ namespace pyreApi.Models
         [ForeignKey("IdHerramienta")]
         public Herramienta Herramienta { get; set; } = null!;
 
-        [ForeignKey("IdUsuario")]
-        public Usuario Usuario { get; set; } = null!;
+        [ForeignKey("IdUsuarioGenera")]
+        public Usuario UsuarioGenera { get; set; } = null!;
+
+        [ForeignKey("IdUsuarioResponsable")]
+        public Usuario UsuarioResponsable { get; set; } = null!;
 
         [ForeignKey("IdTipoMovimiento")]
         public TipoMovimientoHerramienta TipoMovimiento { get; set; } = null!;

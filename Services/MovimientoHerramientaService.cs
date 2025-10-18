@@ -296,7 +296,8 @@ namespace pyreApi.Services
             {
                 IdMovimiento = movimiento.IdMovimiento,
                 IdHerramienta = movimiento.IdHerramienta,
-                IdUsuario = movimiento.IdUsuario,
+                IdUsuarioGenera = movimiento.IdUsuarioGenera,
+                IdUsuarioResponsable = movimiento.IdUsuarioResponsable,
                 IdTipoMovimiento = movimiento.IdTipoMovimiento,
                 Fecha = movimiento.Fecha,
                 IdObra = movimiento.IdObra,
@@ -306,7 +307,8 @@ namespace pyreApi.Services
                 Observaciones = movimiento.Observaciones,
                 CodigoHerramienta = movimiento.Herramienta?.Codigo,
                 NombreHerramienta = movimiento.Herramienta?.NombreHerramienta,
-                NombreUsuario = movimiento.Usuario?.Nombre,
+                NombreUsuarioGenera = movimiento.UsuarioGenera?.Nombre,
+                NombreUsuarioResponsable = movimiento.UsuarioResponsable?.Nombre,
                 TipoMovimiento = movimiento.TipoMovimiento?.NombreTipoMovimiento,
                 NombreObra = movimiento.Obra?.NombreObra,
                 EstadoDevolucion = movimiento.EstadoDevolucion?.Descripcion
@@ -318,7 +320,8 @@ namespace pyreApi.Services
             return new MovimientoHerramienta
             {
                 IdHerramienta = createDto.IdHerramienta,
-                IdUsuario = createDto.IdUsuario,
+                IdUsuarioGenera = createDto.IdUsuarioGenera,
+                IdUsuarioResponsable = createDto.IdUsuarioResponsable,
                 IdTipoMovimiento = createDto.IdTipoMovimiento,
                 IdObra = createDto.IdObra,
                 IdProveedor = createDto.IdProveedor,
@@ -332,7 +335,8 @@ namespace pyreApi.Services
         private void MapFromUpdateDto(UpdateMovimientoHerramientaDto updateDto, MovimientoHerramienta movimiento)
         {
             movimiento.IdHerramienta = updateDto.IdHerramienta;
-            movimiento.IdUsuario = updateDto.IdUsuario;
+            movimiento.IdUsuarioGenera = updateDto.IdUsuarioGenera;
+            movimiento.IdUsuarioResponsable = updateDto.IdUsuarioResponsable;
             movimiento.IdTipoMovimiento = updateDto.IdTipoMovimiento;
             movimiento.Fecha = updateDto.Fecha;
             movimiento.IdObra = updateDto.IdObra;
