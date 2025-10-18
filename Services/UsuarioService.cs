@@ -28,7 +28,7 @@ namespace pyreApi.Services
         private string HashPassword(string password)
         {
             // Salt fijo (a modo de aprendizaje)
-            string salt = _configuration["Salt"]; // Lee el salt del archivo de configuración
+            string salt = _configuration["Salt"] ?? string.Empty; // Asegura que no sea nulo
             if (string.IsNullOrEmpty(salt))
             {
                 throw new InvalidOperationException("El valor de 'Salt' no está configurado en appsettings.json.");
@@ -61,8 +61,8 @@ namespace pyreApi.Services
                 Activo = usuario.Activo,
                 Avatar = usuario.Avatar,
                 FechaRegistro = usuario.FechaRegistro,
-                FechaModificacion = usuario.FechaModificacion,
-                RolNombre = usuario.Rol?.NombreRol ?? string.Empty
+                FechaModificacion = usuario.FechaModificacion ?? DateTime.MinValue, // Manejo explícito de nulos
+                RolNombre = usuario.Rol?.NombreRol ?? string.Empty // Asegurarse de incluir el nombre del rol
             };
         }
 
@@ -347,7 +347,7 @@ namespace pyreApi.Services
                     Message = "Usuario encontrado correctamente."
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new BaseResponseDto<Usuario>
                 {
@@ -559,41 +559,12 @@ namespace pyreApi.Services
                 if (page <= 0) page = 1;
                 if (pageSize <= 0) pageSize = 10;
 
-                // Obtener todos con rol y aplicar filtros en memoria (si vienen)
-                var usuarios = await _usuarioRepository.GetAllWithRolAsync();
-                IEnumerable<Usuario> filtered = usuarios;
+                // Obtener usuarios con filtros aplicados directamente en la base de datos
+                var usuarios = await _usuarioRepository.GetFilteredUsuariosAsync(legajo, estado, nombre, apellido, rolId);
 
-                if (!string.IsNullOrWhiteSpace(legajo))
-                {
-                    var legajoTrim = legajo.Trim();
-                    filtered = filtered.Where(u => string.Equals(u.Legajo?.Trim(), legajoTrim, StringComparison.OrdinalIgnoreCase));
-                }
+                var totalRecords = usuarios.Count();
 
-                if (estado.HasValue)
-                {
-                    filtered = filtered.Where(u => u.Activo == estado.Value);
-                }
-
-                if (!string.IsNullOrWhiteSpace(nombre))
-                {
-                    var nombreTrim = nombre.Trim().ToLowerInvariant();
-                    filtered = filtered.Where(u => (u.Nombre ?? string.Empty).ToLowerInvariant().Contains(nombreTrim));
-                }
-
-                if (!string.IsNullOrWhiteSpace(apellido))
-                {
-                    var apellidoTrim = apellido.Trim().ToLowerInvariant();
-                    filtered = filtered.Where(u => (u.Apellido ?? string.Empty).ToLowerInvariant().Contains(apellidoTrim));
-                }
-
-                if (rolId.HasValue)
-                {
-                    filtered = filtered.Where(u => u.RolId == rolId.Value);
-                }
-
-                var totalRecords = filtered.Count();
-
-                var usuariosPage = filtered
+                var usuariosPage = usuarios
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToList();

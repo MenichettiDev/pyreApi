@@ -38,7 +38,7 @@ namespace pyreApi.Models
         public string? Avatar { get; set; }
 
 
-        public DateTime FechaModificacion { get; set; }
+        public DateTime? FechaModificacion { get; set; }
         public DateTime FechaRegistro { get; set; } = DateTime.UtcNow;
 
         public int? IdUsuarioCrea { get; set; }

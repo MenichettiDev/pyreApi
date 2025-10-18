@@ -66,6 +66,12 @@ namespace pyreApi.Controllers
             }
 
             var usuario = authResponse.Data;
+            if (usuario == null)
+            {
+                _logger.LogError("El objeto usuario es null después de la autenticación.");
+                return BadRequest(new { Message = "El usuario no existe." });
+            }
+
             _logger.LogInformation("Usuario logueado exitosamente: {Legajo}", usuario.Legajo);
             var token = GenerateJwtToken(usuario);
 
