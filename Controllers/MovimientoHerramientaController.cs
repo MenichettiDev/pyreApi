@@ -16,7 +16,30 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? nombreHerramienta = null,
+            [FromQuery] int? idFamiliaHerramienta = null,
+            [FromQuery] int? idUsuarioGenera = null,
+            [FromQuery] int? idUsuarioResponsable = null,
+            [FromQuery] int? idTipoMovimiento = null,
+            [FromQuery] int? idObra = null,
+            [FromQuery] int? idProveedor = null,
+            [FromQuery] int? idEstadoFisico = null,
+            [FromQuery] DateTime? fechaDesde = null,
+            [FromQuery] DateTime? fechaHasta = null)
+        {
+            var result = await _movimientoService.GetAllMovimientosPaginatedAsync(
+                page, pageSize, nombreHerramienta, idFamiliaHerramienta, idUsuarioGenera,
+                idUsuarioResponsable, idTipoMovimiento, idObra, idProveedor,
+                idEstadoFisico, fechaDesde, fechaHasta);
+
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("all-unpaginated")]
+        public async Task<IActionResult> GetAllUnpaginated()
         {
             var result = await _movimientoService.GetAllMovimientosAsync();
             return result.Success ? Ok(result) : BadRequest(result);

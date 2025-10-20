@@ -221,6 +221,72 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<PaginatedResponseDto<MovimientoHerramientaDto>>> GetAllMovimientosPaginatedAsync(
+            int page,
+            int pageSize,
+            string? nombreHerramienta = null,
+            int? idFamiliaHerramienta = null,
+            int? idUsuarioGenera = null,
+            int? idUsuarioResponsable = null,
+            int? idTipoMovimiento = null,
+            int? idObra = null,
+            int? idProveedor = null,
+            int? idEstadoFisico = null,
+            DateTime? fechaDesde = null,
+            DateTime? fechaHasta = null)
+        {
+            try
+            {
+                if (page <= 0) page = 1;
+                if (pageSize <= 0) pageSize = 10;
+
+                // Obtener movimientos con filtros aplicados directamente en la base de datos
+                var movimientos = await _movimientoRepository.GetFilteredMovimientosAsync(
+                    nombreHerramienta, idFamiliaHerramienta, idUsuarioGenera, idUsuarioResponsable,
+                    idTipoMovimiento, idObra, idProveedor, idEstadoFisico, fechaDesde, fechaHasta);
+
+                // Ordenar por fecha descendente antes de aplicar la paginación
+                var movimientosOrdenados = movimientos.OrderByDescending(m => m.Fecha);
+
+                var totalRecords = movimientosOrdenados.Count();
+
+                var movimientosPage = movimientosOrdenados
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                var movimientosDto = movimientosPage.Select(MapToDto).ToList();
+                var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+                var paginatedResponse = new PaginatedResponseDto<MovimientoHerramientaDto>
+                {
+                    Data = movimientosDto,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalRecords = totalRecords,
+                    TotalPages = totalPages,
+                    HasNextPage = page < totalPages,
+                    HasPreviousPage = page > 1
+                };
+
+                return new BaseResponseDto<PaginatedResponseDto<MovimientoHerramientaDto>>
+                {
+                    Success = true,
+                    Data = paginatedResponse,
+                    Message = "Movimientos obtenidos correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<PaginatedResponseDto<MovimientoHerramientaDto>>
+                {
+                    Success = false,
+                    Message = "No se pudieron cargar los movimientos. Por favor, intente nuevamente.",
+                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud: " + ex.Message }
+                };
+            }
+        }
+
         private int DetermineNewAvailabilityStatus(int tipoMovimientoId)
         {
             return tipoMovimientoId switch
