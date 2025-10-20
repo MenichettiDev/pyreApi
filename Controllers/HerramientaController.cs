@@ -22,6 +22,19 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPaged(
+           [FromQuery] int page = 1,
+           [FromQuery] int pageSize = 10,
+           [FromQuery] string? codigo = null,
+           [FromQuery] string? nombre = null,
+           [FromQuery] string? marca = null,
+           [FromQuery] bool? estado = null)
+        {
+            var result = await _herramientaService.GetPagedAsync(page, pageSize, codigo, nombre, marca, estado);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -73,15 +86,7 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
-        [HttpGet("paged")]
-        public async Task<IActionResult> GetPaged([FromQuery] PagedRequestDto request)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
 
-            var result = await _herramientaService.GetPagedAsync(request);
-            return result.Success ? Ok(result) : BadRequest(result);
-        }
 
         [HttpPut("status")]
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusDto updateStatusDto)

@@ -94,5 +94,33 @@ namespace pyreApi.Repositories
                 .Where(h => h.IdDisponibilidad == disponibilidadId)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Herramienta>> GetFilteredHerramientasAsync(
+            string? codigo,
+            string? nombre,
+            string? marca,
+            bool? estado)
+        {
+            var query = _dbSet
+                .Include(h => h.Familia)
+                .Include(h => h.EstadoFisico)
+                .Include(h => h.EstadoDisponibilidad)
+                .Include(h => h.Planta)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(codigo))
+                query = query.Where(h => h.Codigo != null && h.Codigo.Contains(codigo));
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+                query = query.Where(h => h.NombreHerramienta != null && h.NombreHerramienta.Contains(nombre));
+
+            if (!string.IsNullOrWhiteSpace(marca))
+                query = query.Where(h => h.Marca != null && h.Marca.Contains(marca));
+
+            if (estado.HasValue)
+                query = query.Where(h => h.Activo == estado.Value);
+
+            return await query.OrderBy(h => h.IdHerramienta).ToListAsync();
+        }
     }
 }

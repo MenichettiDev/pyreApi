@@ -181,37 +181,39 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<PagedResponseDto<HerramientaDto>>> GetPagedAsync(PagedRequestDto request)
+        public async Task<BaseResponseDto<PagedResponseDto<HerramientaDto>>> GetPagedAsync(
+            int page,
+            int pageSize,
+            string? codigo = null,
+            string? nombre = null,
+            string? marca = null,
+            bool? estado = null)
         {
             try
             {
-                var allHerramientas = await _herramientaRepository.GetAllAsync();
+                if (page <= 0) page = 1;
+                if (pageSize <= 0) pageSize = 10;
 
-                if (!string.IsNullOrEmpty(request.Search))
-                {
-                    allHerramientas = allHerramientas.Where(h =>
-                        h.NombreHerramienta.Contains(request.Search, StringComparison.OrdinalIgnoreCase) ||
-                        h.Codigo.Contains(request.Search, StringComparison.OrdinalIgnoreCase));
-                }
+                var herramientas = await _herramientaRepository.GetFilteredHerramientasAsync(codigo, nombre, marca, estado);
 
-                var totalRecords = allHerramientas.Count();
-                var totalPages = (int)Math.Ceiling((double)totalRecords / request.PageSize);
+                var totalRecords = herramientas.Count();
+                var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
 
-                var pagedHerramientas = allHerramientas
-                    .Skip((request.Page - 1) * request.PageSize)
-                    .Take(request.PageSize);
+                var pagedHerramientas = herramientas
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize);
 
-                var herramientaDtos = pagedHerramientas.Select(MapToDto);
+                var herramientaDtos = pagedHerramientas.Select(MapToDto).ToList();
 
                 var pagedResponse = new PagedResponseDto<HerramientaDto>
                 {
                     Data = herramientaDtos,
                     TotalRecords = totalRecords,
-                    Page = request.Page,
-                    PageSize = request.PageSize,
+                    Page = page,
+                    PageSize = pageSize,
                     TotalPages = totalPages,
-                    HasNextPage = request.Page < totalPages,
-                    HasPreviousPage = request.Page > 1
+                    HasNextPage = page < totalPages,
+                    HasPreviousPage = page > 1
                 };
 
                 return new BaseResponseDto<PagedResponseDto<HerramientaDto>>
