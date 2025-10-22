@@ -9,8 +9,7 @@ namespace pyreApi.DTOs.MovimientoHerramienta
 
         [Required]
         public int IdUsuarioGenera { get; set; }
-        [Required]
-        public int IdUsuarioResponsable { get; set; }
+        public int? IdUsuarioResponsable { get; set; }
 
         [Required]
         public int IdTipoMovimiento { get; set; }

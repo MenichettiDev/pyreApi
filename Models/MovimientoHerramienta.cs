@@ -13,8 +13,7 @@ namespace pyreApi.Models
 
         [Required]
         public int IdUsuarioGenera { get; set; }
-        [Required]
-        public int IdUsuarioResponsable { get; set; }
+        public int? IdUsuarioResponsable { get; set; }
 
         [Required]
         public int IdTipoMovimiento { get; set; }
