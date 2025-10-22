@@ -483,6 +483,40 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByMultipleDisponibilidadAsync(IEnumerable<int> disponibilidadIds)
+        {
+            try
+            {
+                if (disponibilidadIds == null || !disponibilidadIds.Any())
+                {
+                    return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                    {
+                        Success = false,
+                        Message = "Se requiere al menos un ID de disponibilidad"
+                    };
+                }
+
+                var herramientas = await _herramientaRepository.GetByMultipleDisponibilidadAsync(disponibilidadIds);
+                var herramientaDtos = herramientas.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = true,
+                    Data = herramientaDtos,
+                    Message = "Herramientas por estados de disponibilidad obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las herramientas por estados de disponibilidad",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
         private HerramientaDto MapToDto(Herramienta herramienta)
         {
             return new HerramientaDto

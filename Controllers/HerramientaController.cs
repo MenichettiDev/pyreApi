@@ -147,6 +147,27 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
+        [HttpGet("disponibilidad")]
+        public async Task<IActionResult> GetByMultipleDisponibilidad([FromQuery] string ids)
+        {
+            if (string.IsNullOrWhiteSpace(ids))
+                return BadRequest("Se requiere al menos un ID de disponibilidad");
+
+            try
+            {
+                var disponibilidadIds = ids.Split(',')
+                    .Select(id => int.Parse(id.Trim()))
+                    .ToList();
+
+                var result = await _herramientaService.GetByMultipleDisponibilidadAsync(disponibilidadIds);
+                return result.Success ? Ok(result) : BadRequest(result);
+            }
+            catch (FormatException)
+            {
+                return BadRequest("Los IDs deben ser números válidos separados por comas");
+            }
+        }
+
     }
-    
+
 }
