@@ -1,3 +1,4 @@
+using System;
 using pyreApi.DTOs.Common;
 using pyreApi.DTOs.MovimientoHerramienta;
 using pyreApi.Models;
@@ -48,30 +49,31 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<MovimientoHerramientaDto>> GetMovimientoByIdAsync(int id)
+        public async Task<BaseResponseDto<MovimientoHerramientaDetailDto>> GetMovimientoByIdAsync(int id)
         {
             try
             {
                 var movimiento = await _movimientoRepository.GetByIdAsync(id);
                 if (movimiento == null)
                 {
-                    return new BaseResponseDto<MovimientoHerramientaDto>
+                    return new BaseResponseDto<MovimientoHerramientaDetailDto>
                     {
                         Success = false,
-                        Message = "Movimiento no encontrado"
+                        Message = "Movimiento no encontrado",
+                        Errors = new List<string> { $"No existe un movimiento con el ID {id}" }
                     };
                 }
 
-                return new BaseResponseDto<MovimientoHerramientaDto>
+                return new BaseResponseDto<MovimientoHerramientaDetailDto>
                 {
                     Success = true,
-                    Data = MapToDto(movimiento),
+                    Data = MapToDetailDto(movimiento),
                     Message = "Movimiento encontrado"
                 };
             }
             catch (Exception ex)
             {
-                return new BaseResponseDto<MovimientoHerramientaDto>
+                return new BaseResponseDto<MovimientoHerramientaDetailDto>
                 {
                     Success = false,
                     Message = "Error al buscar el movimiento",
@@ -171,14 +173,22 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetByHerramientaAsync(int herramientaId)
+        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDetailDto>>> GetByHerramientaAsync(int herramientaId)
         {
             try
             {
                 var movimientos = await _movimientoRepository.GetByHerramientaAsync(herramientaId);
-                var movimientoDtos = movimientos.Select(MapToDto);
+                if (!movimientos.Any())
+                {
+                    return new BaseResponseDto<IEnumerable<MovimientoHerramientaDetailDto>>
+                    {
+                        Success = false,
+                        Message = "Herramienta no encontrada"
+                    };
+                }
 
-                return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
+                var movimientoDtos = movimientos.Select(MapToDetailDto);
+                return new BaseResponseDto<IEnumerable<MovimientoHerramientaDetailDto>>
                 {
                     Success = true,
                     Data = movimientoDtos,
@@ -187,13 +197,95 @@ namespace pyreApi.Services
             }
             catch (Exception ex)
             {
-                return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
+                return new BaseResponseDto<IEnumerable<MovimientoHerramientaDetailDto>>
                 {
                     Success = false,
                     Message = "Error al obtener el historial de movimientos",
                     Errors = new List<string> { ex.Message }
                 };
             }
+        }
+
+        private MovimientoHerramientaDetailDto MapToDetailDto(MovimientoHerramienta movimiento)
+        {
+            var dto = new MovimientoHerramientaDetailDto
+            {
+                Id = movimiento.IdMovimiento,
+                Herramienta = new HerramientaMinDto
+                {
+                    Id = movimiento.Herramienta?.IdHerramienta ?? movimiento.IdHerramienta,
+                    Codigo = movimiento.Herramienta?.Codigo,
+                    Nombre = movimiento.Herramienta?.NombreHerramienta
+                },
+                Usuario = new UsuarioContainerDto
+                {
+                    Genera = movimiento.UsuarioGenera == null ? null : new UsuarioFullDto
+                    {
+                        Id = movimiento.UsuarioGenera.Id,
+                        Nombre = movimiento.UsuarioGenera.Nombre,
+                        Apellido = movimiento.UsuarioGenera.Apellido,
+                        Legajo = movimiento.UsuarioGenera.Legajo,
+                        Dni = movimiento.UsuarioGenera.Dni,
+                        Email = movimiento.UsuarioGenera.Email,
+                        Telefono = movimiento.UsuarioGenera.Telefono,
+                        RolId = movimiento.UsuarioGenera.RolId,
+                        AccedeAlSistema = movimiento.UsuarioGenera.AccedeAlSistema,
+                        Activo = movimiento.UsuarioGenera.Activo,
+                        Avatar = movimiento.UsuarioGenera.Avatar,
+                        FechaModificacion = movimiento.UsuarioGenera.FechaModificacion.HasValue ? DateTime.SpecifyKind(movimiento.UsuarioGenera.FechaModificacion.Value, DateTimeKind.Utc) : (DateTime?)null,
+                        FechaRegistro = DateTime.SpecifyKind(movimiento.UsuarioGenera.FechaRegistro, DateTimeKind.Utc)
+                    },
+                    Responsable = movimiento.UsuarioResponsable == null ? null : new UsuarioFullDto
+                    {
+                        Id = movimiento.UsuarioResponsable.Id,
+                        Nombre = movimiento.UsuarioResponsable.Nombre,
+                        Apellido = movimiento.UsuarioResponsable.Apellido,
+                        Legajo = movimiento.UsuarioResponsable.Legajo,
+                        Dni = movimiento.UsuarioResponsable.Dni,
+                        Email = movimiento.UsuarioResponsable.Email,
+                        Telefono = movimiento.UsuarioResponsable.Telefono,
+                        RolId = movimiento.UsuarioResponsable.RolId,
+                        AccedeAlSistema = movimiento.UsuarioResponsable.AccedeAlSistema,
+                        Activo = movimiento.UsuarioResponsable.Activo,
+                        Avatar = movimiento.UsuarioResponsable.Avatar,
+                        FechaModificacion = movimiento.UsuarioResponsable.FechaModificacion.HasValue ? DateTime.SpecifyKind(movimiento.UsuarioResponsable.FechaModificacion.Value, DateTimeKind.Utc) : (DateTime?)null,
+                        FechaRegistro = DateTime.SpecifyKind(movimiento.UsuarioResponsable.FechaRegistro, DateTimeKind.Utc)
+                    }
+                },
+                TipoMovimiento = new TipoMovimientoDto
+                {
+                    Id = movimiento.TipoMovimiento?.IdTipoMovimiento ?? movimiento.IdTipoMovimiento,
+                    Nombre = movimiento.TipoMovimiento?.NombreTipoMovimiento
+                },
+                Obra = movimiento.Obra == null ? null : new ObraDto
+                {
+                    Id = movimiento.Obra.IdObra,
+                    Codigo = movimiento.Obra.Codigo,
+                    Nombre = movimiento.Obra.NombreObra,
+                    Ubicacion = movimiento.Obra.Ubicacion,
+                    FechaInicio = movimiento.Obra.FechaInicio.HasValue ? movimiento.Obra.FechaInicio.Value.ToDateTime(new TimeOnly(0,0)) : (DateTime?)null,
+                    FechaFin = movimiento.Obra.FechaFin.HasValue ? movimiento.Obra.FechaFin.Value.ToDateTime(new TimeOnly(0,0)) : (DateTime?)null,
+                    Activa = movimiento.Obra.FechaFin == null || (movimiento.Obra.FechaFin.HasValue && movimiento.Obra.FechaFin.Value >= DateOnly.FromDateTime(DateTime.UtcNow))
+                },
+                Proveedor = movimiento.Proveedor == null ? null : new ProveedorDto
+                {
+                    Id = movimiento.Proveedor.IdProveedor,
+                    Nombre = movimiento.Proveedor.NombreProveedor,
+                    Cuit = movimiento.Proveedor.Cuit,
+                    Contacto = movimiento.Proveedor.Contacto,
+                    Telefono = movimiento.Proveedor.Telefono,
+                    Email = movimiento.Proveedor.Email,
+                    Direccion = movimiento.Proveedor.Direccion,
+                    Activo = movimiento.Proveedor.Activo
+                },
+                FechaMovimiento = DateTime.SpecifyKind(movimiento.Fecha, DateTimeKind.Utc),
+                FechaEstimadaDevolucion = movimiento.FechaEstimadaDevolucion == null ? null : DateTime.SpecifyKind(movimiento.FechaEstimadaDevolucion.Value, DateTimeKind.Utc),
+                EstadoHerramientaAlDevolver = movimiento.EstadoHerramientaAlDevolver,
+                EstadoDevolucion = movimiento.EstadoDevolucion?.Descripcion,
+                Observaciones = movimiento.Observaciones
+            };
+
+            return dto;
         }
 
         public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)

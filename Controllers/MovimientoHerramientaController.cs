@@ -45,18 +45,88 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _movimientoService.GetMovimientoByIdAsync(id);
-            return result.Success ? Ok(result) : NotFound(result);
+
+            if (!result.Success)
+            {
+                return NotFound(new
+                {
+                    status = "error",
+                    code = 404,
+                    message = result.Message,
+                    errors = result.Errors.Select(e => new { field = "idMovimiento", message = e })
+                });
+            }
+
+            var m = result.Data!;
+            return Ok(new
+            {
+                status = "success",
+                code = 200,
+                message = "Movimiento encontrado",
+                data = new
+                {
+                    id = m.Id,
+                    herramienta = m.Herramienta,
+                    usuario = new { genera = m.Usuario.Genera, responsable = m.Usuario.Responsable },
+                    tipoMovimiento = m.TipoMovimiento,
+                    obra = m.Obra,
+                    proveedor = m.Proveedor,
+                    fechaMovimiento = m.FechaMovimiento.ToString("o"),
+                    fechaEstimadaDevolucion = m.FechaEstimadaDevolucion?.ToString("o"),
+                    estadoHerramientaAlDevolver = m.EstadoHerramientaAlDevolver,
+                    estadoDevolucion = m.EstadoDevolucion,
+                    observaciones = m.Observaciones
+                }
+            });
         }
 
         [HttpGet("herramienta/{herramientaId}")]
         public async Task<IActionResult> GetByHerramienta(int herramientaId)
         {
             var result = await _movimientoService.GetByHerramientaAsync(herramientaId);
-            return result.Success ? Ok(result) : BadRequest(result);
+
+            if (result.Data == null || !result.Data.Any())
+            {
+                return NotFound(new
+                {
+                    status = "error",
+                    code = 404,
+                    message = "Herramienta no encontrada",
+                    errors = new[]
+                    {
+                        new { field = "idHerramienta", message = "No existe una herramienta con el ID proporcionado" }
+                    }
+                });
+            }
+
+            return Ok(new
+            {
+                status = "success",
+                code = 200,
+                message = "Historial de movimientos obtenido correctamente",
+                data = result.Data.Select(m => new
+                {
+                    id = m.Id,
+                    herramienta = new { id = m.Herramienta.Id, codigo = m.Herramienta.Codigo, nombre = m.Herramienta.Nombre },
+                    usuario = new
+                    {
+                        genera = m.Usuario.Genera,
+                        responsable = m.Usuario.Responsable
+                    },
+                    tipoMovimiento = new { id = m.TipoMovimiento.Id, nombre = m.TipoMovimiento.Nombre },
+                    obra = m.Obra,
+                    proveedor = m.Proveedor,
+                    fechaMovimiento = m.FechaMovimiento.ToString("o"),
+                    fechaEstimadaDevolucion = m.FechaEstimadaDevolucion?.ToString("o"),
+                    estadoHerramientaAlDevolver = m.EstadoHerramientaAlDevolver,
+                    estadoDevolucion = m.EstadoDevolucion,
+                    observaciones = m.Observaciones
+                })
+            });
         }
 
         [HttpGet("daterange")]
