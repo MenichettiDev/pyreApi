@@ -59,6 +59,13 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
+        [HttpGet("herramienta/{herramientaId}/ultimo")]
+        public async Task<IActionResult> GetLatestByHerramienta(int herramientaId)
+        {
+            var result = await _movimientoService.GetLatestMovimientoByHerramientaAsync(herramientaId);
+            return result.Success ? Ok(result) : NotFound(result);
+        }
+
         [HttpGet("daterange")]
         public async Task<IActionResult> GetByDateRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {

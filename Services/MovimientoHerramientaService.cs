@@ -287,6 +287,38 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<MovimientoHerramientaDto>> GetLatestMovimientoByHerramientaAsync(int herramientaId)
+        {
+            try
+            {
+                var movimiento = await _movimientoRepository.GetLatestMovimientoByHerramientaAsync(herramientaId);
+                if (movimiento == null)
+                {
+                    return new BaseResponseDto<MovimientoHerramientaDto>
+                    {
+                        Success = false,
+                        Message = "No se encontraron movimientos para esta herramienta"
+                    };
+                }
+
+                return new BaseResponseDto<MovimientoHerramientaDto>
+                {
+                    Success = true,
+                    Data = MapToDto(movimiento),
+                    Message = "Último movimiento obtenido correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<MovimientoHerramientaDto>
+                {
+                    Success = false,
+                    Message = "Error al obtener el último movimiento",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
         private int DetermineNewAvailabilityStatus(int tipoMovimientoId)
         {
             return tipoMovimientoId switch

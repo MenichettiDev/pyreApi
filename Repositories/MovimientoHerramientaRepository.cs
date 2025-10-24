@@ -190,5 +190,19 @@ namespace pyreApi.Repositories
 
             return await query.OrderByDescending(m => m.Fecha).ToListAsync();
         }
+
+        public async Task<MovimientoHerramienta?> GetLatestMovimientoByHerramientaAsync(int herramientaId)
+        {
+            return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.UsuarioGenera)
+                .Include(m => m.UsuarioResponsable)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
+                .Where(m => m.IdHerramienta == herramientaId)
+                .OrderByDescending(m => m.Fecha)
+                .FirstOrDefaultAsync();
+        }
     }
 }
