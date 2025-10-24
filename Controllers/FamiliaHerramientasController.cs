@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using pyreApi.DTOs.FamiliaHerramientas;
 using pyreApi.Services;
 
@@ -6,6 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Requiere autenticación para todo el controller
     public class FamiliaHerramientasController : ControllerBase
     {
         private readonly FamiliaHerramientasService _familiaHerramientasService;
@@ -16,6 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar familias de herramientas
         public async Task<IActionResult> GetAll()
         {
             var result = await _familiaHerramientasService.GetAllFamiliasAsync();
@@ -23,6 +26,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar familias específicas
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _familiaHerramientasService.GetFamiliaByIdAsync(id);
@@ -30,6 +34,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede crear familias
         public async Task<IActionResult> Create([FromBody] CreateFamiliaHerramientasDto createDto)
         {
             if (!ModelState.IsValid)
@@ -40,6 +45,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede actualizar familias
         public async Task<IActionResult> Update(int id, [FromBody] UpdateFamiliaHerramientasDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -53,6 +59,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar familias
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _familiaHerramientasService.DeleteAsync(id);

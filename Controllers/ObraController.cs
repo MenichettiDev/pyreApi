@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using pyreApi.DTOs.Obra;
 using pyreApi.Services;
 
@@ -6,6 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Requiere autenticación para todo el controller
     public class ObraController : ControllerBase
     {
         private readonly ObraService _obraService;
@@ -16,6 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar obras
         public async Task<IActionResult> GetAll(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
@@ -28,6 +31,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar obras específicas
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _obraService.GetObraByIdAsync(id);
@@ -35,6 +39,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede crear obras
         public async Task<IActionResult> Create([FromBody] CreateObraDto createDto)
         {
             if (!ModelState.IsValid)
@@ -45,6 +50,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede actualizar obras
         public async Task<IActionResult> Update(int id, [FromBody] UpdateObraDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -58,6 +64,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar obras
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _obraService.DeleteAsync(id);

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using pyreApi.DTOs.MovimientoHerramienta;
 using pyreApi.Services;
 
@@ -6,6 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Requiere autenticación para todo el controller
     public class MovimientoHerramientaController : ControllerBase
     {
         private readonly MovimientoHerramientaService _movimientoService;
@@ -16,6 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "1,2,3,4")] // SuperAdmin, Administrador, Supervisor y Usuario pueden ver todos los movimientos
         public async Task<IActionResult> GetAll(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
@@ -39,6 +42,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("all-unpaginated")]
+        [Authorize(Roles = "1,2,3,4")] // SuperAdmin, Administrador, Supervisor y Usuario pueden ver todos los movimientos
         public async Task<IActionResult> GetAllUnpaginated()
         {
             var result = await _movimientoService.GetAllMovimientosAsync();
@@ -46,6 +50,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver movimientos específicos
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _movimientoService.GetMovimientoByIdAsync(id);
@@ -53,6 +58,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("herramienta/{herramientaId}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver movimientos por herramienta
         public async Task<IActionResult> GetByHerramienta(int herramientaId)
         {
             var result = await _movimientoService.GetByHerramientaAsync(herramientaId);
@@ -60,6 +66,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("herramienta/{herramientaId}/ultimo")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver último movimiento
         public async Task<IActionResult> GetLatestByHerramienta(int herramientaId)
         {
             var result = await _movimientoService.GetLatestMovimientoByHerramientaAsync(herramientaId);
@@ -67,6 +74,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("daterange")]
+        [Authorize(Roles = "1,2,3,4")] // SuperAdmin, Administrador, Supervisor y Usuario pueden filtrar por fechas
         public async Task<IActionResult> GetByDateRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
         {
             var result = await _movimientoService.GetByDateRangeAsync(startDate, endDate);
@@ -74,6 +82,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden crear movimientos (préstamos, devoluciones)
         public async Task<IActionResult> Create([FromBody] CreateMovimientoDto createDto)
         {
             if (!ModelState.IsValid)
@@ -84,6 +93,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede actualizar movimientos
         public async Task<IActionResult> Update(int id, [FromBody] UpdateMovimientoHerramientaDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -97,6 +107,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar movimientos
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _movimientoService.DeleteAsync(id);

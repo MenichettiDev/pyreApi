@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using pyreApi.DTOs.Proveedor;
 using pyreApi.Services;
 
@@ -6,6 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Requiere autenticación para todo el controller
     public class ProveedorController : ControllerBase
     {
         private readonly ProveedorService _proveedorService;
@@ -16,6 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "1,2,3,4")] // Todos pueden consultar proveedores
         public async Task<IActionResult> GetAll(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
@@ -28,6 +31,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos pueden consultar proveedores específicos
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _proveedorService.GetProveedorByIdAsync(id);
@@ -35,6 +39,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede crear proveedores
         public async Task<IActionResult> Create([FromBody] CreateProveedorDto createDto)
         {
             if (!ModelState.IsValid)
@@ -45,6 +50,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede actualizar proveedores
         public async Task<IActionResult> Update(int id, [FromBody] UpdateProveedorDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -58,6 +64,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar proveedores
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _proveedorService.DeleteAsync(id);

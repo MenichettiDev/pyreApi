@@ -1,12 +1,14 @@
 using pyreApi.Data;
 using pyreApi.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace pyreApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // Requiere autenticación para todo el controller
     public class ImagenController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -18,6 +20,7 @@ namespace pyreApi.Controllers
 
         // GET: api/imagen (Lista de imágenes)
         [HttpGet]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver imágenes
         public async Task<IActionResult> GetImagenes()
         {
             var imagenes = await _context.Imagen.ToListAsync();
@@ -38,6 +41,7 @@ namespace pyreApi.Controllers
 
         // GET: api/imagen/{idImagen} (Una imagen específica)
         [HttpGet("{idImagen}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver imágenes específicas
         public async Task<IActionResult> GetImagen(int idImagen)
         {
             var imagen = await _context.Imagen.FindAsync(idImagen);
@@ -65,6 +69,7 @@ namespace pyreApi.Controllers
 
         // POST: api/imagen (Subir nueva imagen)
         [HttpPost]
+        [Authorize(Roles = "1,2,3,4")] // SuperAdmin, Administrador, Supervisor y Usuario pueden subir imágenes
         public async Task<IActionResult> PostImagen(Imagen imagen)
         {
             if (string.IsNullOrEmpty(imagen.Ruta))
@@ -97,6 +102,7 @@ namespace pyreApi.Controllers
 
         // PUT: api/imagen/{idImagen} (Actualizar imagen)
         [HttpPut("{idImagen}")]
+        [Authorize(Roles = "1,2,3,4")] // Solo SuperAdmin, Administrador, Supervisor y Usuario pueden actualizar imágenes
         public async Task<IActionResult> PutImagen(int idImagen, Imagen imagen)
         {
             if (idImagen != imagen.IdImagen)
@@ -145,6 +151,7 @@ namespace pyreApi.Controllers
 
         // DELETE: api/imagen/{idImagen} (Eliminar imagen)
         [HttpDelete("{idImagen}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar imágenes
         public async Task<IActionResult> DeleteImagen(int idImagen)
         {
             var existeImagen = await _context.Imagen.AnyAsync(i => i.IdImagen == idImagen);

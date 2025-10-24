@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using pyreApi.DTOs.Herramienta;
 using pyreApi.Services;
 
@@ -6,6 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Requiere autenticación para todo el controller
     public class HerramientaController : ControllerBase
     {
         private readonly HerramientaService _herramientaService;
@@ -16,6 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar herramientas
         public async Task<IActionResult> GetAll()
         {
             var result = await _herramientaService.GetAllHerramientasAsync();
@@ -23,6 +26,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("paged")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar herramientas paginadas
         public async Task<IActionResult> GetPaged(
            [FromQuery] int page = 1,
            [FromQuery] int pageSize = 10,
@@ -36,6 +40,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar herramientas específicas
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _herramientaService.GetHerramientaByIdAsync(id);
@@ -43,6 +48,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "1,2,3,4")] // Solo SuperAdmin y Administrador pueden crear herramientas
         public async Task<IActionResult> Create([FromBody] CreateHerramientaDto createDto)
         {
             if (!ModelState.IsValid)
@@ -53,6 +59,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "1,2,3,4")] // Solo SuperAdmin y Administrador pueden actualizar herramientas
         public async Task<IActionResult> Update(int id, [FromBody] UpdateHerramientaDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -66,6 +73,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar herramientas
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _herramientaService.DeleteAsync(id);
@@ -73,6 +81,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("available")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver herramientas disponibles
         public async Task<IActionResult> GetAvailable()
         {
             var result = await _herramientaService.GetAvailableToolsAsync();
@@ -80,6 +89,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("familia/{familiaId}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden filtrar por familia
         public async Task<IActionResult> GetByFamilia(int familiaId)
         {
             var result = await _herramientaService.GetByFamiliaAsync(familiaId);
@@ -89,6 +99,7 @@ namespace pyreApi.Controllers
 
 
         [HttpPut("status")]
+        [Authorize(Roles = "1,2,3,4")] // SuperAdmin, Administrador y Supervisor pueden cambiar estado
         public async Task<IActionResult> UpdateStatus([FromBody] UpdateStatusDto updateStatusDto)
         {
             if (!ModelState.IsValid)
@@ -99,6 +110,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("estado-fisico/{estadoFisicoId}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden filtrar por estado físico
         public async Task<IActionResult> GetByEstadoFisico(int estadoFisicoId)
         {
             var result = await _herramientaService.GetByEstadoFisicoAsync(estadoFisicoId);
@@ -106,6 +118,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("en-reparacion")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver herramientas en reparación
         public async Task<IActionResult> GetInRepair()
         {
             var result = await _herramientaService.GetInRepairAsync();
@@ -113,6 +126,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("count-herramientas-totales")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver estadísticas
         public async Task<IActionResult> GetTotalHerramientas()
         {
             var result = await _herramientaService.GetTotalHerramientasAsync();
@@ -120,6 +134,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("count-herramientas-disponibles")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver estadísticas
         public async Task<IActionResult> GetTotalHerramientasDisponibles()
         {
             var result = await _herramientaService.GetTotalHerramientasDisponiblesAsync();
@@ -127,6 +142,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("count-herramientas-en-prestamo")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver estadísticas
         public async Task<IActionResult> GetTotalHerramientasEnPrestamo()
         {
             var result = await _herramientaService.GetTotalHerramientasEnPrestamoAsync();
@@ -134,6 +150,7 @@ namespace pyreApi.Controllers
         }
         [HttpGet("herramientas-en-reparacion")]
         [HttpGet("count-herramientas-en-reparacion")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver estadísticas
         public async Task<IActionResult> GetTotalHerramientasEnReparacion()
         {
             var result = await _herramientaService.GetTotalHerramientasEnReparacionAsync();
@@ -141,6 +158,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("disponibilidad/{disponibilidadId}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden filtrar por disponibilidad
         public async Task<IActionResult> GetByDisponibilidad(int disponibilidadId)
         {
             var result = await _herramientaService.GetByDisponibilidadAsync(disponibilidadId);
@@ -148,6 +166,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("disponibilidad")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden filtrar por múltiple disponibilidad
         public async Task<IActionResult> GetByMultipleDisponibilidad([FromQuery] string ids)
         {
             if (string.IsNullOrWhiteSpace(ids))

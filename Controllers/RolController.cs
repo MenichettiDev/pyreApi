@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using pyreApi.DTOs.Rol;
 using pyreApi.Services;
 
@@ -6,6 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Requiere autenticación para todo el controller
     public class RolController : ControllerBase
     {
         private readonly RolService _rolService;
@@ -17,6 +19,7 @@ namespace pyreApi.Controllers
 
         // GET: api/rol (Lista de todos los roles)
         [HttpGet]
+        [Authorize(Roles = "1,2,3,4")] // Todos pueden consultar roles
         public async Task<IActionResult> GetRoles()
         {
             var result = await _rolService.GetAllRolesAsync();
@@ -25,6 +28,7 @@ namespace pyreApi.Controllers
 
         // GET: api/rol/{id} (Un rol específico)
         [HttpGet("{id}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos pueden consultar roles específicos
         public async Task<IActionResult> GetRol(int id)
         {
             var result = await _rolService.GetRolByIdAsync(id);
@@ -33,6 +37,7 @@ namespace pyreApi.Controllers
 
         // POST: api/rol (Crear un nuevo rol)
         [HttpPost]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede crear roles
         public async Task<IActionResult> PostRol([FromBody] CreateRolDto createDto)
         {
             if (!ModelState.IsValid)
@@ -44,6 +49,7 @@ namespace pyreApi.Controllers
 
         // PUT: api/rol/{id} (Actualizar rol)
         [HttpPut("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede actualizar roles
         public async Task<IActionResult> PutRol(int id, [FromBody] UpdateRolDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -58,6 +64,7 @@ namespace pyreApi.Controllers
 
         // DELETE: api/rol/{id} (Eliminar rol)
         [HttpDelete("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar roles
         public async Task<IActionResult> DeleteRol(int id)
         {
             var result = await _rolService.DeleteAsync(id);

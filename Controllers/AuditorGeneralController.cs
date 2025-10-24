@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using pyreApi.Models;
 using pyreApi.Services;
 
@@ -6,6 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "1")] // Solo SuperAdmin y Administrador pueden acceder a auditoría
     public class AuditorGeneralController : ControllerBase
     {
         private readonly GenericService<AuditorGeneral> _service;

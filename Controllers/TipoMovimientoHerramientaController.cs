@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using pyreApi.DTOs.TipoMovimientoHerramienta;
 using pyreApi.Services;
 
@@ -6,6 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Requiere autenticación para todo el controller
     public class TipoMovimientoHerramientaController : ControllerBase
     {
         private readonly TipoMovimientoHerramientaService _tipoMovimientoHerramientaService;
@@ -16,6 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar tipos de movimiento
         public async Task<IActionResult> GetAll()
         {
             var result = await _tipoMovimientoHerramientaService.GetAllTiposMovimientoAsync();
@@ -23,6 +26,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar tipos de movimiento específicos
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _tipoMovimientoHerramientaService.GetTipoMovimientoByIdAsync(id);
@@ -30,6 +34,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede crear tipos de movimiento
         public async Task<IActionResult> Create([FromBody] CreateTipoMovimientoHerramientaDto createDto)
         {
             if (!ModelState.IsValid)
@@ -40,6 +45,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin y Administrador pueden actualizar tipos de movimiento
         public async Task<IActionResult> Update(int id, [FromBody] UpdateTipoMovimientoHerramientaDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -53,6 +59,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar tipos de movimiento
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _tipoMovimientoHerramientaService.DeleteAsync(id);
