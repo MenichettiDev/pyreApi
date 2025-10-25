@@ -18,7 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede ver todos los usuarios
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede ver todos los usuarios
         public async Task<IActionResult> GetAll(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
@@ -46,7 +46,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("all-unpaginated")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede ver todos los usuarios
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede ver todos los usuarios
         public async Task<IActionResult> GetAllUnpaginated()
         {
             var response = await _usuarioService.GetAllUsuariosAsync();
@@ -56,7 +56,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede ver usuarios específicos
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede ver usuarios específicos
         public async Task<IActionResult> GetById(int id)
         {
             if (id <= 0)
@@ -71,7 +71,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("dni/{dni}")]
-        [Authorize(Roles = "1,2,3")] // SuperAdmin, Administrador y Supervisor
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor")] // SuperAdmin, Administrador y Supervisor
         public async Task<IActionResult> GetByDni(string dni)
         {
             if (string.IsNullOrWhiteSpace(dni))
@@ -86,7 +86,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("active")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver usuarios activos
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver usuarios activos
         public async Task<IActionResult> GetActiveUsers()
         {
             var response = await _usuarioService.GetActiveUsersAsync();
@@ -96,7 +96,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede crear usuarios
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede crear usuarios
         public async Task<IActionResult> Create([FromBody] CreateUsuarioDto createDto)
         {
             // Validar longitud del legajo
@@ -132,7 +132,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede actualizar usuarios
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede actualizar usuarios
         public async Task<IActionResult> Update(int id, [FromBody] UpdateUsuarioDto updateDto)
         {
             if (id <= 0)
@@ -203,7 +203,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar usuarios
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar usuarios
         public async Task<IActionResult> Delete(int id)
         {
             if (id <= 0)
@@ -232,7 +232,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPatch("{id}/toggle-activo")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede cambiar estado activo
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede cambiar estado activo
         public async Task<IActionResult> ToggleActivo(int id)
         {
             if (id <= 0)

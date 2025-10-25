@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using pyreApi.Services;
 
 namespace pyreApi.Controllers
 {
+    [Authorize] // Requiere autenticación para todo el controller
     public abstract class GenericController<T> : ControllerBase where T : class
     {
         protected readonly GenericService<T> _service;
@@ -13,6 +15,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar
         public async Task<IActionResult> GetAll()
         {
             var response = await _service.GetAllAsync();
@@ -22,6 +25,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar específicos
         public async Task<IActionResult> GetById(int id)
         {
             var response = await _service.GetByIdAsync(id);
@@ -31,6 +35,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("paged")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar paginado
         public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             var response = await _service.GetPagedAsync(page, pageSize);
@@ -40,6 +45,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "SuperAdmin,Administrador")] // Solo SuperAdmin y Administrador pueden crear
         public async Task<IActionResult> Create([FromBody] T entity)
         {
             if (!ModelState.IsValid)
@@ -52,6 +58,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut]
+        [Authorize(Roles = "SuperAdmin,Administrador")] // Solo SuperAdmin y Administrador pueden actualizar
         public async Task<IActionResult> Update([FromBody] T entity)
         {
             if (!ModelState.IsValid)
@@ -64,6 +71,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar
         public async Task<IActionResult> Delete(int id)
         {
             var response = await _service.DeleteAsync(id);

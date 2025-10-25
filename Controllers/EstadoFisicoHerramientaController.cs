@@ -18,7 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar estados físicos
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar estados físicos
         public async Task<IActionResult> GetAll()
         {
             var result = await _estadoFisicoHerramientaService.GetAllEstadosFisicosAsync();
@@ -26,7 +26,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar estados específicos
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar estados específicos
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _estadoFisicoHerramientaService.GetEstadoFisicoByIdAsync(id);
@@ -34,7 +34,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede crear estados físicos
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede crear estados físicos
         public async Task<IActionResult> Create([FromBody] CreateEstadoFisicoHerramientaDto createDto)
         {
             if (!ModelState.IsValid)
@@ -45,7 +45,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede actualizar estados físicos
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede actualizar estados físicos
         public async Task<IActionResult> Update(int id, [FromBody] UpdateEstadoFisicoHerramientaDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -59,7 +59,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar estados físicos
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar estados físicos
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _estadoFisicoHerramientaService.DeleteAsync(id);

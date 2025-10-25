@@ -18,7 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar plantas
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar plantas
         public async Task<IActionResult> GetAll()
         {
             var result = await _plantaService.GetAllPlantasAsync();
@@ -26,7 +26,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar plantas específicas
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar plantas específicas
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _plantaService.GetPlantaByIdAsync(id);
@@ -34,7 +34,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede crear plantas
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede crear plantas
         public async Task<IActionResult> Create([FromBody] CreatePlantaDto createDto)
         {
             if (!ModelState.IsValid)
@@ -45,7 +45,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede actualizar plantas
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede actualizar plantas
         public async Task<IActionResult> Update(int id, [FromBody] UpdatePlantaDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -59,7 +59,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar plantas
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar plantas
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _plantaService.DeleteAsync(id);

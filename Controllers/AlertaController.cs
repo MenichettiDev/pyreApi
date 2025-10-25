@@ -18,7 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver todas las alertas
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver alertas
         public async Task<IActionResult> GetAll()
         {
             var result = await _alertaService.GetAllAlertasAsync();
@@ -26,7 +26,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver alertas específicas
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver alertas específicas
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _alertaService.GetAlertaByIdAsync(id);
@@ -34,7 +34,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede crear alertas
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede crear alertas
         public async Task<IActionResult> Create([FromBody] CreateAlertaDto createDto)
         {
             if (!ModelState.IsValid)
@@ -45,7 +45,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede actualizar alertas
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede actualizar alertas
         public async Task<IActionResult> Update(int id, [FromBody] UpdateAlertaDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -59,7 +59,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar alertas
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar alertas
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _alertaService.DeleteAsync(id);
@@ -67,7 +67,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("herramienta/{idHerramienta}")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver alertas por herramienta
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver alertas por herramienta
         public async Task<IActionResult> GetByHerramienta(int idHerramienta)
         {
             var result = await _alertaService.GetAlertasByHerramientaAsync(idHerramienta);
@@ -75,7 +75,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("unread")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver alertas no leídas
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver alertas no leídas
         public async Task<IActionResult> GetUnread()
         {
             var result = await _alertaService.GetUnreadAlertasAsync();
@@ -83,7 +83,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPatch("{id}/mark-read")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden marcar alertas como leídas
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden marcar alertas como leídas
         public async Task<IActionResult> MarkAsRead(int id)
         {
             var result = await _alertaService.MarkAlertaAsReadAsync(id);
@@ -91,7 +91,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("tipo-alerta/{idTipoAlerta}")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden filtrar por tipo de alerta
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden filtrar por tipo de alerta
         public async Task<IActionResult> GetByTipoAlerta(int idTipoAlerta)
         {
             var result = await _alertaService.GetByTipoAlertaAsync(idTipoAlerta);
@@ -99,7 +99,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("count-alertas-pendientes")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver contadores
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver contadores
         public async Task<IActionResult> GetCountAlertasPendientes()
         {
             var result = await _alertaService.GetCountAlertasPendientesAsync();
@@ -107,7 +107,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("count-alertas-vencidas")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden ver contadores
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver contadores
         public async Task<IActionResult> GetCountAlertasVencidas()
         {
             var result = await _alertaService.GetCountAlertasVencidasAsync();

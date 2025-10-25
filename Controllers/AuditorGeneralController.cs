@@ -7,7 +7,7 @@ namespace pyreApi.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "1")] // Solo SuperAdmin y Administrador pueden acceder a auditoría
+    [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede acceder a auditoría
     public class AuditorGeneralController : ControllerBase
     {
         private readonly GenericService<AuditorGeneral> _service;

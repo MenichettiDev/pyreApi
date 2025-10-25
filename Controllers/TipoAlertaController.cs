@@ -18,7 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar tipos de alerta
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar tipos de alerta
         public async Task<IActionResult> GetAll()
         {
             var result = await _tipoAlertaService.GetAllTiposAlertaAsync();
@@ -26,7 +26,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "1,2,3,4")] // Todos los roles pueden consultar tipos de alerta específicos
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar tipos de alerta específicos
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _tipoAlertaService.GetTipoAlertaByIdAsync(id);
@@ -34,7 +34,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede crear tipos de alerta
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede crear tipos de alerta
         public async Task<IActionResult> Create([FromBody] CreateTipoAlertaDto createDto)
         {
             if (!ModelState.IsValid)
@@ -45,7 +45,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede actualizar tipos de alerta
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede actualizar tipos de alerta
         public async Task<IActionResult> Update(int id, [FromBody] UpdateTipoAlertaDto updateDto)
         {
             if (!ModelState.IsValid)
@@ -59,7 +59,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "1")] // Solo SuperAdmin puede eliminar tipos de alerta
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar tipos de alerta
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _tipoAlertaService.DeleteAsync(id);
