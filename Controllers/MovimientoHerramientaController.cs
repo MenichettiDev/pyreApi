@@ -89,6 +89,14 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
+        [HttpGet("ranking-mas-prestadas")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver el ranking
+        public async Task<IActionResult> GetMostBorrowedToolsLast30Days()
+        {
+            var result = await _movimientoService.GetMostBorrowedToolsLast30DaysAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
         [HttpPost]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden crear movimientos
         public async Task<IActionResult> Create([FromBody] CreateMovimientoDto createDto)

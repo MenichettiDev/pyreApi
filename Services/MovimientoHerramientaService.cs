@@ -344,6 +344,43 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<IEnumerable<HerramientaRankingDto>>> GetMostBorrowedToolsLast30DaysAsync()
+        {
+            try
+            {
+                var rankingData = await _movimientoRepository.GetMostBorrowedToolsLast30DaysAsync();
+                var rankingDtos = rankingData.Select(item =>
+                {
+                    var itemType = item.GetType();
+                    return new HerramientaRankingDto
+                    {
+                        IdHerramienta = (int)itemType.GetProperty("IdHerramienta")?.GetValue(item)!,
+                        CodigoHerramienta = (string?)itemType.GetProperty("CodigoHerramienta")?.GetValue(item),
+                        NombreHerramienta = (string?)itemType.GetProperty("NombreHerramienta")?.GetValue(item),
+                        FamiliaHerramienta = (string?)itemType.GetProperty("FamiliaHerramienta")?.GetValue(item),
+                        TotalPrestamos = (int)itemType.GetProperty("TotalPrestamos")?.GetValue(item)!,
+                        UltimoPrestamo = (DateTime?)itemType.GetProperty("UltimoPrestamo")?.GetValue(item)
+                    };
+                });
+
+                return new BaseResponseDto<IEnumerable<HerramientaRankingDto>>
+                {
+                    Success = true,
+                    Data = rankingDtos,
+                    Message = "Ranking de herramientas más prestadas obtenido correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<HerramientaRankingDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener el ranking de herramientas más prestadas",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
         private int DetermineNewAvailabilityStatus(int tipoMovimientoId)
         {
             return tipoMovimientoId switch

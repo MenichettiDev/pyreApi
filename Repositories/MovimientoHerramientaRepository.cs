@@ -219,5 +219,35 @@ namespace pyreApi.Repositories
                 .Take(5)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<object>> GetMostBorrowedToolsLast30DaysAsync()
+        {
+            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+
+            return await _dbSet
+                .Include(m => m.Herramienta)
+                    .ThenInclude(h => h.Familia)
+                .Where(m => m.IdTipoMovimiento == 1 && m.Fecha >= thirtyDaysAgo) // Solo préstamos de últimos 30 días
+                .GroupBy(m => new
+                {
+                    m.IdHerramienta,
+                    m.Herramienta.Codigo,
+                    m.Herramienta.NombreHerramienta,
+                    FamiliaHerramienta = m.Herramienta.Familia.NombreFamilia
+                })
+                .Select(g => new
+                {
+                    IdHerramienta = g.Key.IdHerramienta,
+                    CodigoHerramienta = g.Key.Codigo,
+                    NombreHerramienta = g.Key.NombreHerramienta,
+                    FamiliaHerramienta = g.Key.FamiliaHerramienta,
+                    TotalPrestamos = g.Count(),
+                    UltimoPrestamo = g.Max(m => m.Fecha)
+                })
+                .OrderByDescending(x => x.TotalPrestamos)
+                .ThenByDescending(x => x.UltimoPrestamo)
+                .Take(10) // Top 10 herramientas más prestadas
+                .ToListAsync();
+        }
     }
 }
