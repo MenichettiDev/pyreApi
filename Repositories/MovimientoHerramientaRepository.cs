@@ -204,5 +204,20 @@ namespace pyreApi.Repositories
                 .OrderByDescending(m => m.Fecha)
                 .FirstOrDefaultAsync();
         }
+
+        public async Task<IEnumerable<MovimientoHerramienta>> GetLatest5BorrowedToolsAsync()
+        {
+            return await _dbSet
+                .Include(m => m.Herramienta)
+                .Include(m => m.UsuarioGenera)
+                .Include(m => m.UsuarioResponsable)
+                .Include(m => m.TipoMovimiento)
+                .Include(m => m.Obra)
+                .Include(m => m.EstadoDevolucion)
+                .Where(m => m.IdTipoMovimiento == 1) // Solo préstamos
+                .OrderByDescending(m => m.Fecha)
+                .Take(5)
+                .ToListAsync();
+        }
     }
 }

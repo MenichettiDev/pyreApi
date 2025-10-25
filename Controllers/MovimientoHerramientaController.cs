@@ -81,6 +81,14 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
+        [HttpGet("ultimas-prestadas")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver últimas prestadas
+        public async Task<IActionResult> GetLatest5BorrowedTools()
+        {
+            var result = await _movimientoService.GetLatest5BorrowedToolsAsync();
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
         [HttpPost]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden crear movimientos
         public async Task<IActionResult> Create([FromBody] CreateMovimientoDto createDto)
