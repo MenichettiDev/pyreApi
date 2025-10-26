@@ -70,5 +70,13 @@ namespace pyreApi.Controllers
             var result = await _proveedorService.DeleteAsync(id);
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
+        [HttpGet("getProveedoresCombo")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos pueden consultar el combo de proveedores
+        public async Task<IActionResult> GetAllCombo([FromQuery] string? search = null)
+        {
+            var result = await _proveedorService.GetAllComboAsync(search);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
     }
 }

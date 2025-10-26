@@ -198,6 +198,38 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<IEnumerable<ProveedorDto>>> GetAllComboAsync(string? search = null)
+        {
+            try
+            {
+                var proveedores = await _repository.GetAllAsync();
+                var filteredProveedores = proveedores
+                    .Where(p => string.IsNullOrWhiteSpace(search) ||
+                        (p.NombreProveedor != null && p.NombreProveedor.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
+                        (p.Contacto != null && p.Contacto.Contains(search, StringComparison.OrdinalIgnoreCase)))
+                    .Take(15)
+                    .ToList();
+
+                var proveedorDtos = filteredProveedores.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<ProveedorDto>>
+                {
+                    Success = true,
+                    Data = proveedorDtos,
+                    Message = "Proveedores obtenidos correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<ProveedorDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener los proveedores",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
         private ProveedorDto MapToDto(Proveedor proveedor)
         {
             return new ProveedorDto
