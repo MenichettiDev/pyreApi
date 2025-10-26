@@ -133,5 +133,28 @@ namespace pyreApi.Repositories
 
             return await query.OrderBy(h => h.IdHerramienta).ToListAsync();
         }
+
+        public async Task<IEnumerable<Herramienta>> GetByMultipleDisponibilidadAsync(List<int> disponibilidadIds, string? searchText = null)
+        {
+            var query = _dbSet
+                .Include(h => h.Familia)
+                .Include(h => h.EstadoFisico)
+                .Include(h => h.EstadoDisponibilidad)
+                .Include(h => h.Planta)
+                .Where(h => disponibilidadIds.Contains(h.IdDisponibilidad) && h.Activo)
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                query = query.Where(h =>
+                    (h.NombreHerramienta != null && h.NombreHerramienta.Contains(searchText)) ||
+                    (h.Marca != null && h.Marca.Contains(searchText)));
+            }
+
+            return await query
+                .OrderBy(h => h.NombreHerramienta)
+                .Take(15) // Límite de 15 herramientas
+                .ToListAsync();
+        }
     }
 }

@@ -167,7 +167,9 @@ namespace pyreApi.Controllers
 
         [HttpGet("disponibilidad")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden filtrar por múltiple disponibilidad
-        public async Task<IActionResult> GetByMultipleDisponibilidad([FromQuery] string ids)
+        public async Task<IActionResult> GetByMultipleDisponibilidad(
+            [FromQuery] string ids,
+            [FromQuery] string? search = null)
         {
             if (string.IsNullOrWhiteSpace(ids))
                 return BadRequest("Se requiere al menos un ID de disponibilidad");
@@ -178,7 +180,7 @@ namespace pyreApi.Controllers
                     .Select(id => int.Parse(id.Trim()))
                     .ToList();
 
-                var result = await _herramientaService.GetByMultipleDisponibilidadAsync(disponibilidadIds);
+                var result = await _herramientaService.GetByMultipleDisponibilidadAsync(disponibilidadIds, search);
                 return result.Success ? Ok(result) : BadRequest(result);
             }
             catch (FormatException)
