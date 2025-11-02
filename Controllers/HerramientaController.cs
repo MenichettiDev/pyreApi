@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using pyreApi.DTOs.Herramienta;
 using pyreApi.Services;
 
@@ -28,14 +28,22 @@ namespace pyreApi.Controllers
         [HttpGet("paged")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar herramientas paginadas
         public async Task<IActionResult> GetPaged(
-           [FromQuery] int page = 1,
-           [FromQuery] int pageSize = 10,
-           [FromQuery] string? codigo = null,
-           [FromQuery] string? nombre = null,
-           [FromQuery] string? marca = null,
-           [FromQuery] bool? estado = null)
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? codigo = null,
+            [FromQuery] string? nombre = null,
+            [FromQuery] string? marca = null,
+            [FromQuery] bool? estado = null
+        )
         {
-            var result = await _herramientaService.GetPagedAsync(page, pageSize, codigo, nombre, marca, estado);
+            var result = await _herramientaService.GetPagedAsync(
+                page,
+                pageSize,
+                codigo,
+                nombre,
+                marca,
+                estado
+            );
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
@@ -55,7 +63,9 @@ namespace pyreApi.Controllers
                 return BadRequest(ModelState);
 
             var result = await _herramientaService.CreateHerramientaAsync(createDto);
-            return result.Success ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdHerramienta }, result) : BadRequest(result);
+            return result.Success
+                ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdHerramienta }, result)
+                : BadRequest(result);
         }
 
         [HttpPut("{id}")]
@@ -95,8 +105,6 @@ namespace pyreApi.Controllers
             var result = await _herramientaService.GetByFamiliaAsync(familiaId);
             return result.Success ? Ok(result) : BadRequest(result);
         }
-
-
 
         [HttpPut("status")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden cambiar estado
@@ -148,6 +156,7 @@ namespace pyreApi.Controllers
             var result = await _herramientaService.GetTotalHerramientasEnPrestamoAsync();
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
         [HttpGet("herramientas-en-reparacion")]
         [HttpGet("count-herramientas-en-reparacion")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver estadísticas
@@ -169,18 +178,20 @@ namespace pyreApi.Controllers
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden filtrar por múltiple disponibilidad
         public async Task<IActionResult> GetByMultipleDisponibilidad(
             [FromQuery] string ids,
-            [FromQuery] string? search = null)
+            [FromQuery] string? search = null
+        )
         {
             if (string.IsNullOrWhiteSpace(ids))
                 return BadRequest("Se requiere al menos un ID de disponibilidad");
 
             try
             {
-                var disponibilidadIds = ids.Split(',')
-                    .Select(id => int.Parse(id.Trim()))
-                    .ToList();
+                var disponibilidadIds = ids.Split(',').Select(id => int.Parse(id.Trim())).ToList();
 
-                var result = await _herramientaService.GetByMultipleDisponibilidadAsync(disponibilidadIds, search);
+                var result = await _herramientaService.GetByMultipleDisponibilidadAsync(
+                    disponibilidadIds,
+                    search
+                );
                 return result.Success ? Ok(result) : BadRequest(result);
             }
             catch (FormatException)
@@ -188,7 +199,5 @@ namespace pyreApi.Controllers
                 return BadRequest("Los IDs deben ser números válidos separados por comas");
             }
         }
-
     }
-
 }

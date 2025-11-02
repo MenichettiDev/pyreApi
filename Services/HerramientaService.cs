@@ -1,17 +1,70 @@
+using System.Text.Json;
 using pyreApi.DTOs.Common;
 using pyreApi.DTOs.Herramienta;
 using pyreApi.Models;
 using pyreApi.Repositories;
+using pyreApi.Services;
 
 namespace pyreApi.Services
 {
+    // Utilidad para comparar dos objetos y obtener solo los campos modificados
+    public static class AuditHelper
+    {
+        public static Dictionary<string, object?> GetChangedFields<T>(T before, T after)
+        {
+            var result = new Dictionary<string, object?>();
+            if (before == null || after == null)
+                return result;
+            var type = typeof(T);
+            foreach (var prop in type.GetProperties())
+            {
+                // Solo campos simples (evitar navegación y colecciones)
+                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string)) continue;
+                if (typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType) && prop.PropertyType != typeof(string)) continue;
+                var beforeValue = prop.GetValue(before);
+                var afterValue = prop.GetValue(after);
+                if (!Equals(beforeValue, afterValue))
+                {
+                    result[prop.Name] = afterValue;
+                }
+            }
+            return result;
+        }
+
+        public static Dictionary<string, object?> GetOriginalFields<T>(T before, T after)
+        {
+            var result = new Dictionary<string, object?>();
+            if (before == null || after == null)
+                return result;
+            var type = typeof(T);
+            foreach (var prop in type.GetProperties())
+            {
+                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string)) continue;
+                if (typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType) && prop.PropertyType != typeof(string)) continue;
+                var beforeValue = prop.GetValue(before);
+                var afterValue = prop.GetValue(after);
+                if (!Equals(beforeValue, afterValue))
+                {
+                    result[prop.Name] = beforeValue;
+                }
+            }
+            return result;
+        }
+    }
+
     public class HerramientaService : GenericService<Herramienta>
     {
         private readonly HerramientaRepository _herramientaRepository;
+        private readonly AuditorGeneralService _auditorGeneralService;
 
-        public HerramientaService(HerramientaRepository repository) : base(repository)
+        public HerramientaService(
+            HerramientaRepository repository,
+            AuditorGeneralService auditorGeneralService
+        )
+            : base(repository)
         {
             _herramientaRepository = repository;
+            _auditorGeneralService = auditorGeneralService;
         }
 
         public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetAllHerramientasAsync()
@@ -25,7 +78,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = herramientaDtos,
-                    Message = "Herramientas obtenidas correctamente"
+                    Message = "Herramientas obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -34,7 +87,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las herramientas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -49,7 +102,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<HerramientaDto>
                     {
                         Success = false,
-                        Message = "Herramienta no encontrada"
+                        Message = "Herramienta no encontrada",
                     };
                 }
 
@@ -57,7 +110,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(herramienta),
-                    Message = "Herramienta encontrada"
+                    Message = "Herramienta encontrada",
                 };
             }
             catch (Exception ex)
@@ -66,23 +119,83 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al buscar la herramienta",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<HerramientaDto>> CreateHerramientaAsync(CreateHerramientaDto createDto)
+        public async Task<BaseResponseDto<HerramientaDto>> CreateHerramientaAsync(
+            CreateHerramientaDto createDto
+        )
         {
             try
             {
+                // Mapear el DTO a la entidad
                 var herramienta = MapFromCreateDto(createDto);
+
+                // Guardar la herramienta en la base de datos para obtener el IdHerramienta
                 var result = await _repository.AddAsync(herramienta);
+
+                // Generar el código basado en la familia y el IdHerramienta
+                result.Codigo = GenerateCodigo(result.IdFamilia, result.IdHerramienta);
+
+                // Actualizar la herramienta con el código generado
+                await _repository.UpdateAsync(result);
+
+                // Registrar auditoría de INSERT
+                // Serializar todos los campos simples relevantes para INSERT
+                var insertData = new {
+                    result.IdHerramienta,
+                    result.NombreHerramienta,
+                    result.Codigo,
+                    result.CostoDolares,
+                    result.IdFamilia,
+                    result.IdEstadoFisico,
+                    result.IdDisponibilidad,
+                    result.IdPlanta,
+                    result.Tipo,
+                    result.Marca,
+                    result.Serie,
+                    result.FechaDeIngreso,
+                    result.UbicacionFisica,
+                    result.Ubicacion,
+                    result.Activo,
+                    result.DiasAlerta
+                };
+                await _auditorGeneralService.RegisterAuditAsync(
+                    new AuditorGeneral
+                    {
+                        IdUsuario = 1, // Reemplazar con el ID del usuario actual
+                        Entidad = nameof(Herramienta),
+                        IdEntidad = result.IdHerramienta,
+                        Accion = AccionAuditoria.INSERT,
+                        ValorAnterior = null,
+                        ValorNuevo = JsonSerializer.Serialize(insertData),
+                        Observaciones = "Herramienta creada correctamente",
+                    }
+                );
+
+                // Mapear los valores adicionales para la respuesta
+                var herramientaDto = MapToDto(result);
+                herramientaDto.NombreFamilia = await _herramientaRepository.GetFamiliaNombre(
+                    result.IdFamilia
+                );
+                herramientaDto.EstadoFisico = await _herramientaRepository.GetEstadoFisicoNombre(
+                    result.IdEstadoFisico
+                );
+                herramientaDto.EstadoDisponibilidad =
+                    await _herramientaRepository.GetEstadoDisponibilidadNombre(
+                        result.IdDisponibilidad
+                    );
+                herramientaDto.NombrePlanta = await _herramientaRepository.GetPlantaNombre(
+                    result.IdPlanta
+                );
 
                 return new BaseResponseDto<HerramientaDto>
                 {
                     Success = true,
-                    Data = MapToDto(result),
-                    Message = "Herramienta creada correctamente"
+                    Data = herramientaDto,
+                    Message = $"Herramienta creada correctamente con código {result.Codigo}",
                 };
             }
             catch (Exception ex)
@@ -91,33 +204,111 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al crear la herramienta",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<HerramientaDto>> UpdateHerramientaAsync(UpdateHerramientaDto updateDto)
+        public async Task<BaseResponseDto<HerramientaDto>> UpdateHerramientaAsync(
+            UpdateHerramientaDto updateDto
+        )
         {
             try
             {
-                var existingHerramienta = await _repository.GetByIdAsync(updateDto.IdHerramienta);
-                if (existingHerramienta == null)
+                var herramienta = await _repository.GetByIdAsync(updateDto.IdHerramienta);
+                if (herramienta == null)
                 {
                     return new BaseResponseDto<HerramientaDto>
                     {
                         Success = false,
-                        Message = "Herramienta no encontrada"
+                        Message = "Herramienta no encontrada",
                     };
                 }
 
-                MapFromUpdateDto(updateDto, existingHerramienta);
-                await _repository.UpdateAsync(existingHerramienta);
+                // Copia del estado original antes de modificar
+                // Copia del estado original antes de modificar (todos los campos simples relevantes)
+                var original = new Herramienta
+                {
+                    IdHerramienta = herramienta.IdHerramienta,
+                    NombreHerramienta = herramienta.NombreHerramienta,
+                    Codigo = herramienta.Codigo,
+                    CostoDolares = herramienta.CostoDolares,
+                    IdFamilia = herramienta.IdFamilia,
+                    IdEstadoFisico = herramienta.IdEstadoFisico,
+                    IdDisponibilidad = herramienta.IdDisponibilidad,
+                    IdPlanta = herramienta.IdPlanta,
+                    Tipo = herramienta.Tipo,
+                    Marca = herramienta.Marca,
+                    Serie = herramienta.Serie,
+                    FechaDeIngreso = herramienta.FechaDeIngreso,
+                    UbicacionFisica = herramienta.UbicacionFisica,
+                    Ubicacion = herramienta.Ubicacion,
+                    Activo = herramienta.Activo,
+                    DiasAlerta = herramienta.DiasAlerta
+                };
+
+                bool familiaActualizada = false;
+
+                // Map other fields from el DTO primero
+                MapFromUpdateDto(updateDto, herramienta);
+
+                // Si la familia cambió, actualiza el código
+                if (herramienta.IdFamilia != original.IdFamilia)
+                {
+                    herramienta.Codigo = GenerateCodigo(
+                        herramienta.IdFamilia,
+                        herramienta.IdHerramienta
+                    );
+                    familiaActualizada = true;
+                }
+
+                // Guardar cambios
+                await _repository.UpdateAsync(herramienta);
+
+                // Después de modificar y guardar la herramienta
+                var modificado = new Herramienta
+                {
+                    IdHerramienta = herramienta.IdHerramienta,
+                    NombreHerramienta = herramienta.NombreHerramienta,
+                    Codigo = herramienta.Codigo,
+                    CostoDolares = herramienta.CostoDolares,
+                    IdFamilia = herramienta.IdFamilia,
+                    IdEstadoFisico = herramienta.IdEstadoFisico,
+                    IdDisponibilidad = herramienta.IdDisponibilidad,
+                    IdPlanta = herramienta.IdPlanta,
+                    Tipo = herramienta.Tipo,
+                    Marca = herramienta.Marca,
+                    Serie = herramienta.Serie,
+                    FechaDeIngreso = herramienta.FechaDeIngreso,
+                    UbicacionFisica = herramienta.UbicacionFisica,
+                    Ubicacion = herramienta.Ubicacion,
+                    Activo = herramienta.Activo,
+                    DiasAlerta = herramienta.DiasAlerta
+                };
+
+                var cambiosAntes = AuditHelper.GetOriginalFields(original, modificado);
+                var cambiosDespues = AuditHelper.GetChangedFields(original, modificado);
+
+                await _auditorGeneralService.RegisterAuditAsync(
+                    new AuditorGeneral
+                    {
+                        IdUsuario = 1, // Reemplazar con el ID del usuario actual
+                        Entidad = nameof(Herramienta),
+                        IdEntidad = herramienta.IdHerramienta,
+                        Accion = AccionAuditoria.UPDATE,
+                        ValorAnterior = cambiosAntes.Count > 0 ? JsonSerializer.Serialize(cambiosAntes) : null,
+                        ValorNuevo = cambiosDespues.Count > 0 ? JsonSerializer.Serialize(cambiosDespues) : null,
+                        Observaciones = "Herramienta actualizada correctamente",
+                    }
+                );
 
                 return new BaseResponseDto<HerramientaDto>
                 {
                     Success = true,
-                    Data = MapToDto(existingHerramienta),
-                    Message = "Herramienta actualizada correctamente"
+                    Message = familiaActualizada
+                        ? $"Herramienta actualizada correctamente. Nuevo código: {herramienta.Codigo}"
+                        : "Herramienta actualizada correctamente.",
+                    Data = MapToDto(herramienta),
                 };
             }
             catch (Exception ex)
@@ -126,7 +317,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al actualizar la herramienta",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -142,7 +333,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = herramientaDtos,
-                    Message = "Herramientas disponibles obtenidas correctamente"
+                    Message = "Herramientas disponibles obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -151,12 +342,14 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las herramientas disponibles",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByFamiliaAsync(int familiaId)
+        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByFamiliaAsync(
+            int familiaId
+        )
         {
             try
             {
@@ -167,7 +360,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = herramientaDtos,
-                    Message = "Herramientas por familia obtenidas correctamente"
+                    Message = "Herramientas por familia obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -176,7 +369,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las herramientas por familia",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -187,19 +380,30 @@ namespace pyreApi.Services
             string? codigo = null,
             string? nombre = null,
             string? marca = null,
-            bool? estado = null)
+            bool? estado = null
+        )
         {
             try
             {
-                if (page <= 0) page = 1;
-                if (pageSize <= 0) pageSize = 10;
+                if (page <= 0)
+                    page = 1;
+                if (pageSize <= 0)
+                    pageSize = 10;
 
-                var herramientas = await _herramientaRepository.GetFilteredHerramientasAsync(codigo, nombre, marca, estado);
+                var herramientas = await _herramientaRepository.GetFilteredHerramientasAsync(
+                    codigo,
+                    nombre,
+                    marca,
+                    estado
+                );
 
-                var totalRecords = herramientas.Count();
+                // Ordenar por IdHerramienta en orden descendente
+                var herramientasOrdenadas = herramientas.OrderByDescending(h => h.IdHerramienta);
+
+                var totalRecords = herramientasOrdenadas.Count();
                 var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
 
-                var pagedHerramientas = herramientas
+                var pagedHerramientas = herramientasOrdenadas
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize);
 
@@ -213,14 +417,14 @@ namespace pyreApi.Services
                     PageSize = pageSize,
                     TotalPages = totalPages,
                     HasNextPage = page < totalPages,
-                    HasPreviousPage = page > 1
+                    HasPreviousPage = page > 1,
                 };
 
                 return new BaseResponseDto<PagedResponseDto<HerramientaDto>>
                 {
                     Success = true,
                     Data = pagedResponse,
-                    Message = "Herramientas paginadas obtenidas correctamente"
+                    Message = "Herramientas paginadas obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -229,22 +433,26 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las herramientas paginadas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<HerramientaDto>> UpdateStatusAsync(UpdateStatusDto updateStatusDto)
+        public async Task<BaseResponseDto<HerramientaDto>> UpdateStatusAsync(
+            UpdateStatusDto updateStatusDto
+        )
         {
             try
             {
-                var existingHerramienta = await _repository.GetByIdAsync(updateStatusDto.IdHerramienta);
+                var existingHerramienta = await _repository.GetByIdAsync(
+                    updateStatusDto.IdHerramienta
+                );
                 if (existingHerramienta == null)
                 {
                     return new BaseResponseDto<HerramientaDto>
                     {
                         Success = false,
-                        Message = "Herramienta no encontrada"
+                        Message = "Herramienta no encontrada",
                     };
                 }
 
@@ -255,7 +463,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(existingHerramienta),
-                    Message = "Estado de la herramienta actualizado correctamente"
+                    Message = "Estado de la herramienta actualizado correctamente",
                 };
             }
             catch (Exception ex)
@@ -264,12 +472,14 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al actualizar el estado de la herramienta",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByEstadoFisicoAsync(int estadoFisicoId)
+        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByEstadoFisicoAsync(
+            int estadoFisicoId
+        )
         {
             try
             {
@@ -280,7 +490,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = herramientaDtos,
-                    Message = "Herramientas por estado físico obtenidas correctamente"
+                    Message = "Herramientas por estado físico obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -289,7 +499,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las herramientas por estado físico",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -305,7 +515,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = herramientaDtos,
-                    Message = "Herramientas en reparación obtenidas correctamente"
+                    Message = "Herramientas en reparación obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -314,7 +524,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las herramientas en reparación",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -330,7 +540,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = total,
-                    Message = "Total de herramientas obtenido correctamente"
+                    Message = "Total de herramientas obtenido correctamente",
                 };
             }
             catch (Exception ex)
@@ -339,7 +549,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener el total de herramientas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -356,7 +566,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = totalDisponibles,
-                    Message = "Total de herramientas disponibles obtenido correctamente"
+                    Message = "Total de herramientas disponibles obtenido correctamente",
                 };
             }
             catch (Exception ex)
@@ -365,7 +575,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener el total de herramientas disponibles",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -382,7 +592,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = totalEnPrestamo,
-                    Message = "Total de herramientas en préstamo obtenido correctamente"
+                    Message = "Total de herramientas en préstamo obtenido correctamente",
                 };
             }
             catch (Exception ex)
@@ -391,7 +601,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener el total de herramientas en préstamo",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -408,7 +618,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = totalEnReparacion,
-                    Message = "Total de herramientas en reparación obtenido correctamente"
+                    Message = "Total de herramientas en reparación obtenido correctamente",
                 };
             }
             catch (Exception ex)
@@ -417,23 +627,27 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener el total de herramientas en reparación",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByDisponibilidadAsync(int disponibilidadId)
+        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByDisponibilidadAsync(
+            int disponibilidadId
+        )
         {
             try
             {
-                var herramientas = await _herramientaRepository.GetByDisponibilidadAsync(disponibilidadId);
+                var herramientas = await _herramientaRepository.GetByDisponibilidadAsync(
+                    disponibilidadId
+                );
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
                 {
                     Success = true,
                     Data = herramientaDtos,
-                    Message = "Herramientas por estado de disponibilidad obtenidas correctamente"
+                    Message = "Herramientas por estado de disponibilidad obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -442,13 +656,16 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las herramientas por estado de disponibilidad",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
         //Lo usamos al generar el movimiento de una herramienta para actualizar su disponibilidad
-        public async Task<BaseResponseDto<HerramientaDto>> UpdateDisponibilidadAsync(int herramientaId, int nuevaDisponibilidad)
+        public async Task<BaseResponseDto<HerramientaDto>> UpdateDisponibilidadAsync(
+            int herramientaId,
+            int nuevaDisponibilidad
+        )
         {
             try
             {
@@ -458,7 +675,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<HerramientaDto>
                     {
                         Success = false,
-                        Message = "Herramienta no encontrada"
+                        Message = "Herramienta no encontrada",
                     };
                 }
 
@@ -469,7 +686,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(existingHerramienta),
-                    Message = "Estado de disponibilidad actualizado correctamente"
+                    Message = "Estado de disponibilidad actualizado correctamente",
                 };
             }
             catch (Exception ex)
@@ -478,12 +695,14 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al actualizar el estado de disponibilidad",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByMultipleDisponibilidadAsync(IEnumerable<int> disponibilidadIds)
+        public async Task<
+            BaseResponseDto<IEnumerable<HerramientaDto>>
+        > GetByMultipleDisponibilidadAsync(IEnumerable<int> disponibilidadIds)
         {
             try
             {
@@ -492,18 +711,20 @@ namespace pyreApi.Services
                     return new BaseResponseDto<IEnumerable<HerramientaDto>>
                     {
                         Success = false,
-                        Message = "Se requiere al menos un ID de disponibilidad"
+                        Message = "Se requiere al menos un ID de disponibilidad",
                     };
                 }
 
-                var herramientas = await _herramientaRepository.GetByMultipleDisponibilidadAsync(disponibilidadIds);
+                var herramientas = await _herramientaRepository.GetByMultipleDisponibilidadAsync(
+                    disponibilidadIds
+                );
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
                 {
                     Success = true,
                     Data = herramientaDtos,
-                    Message = "Herramientas por estados de disponibilidad obtenidas correctamente"
+                    Message = "Herramientas por estados de disponibilidad obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -512,16 +733,21 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las herramientas por estados de disponibilidad",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetByMultipleDisponibilidadAsync(List<int> disponibilidadIds, string? searchText = null)
+        public async Task<
+            BaseResponseDto<IEnumerable<HerramientaDto>>
+        > GetByMultipleDisponibilidadAsync(List<int> disponibilidadIds, string? searchText = null)
         {
             try
             {
-                var herramientas = await _herramientaRepository.GetByMultipleDisponibilidadAsync(disponibilidadIds, searchText);
+                var herramientas = await _herramientaRepository.GetByMultipleDisponibilidadAsync(
+                    disponibilidadIds,
+                    searchText
+                );
                 var herramientasDto = herramientas.Select(MapToDto);
 
                 var message = string.IsNullOrWhiteSpace(searchText)
@@ -532,7 +758,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = herramientasDto,
-                    Message = message
+                    Message = message,
                 };
             }
             catch (Exception ex)
@@ -541,9 +767,25 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener herramientas por disponibilidad",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
+        }
+
+        private string GenerateCodigo(int idFamilia, int idHerramienta)
+        {
+            string idFormatted = idHerramienta.ToString("D3"); // Formatea el ID con tres dígitos
+            return idFamilia switch
+            {
+                1 => $"ELE-{idFormatted}",
+                2 => $"MEC-{idFormatted}",
+                3 => $"MED-{idFormatted}",
+                4 => $"FER-{idFormatted}",
+                5 => $"SEG-{idFormatted}",
+                6 => $"HID-{idFormatted}",
+                7 => $"NEU-{idFormatted}",
+                _ => $"UNK-{idFormatted}" // Código por defecto para familias desconocidas
+            };
         }
 
         private HerramientaDto MapToDto(Herramienta herramienta)
@@ -562,13 +804,12 @@ namespace pyreApi.Services
                 UbicacionFisica = herramienta.UbicacionFisica,
                 IdEstadoFisico = herramienta.IdEstadoFisico,
                 IdPlanta = herramienta.IdPlanta,
-                Ubicacion = herramienta.Ubicacion,
                 Activo = herramienta.Activo,
                 IdDisponibilidad = herramienta.IdDisponibilidad,
                 NombreFamilia = herramienta.Familia?.NombreFamilia,
                 EstadoFisico = herramienta.EstadoFisico?.Descripcion,
                 EstadoDisponibilidad = herramienta.EstadoDisponibilidad?.Descripcion,
-                NombrePlanta = herramienta.Planta?.NombrePlanta
+                NombrePlanta = herramienta.Planta?.NombrePlanta,
             };
         }
 
@@ -576,20 +817,19 @@ namespace pyreApi.Services
         {
             return new Herramienta
             {
-                Codigo = createDto.Codigo,
                 NombreHerramienta = createDto.NombreHerramienta,
                 IdFamilia = createDto.IdFamilia,
                 Tipo = createDto.Tipo,
                 Marca = createDto.Marca,
                 Serie = createDto.Serie,
-                FechaDeIngreso = createDto.FechaDeIngreso,
                 CostoDolares = createDto.CostoDolares,
                 UbicacionFisica = createDto.UbicacionFisica,
-                IdEstadoFisico = createDto.IdEstadoFisico,
                 IdPlanta = createDto.IdPlanta,
-                Ubicacion = createDto.Ubicacion,
                 Activo = createDto.Activo,
-                IdDisponibilidad = createDto.IdDisponibilidad
+                IdDisponibilidad = createDto.IdDisponibilidad,
+                DiasAlerta = createDto.DiasAlerta,
+                FechaDeIngreso = DateTime.Now, // Asignar la fecha actual
+                IdEstadoFisico = 1, // Asignar el estado físico como "Excelente"
             };
         }
 
@@ -601,12 +841,10 @@ namespace pyreApi.Services
             herramienta.Tipo = updateDto.Tipo;
             herramienta.Marca = updateDto.Marca;
             herramienta.Serie = updateDto.Serie;
-            herramienta.FechaDeIngreso = updateDto.FechaDeIngreso;
             herramienta.CostoDolares = updateDto.CostoDolares;
             herramienta.UbicacionFisica = updateDto.UbicacionFisica;
             herramienta.IdEstadoFisico = updateDto.IdEstadoFisico;
             herramienta.IdPlanta = updateDto.IdPlanta;
-            herramienta.Ubicacion = updateDto.Ubicacion;
             herramienta.Activo = updateDto.Activo;
             herramienta.IdDisponibilidad = updateDto.IdDisponibilidad;
         }
