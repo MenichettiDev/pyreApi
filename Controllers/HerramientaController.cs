@@ -189,6 +189,14 @@ namespace pyreApi.Controllers
             }
         }
 
+        [HttpGet("prestamo/usuario/{idUsuarioResponsable}")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar herramientas en préstamo por usuario
+        public async Task<IActionResult> GetHerramientasEnPrestamoByUsuario(int idUsuarioResponsable)
+        {
+            var result = await _herramientaService.GetHerramientasEnPrestamoByUsuarioAsync(idUsuarioResponsable);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
     }
 
 }

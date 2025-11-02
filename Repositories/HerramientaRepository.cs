@@ -156,5 +156,19 @@ namespace pyreApi.Repositories
                 .Take(15) // Límite de 15 herramientas
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Herramienta>> GetHerramientasEnPrestamoByUsuarioAsync(int idUsuarioResponsable)
+        {
+            return await _dbSet
+                .Include(h => h.Familia)
+                .Include(h => h.EstadoFisico)
+                .Include(h => h.EstadoDisponibilidad)
+                .Include(h => h.Planta)
+                .Include(h => h.Movimientos)
+                .Where(h => h.IdDisponibilidad == 2 &&
+                           h.Activo == true &&
+                           h.Movimientos.Any(m => m.IdUsuarioResponsable == idUsuarioResponsable))
+                .ToListAsync();
+        }
     }
 }

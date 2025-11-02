@@ -546,6 +546,31 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetHerramientasEnPrestamoByUsuarioAsync(int idUsuarioResponsable)
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetHerramientasEnPrestamoByUsuarioAsync(idUsuarioResponsable);
+                var herramientaDtos = herramientas.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = true,
+                    Data = herramientaDtos,
+                    Message = "Herramientas en préstamo del usuario obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las herramientas en préstamo del usuario",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
         private HerramientaDto MapToDto(Herramienta herramienta)
         {
             return new HerramientaDto
