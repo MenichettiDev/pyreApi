@@ -148,7 +148,8 @@ namespace pyreApi.Repositories
             {
                 query = query.Where(h =>
                     (h.NombreHerramienta != null && h.NombreHerramienta.Contains(searchText)) ||
-                    (h.Marca != null && h.Marca.Contains(searchText)));
+                    (h.Marca != null && h.Marca.Contains(searchText)) ||
+                    (h.Codigo != null && h.Codigo.Contains(searchText)));
             }
 
             return await query
