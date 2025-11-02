@@ -241,6 +241,7 @@ namespace pyreApi.Services
                 Telefono = proveedor.Telefono,
                 Email = proveedor.Email,
                 Direccion = proveedor.Direccion,
+                Descripcion = proveedor.Descripcion,
                 Activo = proveedor.Activo
             };
         }
@@ -255,6 +256,7 @@ namespace pyreApi.Services
                 Telefono = createDto.Telefono,
                 Email = createDto.Email,
                 Direccion = createDto.Direccion,
+                Descripcion = createDto.Descripcion,
                 Activo = createDto.Activo
             };
         }
@@ -267,6 +269,7 @@ namespace pyreApi.Services
             proveedor.Telefono = updateDto.Telefono;
             proveedor.Email = updateDto.Email;
             proveedor.Direccion = updateDto.Direccion;
+            proveedor.Descripcion = updateDto.Descripcion;
             proveedor.Activo = updateDto.Activo;
         }
     }

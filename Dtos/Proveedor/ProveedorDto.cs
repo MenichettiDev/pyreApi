@@ -9,6 +9,7 @@ namespace pyreApi.DTOs.Proveedor
         public string? Telefono { get; set; }
         public string? Email { get; set; }
         public string? Direccion { get; set; }
+        public string? Descripcion { get; set; }
         public bool Activo { get; set; }
     }
 }

@@ -24,6 +24,8 @@ namespace pyreApi.Models
 
         [MaxLength(200)]
         public string? Direccion { get; set; }
+        [MaxLength(200)]
+        public string? Descripcion { get; set; }
 
         public bool Activo { get; set; } = true;
 

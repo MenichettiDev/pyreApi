@@ -25,6 +25,8 @@ namespace pyreApi.DTOs.Proveedor
 
         [StringLength(200, ErrorMessage = "La dirección no puede exceder 200 caracteres")]
         public string? Direccion { get; set; }
+        [StringLength(200, ErrorMessage = "La descripción no puede exceder 200 caracteres")]
+        public string? Descripcion { get; set; }
 
         public bool Activo { get; set; }
     }
