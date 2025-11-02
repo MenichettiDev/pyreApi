@@ -1,0 +1,20 @@
+using pyreApi.Models;
+using pyreApi.Repositories;
+
+namespace pyreApi.Services
+{
+    public class AuditorGeneralService
+    {
+        private readonly GenericRepository<AuditorGeneral> _repository;
+
+        public AuditorGeneralService(GenericRepository<AuditorGeneral> repository)
+        {
+            _repository = repository;
+        }
+
+        public async Task RegisterAuditAsync(AuditorGeneral auditoria)
+        {
+            await _repository.AddAsync(auditoria);
+        }
+    }
+}

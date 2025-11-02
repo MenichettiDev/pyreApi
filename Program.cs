@@ -3,7 +3,6 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
-using pyreApi.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -15,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using pyreApi.Data;
 using pyreApi.Repositories;
 using pyreApi.Services;
 
@@ -50,9 +50,7 @@ builder.Logging.SetMinimumLevel(LogLevel.Information); // para tu código, info+
 //     );
 // });
 
-
 //Repos
-
 
 //Cambio
 builder.Services.AddCors(options =>
@@ -89,6 +87,7 @@ builder.Services.AddScoped<UsuarioRepository>();
 builder.Services.AddScoped<HerramientaRepository>();
 builder.Services.AddScoped<MovimientoHerramientaRepository>();
 builder.Services.AddScoped<AlertaRepository>();
+builder.Services.AddScoped<AuditorGeneralRepository>();
 
 //Services
 builder.Services.AddScoped(typeof(GenericService<>));
@@ -106,6 +105,7 @@ builder.Services.AddScoped<TipoMovimientoHerramientaService>();
 builder.Services.AddScoped<TipoAlertaService>();
 builder.Services.AddScoped<AlertaService>();
 builder.Services.AddScoped<ObraService>();
+builder.Services.AddScoped<AuditorGeneralService>();
 
 // Configurar Swagger
 builder.Services.AddSwaggerGen(options =>
@@ -250,8 +250,6 @@ app.MapControllers(); // esto es para habilitar los enroutadores de los controla
 // app.Run();
 //Cambio
 app.Run("http://localhost:5000");
-
-
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {

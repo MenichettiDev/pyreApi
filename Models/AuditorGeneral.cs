@@ -9,7 +9,7 @@ namespace pyreApi.Models
         UPDATE,
         DELETE,
         ALERTA_GENERADA,
-        FECHA_CAMBIADA
+        FECHA_CAMBIADA,
     }
 
     public class AuditorGeneral
