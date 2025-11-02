@@ -170,5 +170,19 @@ namespace pyreApi.Repositories
                            h.Movimientos.Any(m => m.IdUsuarioResponsable == idUsuarioResponsable))
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Herramienta>> GetHerramientasEnReparacionByProveedorAsync(int idProveedor)
+        {
+            return await _dbSet
+                .Include(h => h.Familia)
+                .Include(h => h.EstadoFisico)
+                .Include(h => h.EstadoDisponibilidad)
+                .Include(h => h.Planta)
+                .Include(h => h.Movimientos)
+                .Where(h => h.IdDisponibilidad == 3 &&
+                           h.Activo == true &&
+                           h.Movimientos.Any(m => m.IdProveedor == idProveedor))
+                .ToListAsync();
+        }
     }
 }

@@ -408,7 +408,7 @@ namespace pyreApi.Services
 
                 // Desde Mantenimiento (3)
                 (3, 2) => true,  // Mantenimiento -> Devolución (finalizar reparación)
-                (3, 4) => true,  // Mantenimiento -> Baja (no se puede reparar)
+                // (3, 4) => true,  // Mantenimiento -> Baja (no se puede reparar)
 
                 // Desde Extraviada (4)
                 (4, 5) => true,  // Extraviada -> Alta (si se recupera)

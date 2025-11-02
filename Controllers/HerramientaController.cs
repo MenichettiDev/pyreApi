@@ -197,6 +197,14 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
+        [HttpGet("reparacion/proveedor/{idProveedor}")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar herramientas en reparación por proveedor
+        public async Task<IActionResult> GetHerramientasEnReparacionByProveedor(int idProveedor)
+        {
+            var result = await _herramientaService.GetHerramientasEnReparacionByProveedorAsync(idProveedor);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
     }
 
 }

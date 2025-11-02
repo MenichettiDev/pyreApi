@@ -571,6 +571,31 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetHerramientasEnReparacionByProveedorAsync(int idProveedor)
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetHerramientasEnReparacionByProveedorAsync(idProveedor);
+                var herramientaDtos = herramientas.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = true,
+                    Data = herramientaDtos,
+                    Message = "Herramientas en reparación del proveedor obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<HerramientaDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las herramientas en reparación del proveedor",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
         private HerramientaDto MapToDto(Herramienta herramienta)
         {
             return new HerramientaDto
