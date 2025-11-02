@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging; // <-- agregado
 using pyreApi.DTOs.Common;
 using pyreApi.DTOs.Herramienta;
 using pyreApi.Models;
@@ -19,8 +20,13 @@ namespace pyreApi.Services
             foreach (var prop in type.GetProperties())
             {
                 // Solo campos simples (evitar navegación y colecciones)
-                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string)) continue;
-                if (typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType) && prop.PropertyType != typeof(string)) continue;
+                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
+                    continue;
+                if (
+                    typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType)
+                    && prop.PropertyType != typeof(string)
+                )
+                    continue;
                 var beforeValue = prop.GetValue(before);
                 var afterValue = prop.GetValue(after);
                 if (!Equals(beforeValue, afterValue))
@@ -39,8 +45,13 @@ namespace pyreApi.Services
             var type = typeof(T);
             foreach (var prop in type.GetProperties())
             {
-                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string)) continue;
-                if (typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType) && prop.PropertyType != typeof(string)) continue;
+                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
+                    continue;
+                if (
+                    typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType)
+                    && prop.PropertyType != typeof(string)
+                )
+                    continue;
                 var beforeValue = prop.GetValue(before);
                 var afterValue = prop.GetValue(after);
                 if (!Equals(beforeValue, afterValue))
@@ -56,15 +67,18 @@ namespace pyreApi.Services
     {
         private readonly HerramientaRepository _herramientaRepository;
         private readonly AuditorGeneralService _auditorGeneralService;
+        private readonly ILogger<HerramientaService> _logger; // <-- agregado
 
         public HerramientaService(
             HerramientaRepository repository,
-            AuditorGeneralService auditorGeneralService
+            AuditorGeneralService auditorGeneralService,
+            ILogger<HerramientaService> logger // <-- agregado
         )
             : base(repository)
         {
             _herramientaRepository = repository;
             _auditorGeneralService = auditorGeneralService;
+            _logger = logger; // <-- agregado
         }
 
         public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetAllHerramientasAsync()
@@ -130,6 +144,11 @@ namespace pyreApi.Services
         {
             try
             {
+                _logger.LogInformation(
+                    "CreateHerramientaAsync - Start. DTO: {dto}",
+                    JsonSerializer.Serialize(createDto)
+                );
+
                 // Mapear el DTO a la entidad
                 var herramienta = MapFromCreateDto(createDto);
 
@@ -142,9 +161,17 @@ namespace pyreApi.Services
                 // Actualizar la herramienta con el código generado
                 await _repository.UpdateAsync(result);
 
+                _logger.LogInformation(
+                    "CreateHerramientaAsync - Saved entity Id={id}, FamiliaId={fam}, Codigo={cod}",
+                    result.IdHerramienta,
+                    result.IdFamilia,
+                    result.Codigo
+                );
+
                 // Registrar auditoría de INSERT
                 // Serializar todos los campos simples relevantes para INSERT
-                var insertData = new {
+                var insertData = new
+                {
                     result.IdHerramienta,
                     result.NombreHerramienta,
                     result.Codigo,
@@ -160,20 +187,26 @@ namespace pyreApi.Services
                     result.UbicacionFisica,
                     result.Ubicacion,
                     result.Activo,
-                    result.DiasAlerta
+                    result.DiasAlerta,
                 };
-                await _auditorGeneralService.RegisterAuditAsync(
-                    new AuditorGeneral
-                    {
-                        IdUsuario = 1, // Reemplazar con el ID del usuario actual
-                        Entidad = nameof(Herramienta),
-                        IdEntidad = result.IdHerramienta,
-                        Accion = AccionAuditoria.INSERT,
-                        ValorAnterior = null,
-                        ValorNuevo = JsonSerializer.Serialize(insertData),
-                        Observaciones = "Herramienta creada correctamente",
-                    }
+
+                var auditInsertPayload = new AuditorGeneral
+                {
+                    IdUsuario = 1, // Reemplazar con el ID del usuario actual
+                    Entidad = nameof(Herramienta),
+                    IdEntidad = result.IdHerramienta,
+                    Accion = AccionAuditoria.INSERT,
+                    ValorAnterior = null,
+                    ValorNuevo = JsonSerializer.Serialize(insertData),
+                    Observaciones = "Herramienta creada correctamente",
+                };
+
+                _logger.LogDebug(
+                    "CreateHerramientaAsync - Enviando auditoría INSERT: {audit}",
+                    JsonSerializer.Serialize(auditInsertPayload)
                 );
+
+                await _auditorGeneralService.RegisterAuditAsync(auditInsertPayload);
 
                 // Mapear los valores adicionales para la respuesta
                 var herramientaDto = MapToDto(result);
@@ -200,6 +233,11 @@ namespace pyreApi.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(
+                    ex,
+                    "CreateHerramientaAsync - Error al crear herramienta. DTO: {dto}",
+                    JsonSerializer.Serialize(createDto)
+                );
                 return new BaseResponseDto<HerramientaDto>
                 {
                     Success = false,
@@ -215,9 +253,19 @@ namespace pyreApi.Services
         {
             try
             {
+                _logger.LogInformation(
+                    "UpdateHerramientaAsync - Start. IdHerramienta={id}, DTO={dto}",
+                    updateDto.IdHerramienta,
+                    JsonSerializer.Serialize(updateDto)
+                );
+
                 var herramienta = await _repository.GetByIdAsync(updateDto.IdHerramienta);
                 if (herramienta == null)
                 {
+                    _logger.LogWarning(
+                        "UpdateHerramientaAsync - Herramienta no encontrada. Id={id}",
+                        updateDto.IdHerramienta
+                    );
                     return new BaseResponseDto<HerramientaDto>
                     {
                         Success = false,
@@ -226,7 +274,6 @@ namespace pyreApi.Services
                 }
 
                 // Copia del estado original antes de modificar
-                // Copia del estado original antes de modificar (todos los campos simples relevantes)
                 var original = new Herramienta
                 {
                     IdHerramienta = herramienta.IdHerramienta,
@@ -244,62 +291,100 @@ namespace pyreApi.Services
                     UbicacionFisica = herramienta.UbicacionFisica,
                     Ubicacion = herramienta.Ubicacion,
                     Activo = herramienta.Activo,
-                    DiasAlerta = herramienta.DiasAlerta
+                    DiasAlerta = herramienta.DiasAlerta,
                 };
+
+                // Loguear solo campos simples para evitar ciclos de serialización
+                _logger.LogDebug(
+                    "UpdateHerramientaAsync - Original state (shallow): {original}",
+                    JsonSerializer.Serialize(ShallowTool(original))
+                );
 
                 bool familiaActualizada = false;
 
                 // Map other fields from el DTO primero
                 MapFromUpdateDto(updateDto, herramienta);
 
+                // Loguear solo campos simples para evitar ciclos de serialización
+                _logger.LogDebug(
+                    "UpdateHerramientaAsync - State after mapping DTO (shallow): {after}",
+                    JsonSerializer.Serialize(ShallowTool(herramienta))
+                );
+
                 // Si la familia cambió, actualiza el código
                 if (herramienta.IdFamilia != original.IdFamilia)
                 {
+                    var oldCodigo = herramienta.Codigo;
                     herramienta.Codigo = GenerateCodigo(
                         herramienta.IdFamilia,
                         herramienta.IdHerramienta
                     );
                     familiaActualizada = true;
+                    _logger.LogInformation(
+                        "UpdateHerramientaAsync - Familia cambiada. IdHerramienta={id}, OldCodigo={old}, NewCodigo={new}",
+                        herramienta.IdHerramienta,
+                        oldCodigo,
+                        herramienta.Codigo
+                    );
                 }
 
-                // Guardar cambios
-                await _repository.UpdateAsync(herramienta);
+                // Obtener los cambios antes de guardar
+                var cambiosAntes = AuditHelper.GetOriginalFields(original, herramienta);
+                var cambiosDespues = AuditHelper.GetChangedFields(original, herramienta);
 
-                // Después de modificar y guardar la herramienta
-                var modificado = new Herramienta
+                _logger.LogDebug(
+                    "UpdateHerramientaAsync - Cambios antes (original values): {cambiosAntes}",
+                    JsonSerializer.Serialize(cambiosAntes)
+                );
+                _logger.LogDebug(
+                    "UpdateHerramientaAsync - Cambios despues (new values): {cambiosDespues}",
+                    JsonSerializer.Serialize(cambiosDespues)
+                );
+
+                // Solo registrar auditoría si hay cambios
+                if (cambiosAntes.Count > 0 && cambiosDespues.Count > 0)
                 {
-                    IdHerramienta = herramienta.IdHerramienta,
-                    NombreHerramienta = herramienta.NombreHerramienta,
-                    Codigo = herramienta.Codigo,
-                    CostoDolares = herramienta.CostoDolares,
-                    IdFamilia = herramienta.IdFamilia,
-                    IdEstadoFisico = herramienta.IdEstadoFisico,
-                    IdDisponibilidad = herramienta.IdDisponibilidad,
-                    IdPlanta = herramienta.IdPlanta,
-                    Tipo = herramienta.Tipo,
-                    Marca = herramienta.Marca,
-                    Serie = herramienta.Serie,
-                    FechaDeIngreso = herramienta.FechaDeIngreso,
-                    UbicacionFisica = herramienta.UbicacionFisica,
-                    Ubicacion = herramienta.Ubicacion,
-                    Activo = herramienta.Activo,
-                    DiasAlerta = herramienta.DiasAlerta
-                };
-
-                var cambiosAntes = AuditHelper.GetOriginalFields(original, modificado);
-                var cambiosDespues = AuditHelper.GetChangedFields(original, modificado);
-
-                await _auditorGeneralService.RegisterAuditAsync(
-                    new AuditorGeneral
+                    var auditPayload = new AuditorGeneral
                     {
                         IdUsuario = 1, // Reemplazar con el ID del usuario actual
                         Entidad = nameof(Herramienta),
                         IdEntidad = herramienta.IdHerramienta,
                         Accion = AccionAuditoria.UPDATE,
-                        ValorAnterior = cambiosAntes.Count > 0 ? JsonSerializer.Serialize(cambiosAntes) : null,
-                        ValorNuevo = cambiosDespues.Count > 0 ? JsonSerializer.Serialize(cambiosDespues) : null,
+                        ValorAnterior = JsonSerializer.Serialize(cambiosAntes),
+                        ValorNuevo = JsonSerializer.Serialize(cambiosDespues),
                         Observaciones = "Herramienta actualizada correctamente",
-                    }
+                    };
+
+                    // Log adicional: número y nombre de la acción + valores exactos que se enviarán
+                    _logger.LogDebug(
+                        "UpdateHerramientaAsync - Audit payload details: AccionNumber={num}, AccionString={str}, ValorAnterior={va}, ValorNuevo={vn}",
+                        (int)auditPayload.Accion,
+                        auditPayload.Accion.ToString(),
+                        auditPayload.ValorAnterior,
+                        auditPayload.ValorNuevo
+                    );
+
+                    _logger.LogInformation(
+                        "UpdateHerramientaAsync - Enviando auditoría UPDATE: {audit}",
+                        JsonSerializer.Serialize(auditPayload)
+                    );
+
+                    await _auditorGeneralService.RegisterAuditAsync(auditPayload);
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "UpdateHerramientaAsync - No se registró auditoría porque no se detectaron cambios. IdHerramienta={id}",
+                        herramienta.IdHerramienta
+                    );
+                }
+
+                // Guardar cambios después del registro de auditoría
+                await _repository.UpdateAsync(herramienta);
+
+                _logger.LogInformation(
+                    "UpdateHerramientaAsync - Actualización persistida. IdHerramienta={id}",
+                    herramienta.IdHerramienta
                 );
 
                 return new BaseResponseDto<HerramientaDto>
@@ -313,6 +398,11 @@ namespace pyreApi.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(
+                    ex,
+                    "UpdateHerramientaAsync - Error al actualizar herramienta. DTO: {dto}",
+                    JsonSerializer.Serialize(updateDto)
+                );
                 return new BaseResponseDto<HerramientaDto>
                 {
                     Success = false,
@@ -847,6 +937,29 @@ namespace pyreApi.Services
             herramienta.IdPlanta = updateDto.IdPlanta;
             herramienta.Activo = updateDto.Activo;
             herramienta.IdDisponibilidad = updateDto.IdDisponibilidad;
+        }
+
+        // Agregar método helper privado (colócalo dentro de la clase HerramientaService, por ejemplo antes de GenerateCodigo)
+        private object ShallowTool(Herramienta? h)
+        {
+            if (h == null)
+                return new { };
+            return new
+            {
+                h.IdHerramienta,
+                h.Codigo,
+                h.NombreHerramienta,
+                h.IdFamilia,
+                h.CostoDolares,
+                h.IdEstadoFisico,
+                h.IdDisponibilidad,
+                h.IdPlanta,
+                h.Activo,
+                h.DiasAlerta,
+                h.Tipo,
+                h.Marca,
+                h.Serie,
+            };
         }
     }
 }
