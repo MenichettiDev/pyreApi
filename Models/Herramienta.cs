@@ -50,20 +50,22 @@ namespace pyreApi.Models
 
         [Required]
         public int IdDisponibilidad { get; set; }
-        public int DiasAlerta { get; set; } = 5; //por defecto 5 dias en la db 
+        public int DiasAlerta { get; set; } = 5; //por defecto 5 dias en la db
 
         [ForeignKey(nameof(IdFamilia))]
         public FamiliaHerramientas Familia { get; set; } = null!;
 
         [ForeignKey(nameof(IdEstadoFisico))]
         public EstadoFisicoHerramienta EstadoFisico { get; set; } = null!;
+
         [ForeignKey(nameof(IdDisponibilidad))]
         public EstadoDisponibilidadHerramienta EstadoDisponibilidad { get; set; } = null!;
 
         [ForeignKey(nameof(IdPlanta))]
         public Planta Planta { get; set; } = null!;
 
-        public ICollection<MovimientoHerramienta> Movimientos { get; set; } = new List<MovimientoHerramienta>();
+        public ICollection<MovimientoHerramienta> Movimientos { get; set; } =
+            new List<MovimientoHerramienta>();
         public ICollection<Alerta> Alertas { get; set; } = new List<Alerta>();
     }
 }

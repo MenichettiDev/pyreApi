@@ -6,9 +6,8 @@ namespace pyreApi.Repositories
 {
     public class HerramientaRepository : GenericRepository<Herramienta>
     {
-        public HerramientaRepository(ApplicationDbContext context) : base(context)
-        {
-        }
+        public HerramientaRepository(ApplicationDbContext context)
+            : base(context) { }
 
         public override async Task<IEnumerable<Herramienta>> GetAllAsync()
         {
@@ -29,6 +28,7 @@ namespace pyreApi.Repositories
                 .Include(h => h.Planta)
                 .FirstOrDefaultAsync(h => h.IdHerramienta == id);
         }
+
         public async Task<IEnumerable<Herramienta>> GetByEstadoAsync(int estadoId)
         {
             return await _dbSet
@@ -69,7 +69,10 @@ namespace pyreApi.Repositories
                 .Include(h => h.EstadoFisico)
                 .Include(h => h.EstadoDisponibilidad)
                 .Include(h => h.Planta)
-                .Where(h => h.EstadoDisponibilidad.Descripcion.ToLower().Contains("disponible") && h.Activo == true)
+                .Where(h =>
+                    h.EstadoDisponibilidad.Descripcion.ToLower().Contains("disponible")
+                    && h.Activo == true
+                )
                 .ToListAsync();
         }
 
@@ -95,7 +98,9 @@ namespace pyreApi.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Herramienta>> GetByMultipleDisponibilidadAsync(IEnumerable<int> disponibilidadIds)
+        public async Task<IEnumerable<Herramienta>> GetByMultipleDisponibilidadAsync(
+            IEnumerable<int> disponibilidadIds
+        )
         {
             return await _dbSet
                 .Include(h => h.Familia)
@@ -110,7 +115,8 @@ namespace pyreApi.Repositories
             string? codigo,
             string? nombre,
             string? marca,
-            bool? estado)
+            bool? estado
+        )
         {
             var query = _dbSet
                 .Include(h => h.Familia)
@@ -123,7 +129,9 @@ namespace pyreApi.Repositories
                 query = query.Where(h => h.Codigo != null && h.Codigo.Contains(codigo));
 
             if (!string.IsNullOrWhiteSpace(nombre))
-                query = query.Where(h => h.NombreHerramienta != null && h.NombreHerramienta.Contains(nombre));
+                query = query.Where(h =>
+                    h.NombreHerramienta != null && h.NombreHerramienta.Contains(nombre)
+                );
 
             if (!string.IsNullOrWhiteSpace(marca))
                 query = query.Where(h => h.Marca != null && h.Marca.Contains(marca));
@@ -134,7 +142,10 @@ namespace pyreApi.Repositories
             return await query.OrderBy(h => h.IdHerramienta).ToListAsync();
         }
 
-        public async Task<IEnumerable<Herramienta>> GetByMultipleDisponibilidadAsync(List<int> disponibilidadIds, string? searchText = null)
+        public async Task<IEnumerable<Herramienta>> GetByMultipleDisponibilidadAsync(
+            List<int> disponibilidadIds,
+            string? searchText = null
+        )
         {
             var query = _dbSet
                 .Include(h => h.Familia)
@@ -184,6 +195,38 @@ namespace pyreApi.Repositories
                            h.Activo == true &&
                            h.Movimientos.Any(m => m.IdProveedor == idProveedor))
                 .ToListAsync();
+        }
+
+        public async Task<string?> GetFamiliaNombre(int familiaId)
+        {
+            return await _context
+                .FamiliaHerramientas.Where(f => f.IdFamilia == familiaId)
+                .Select(f => f.NombreFamilia)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<string?> GetEstadoFisicoNombre(int estadoFisicoId)
+        {
+            return await _context
+                .EstadoFisicoHerramienta.Where(e => e.Id == estadoFisicoId)
+                .Select(e => e.Descripcion)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<string?> GetEstadoDisponibilidadNombre(int disponibilidadId)
+        {
+            return await _context
+                .EstadoDisponibilidadHerramienta.Where(e => e.Id == disponibilidadId)
+                .Select(e => e.Descripcion)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<string?> GetPlantaNombre(int plantaId)
+        {
+            return await _context
+                .Planta.Where(p => p.IdPlanta == plantaId)
+                .Select(p => p.NombrePlanta)
+                .FirstOrDefaultAsync();
         }
     }
 }
