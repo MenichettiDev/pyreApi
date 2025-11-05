@@ -63,7 +63,8 @@ builder.Services.AddCors(options =>
                 .WithOrigins(
                     "http://localhost:4200", // Desarrollo
                     "http://localhost:4200/", // Desarrollo
-                    "https://test.forestdev.com.ar" // Producción
+                    "https://test.forestdev.com.ar", // Producción
+                "https://test.forestdev.com.ar/" // Producción
                 )
                 .AllowAnyMethod()
                 .AllowAnyHeader()
@@ -204,10 +205,11 @@ app.UseHttpsRedirection();
 //esto va a servir el contenido estatico desde la carpeta wwwroot
 app.UseStaticFiles();
 
-app.UseAuthentication();
-
 // Aplica la política de CORS después de autenticación pero antes de autorización
 app.UseCors("AllowFrontend");
+
+app.UseAuthentication();
+
 
 app.UseAuthorization();
 
@@ -249,7 +251,7 @@ app.MapControllers(); // esto es para habilitar los enroutadores de los controla
 //Original
 // app.Run();
 //Cambio
-app.Run("http://localhost:1000");
+app.Run("http://0.0.0.0:1000");
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
