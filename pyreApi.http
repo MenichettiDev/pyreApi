@@ -1,4 +1,4 @@
-@pyreApi_HostAddress = http://localhost:5000
+@pyreApi_HostAddress = http://localhost:1000
 
 GET {{pyreApi_HostAddress}}/weatherforecast/
 Accept: application/json
