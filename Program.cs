@@ -251,7 +251,10 @@ app.MapControllers(); // esto es para habilitar los enroutadores de los controla
 //Original
 // app.Run();
 //Cambio
-app.Run("http://0.0.0.0:1000");
+// app.Run("http://0.0.0.0:1000");
+app.Urls.Add("http://*:1000");
+app.Run();
+
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
