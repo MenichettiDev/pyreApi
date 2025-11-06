@@ -64,7 +64,6 @@ builder.Services.AddCors(options =>
                     "http://localhost:4200", // Desarrollo
                     "http://localhost:4200/", // Desarrollo
                     "https://test.forestdev.com.ar", // Producción
-                "https://test.forestdev.com.ar/", // Producción
                 "https://forestdev.com.ar" // Producción
                 )
                 .AllowAnyMethod()
@@ -202,12 +201,12 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+// Aplica la política de CORS después de autenticación pero antes de autorización
+app.UseCors("AllowFrontend");
 
 //esto va a servir el contenido estatico desde la carpeta wwwroot
 app.UseStaticFiles();
 
-// Aplica la política de CORS después de autenticación pero antes de autorización
-app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 
