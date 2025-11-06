@@ -64,7 +64,8 @@ builder.Services.AddCors(options =>
                     "http://localhost:4200", // Desarrollo
                     "http://localhost:4200/", // Desarrollo
                     "https://test.forestdev.com.ar", // Producción
-                "https://test.forestdev.com.ar/" // Producción
+                "https://test.forestdev.com.ar/", // Producción
+                "https://forestdev.com.ar" // Producción
                 )
                 .AllowAnyMethod()
                 .AllowAnyHeader()
