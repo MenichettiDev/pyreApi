@@ -206,7 +206,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 // Aplica la política de CORS después de autenticación pero antes de autorización
 app.UseCors("AllowFrontend");
 
