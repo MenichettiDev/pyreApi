@@ -19,7 +19,7 @@ using pyreApi.Repositories;
 using pyreApi.Services;
 
 // 🚀 Forzamos que Kestrel use solo el puerto 1000 en todas las interfaces
-Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://0.0.0.0:1000");
+Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://localhost:1000");
 
 
 var builder = WebApplication.CreateBuilder(args); // aca lo q se hace es crear la instancia de la app
@@ -68,6 +68,8 @@ builder.Services.AddCors(options =>
                     "http://localhost:4200", // Desarrollo
                     "http://localhost:4200/", // Desarrollo
                     "https://test.forestdev.com.ar", // Producción
+                    "http://test.forestdev.com.ar", // Producción
+                "http://forestdev.com.ar", // Producción
                 "https://forestdev.com.ar" // Producción
                 )
                 .AllowAnyMethod()
