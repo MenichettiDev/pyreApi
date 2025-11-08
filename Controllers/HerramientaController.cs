@@ -125,6 +125,21 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
+        [HttpGet("count-herramientas-by-estado-fisico/{estadoFisicoId}")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver estadísticas
+        public async Task<IActionResult> GetTotalHerramientasByEstadoFisico(int estadoFisicoId)
+        {
+            var result = await _herramientaService.GetTotalHerramientasByEstadoFisicoAsync(estadoFisicoId);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+        [HttpGet("count-herramientas-by-disponibilidad/{disponibilidadId}")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver estadísticas
+        public async Task<IActionResult> GetTotalHerramientasByDisponibilidad(int disponibilidadId)
+        {
+            var result = await _herramientaService.GetTotalHerramientasByDisponibilidadAsync(disponibilidadId);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
         [HttpGet("en-reparacion")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver herramientas en reparación
         public async Task<IActionResult> GetInRepair()
