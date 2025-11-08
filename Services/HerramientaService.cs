@@ -644,6 +644,57 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<int>> GetTotalHerramientasByEstadoFisicoAsync(int estadoFisicoId)
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetAllAsync();
+                // Ajusta el valor de IdEstadoFisico según tu lógica de estado físico
+                int totalPorEstado = herramientas.Count(h => h.IdEstadoFisico == estadoFisicoId);
+
+                return new BaseResponseDto<int>
+                {
+                    Success = true,
+                    Data = totalPorEstado,
+                    Message = "Total de herramientas por estado físico obtenido correctamente",
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<int>
+                {
+                    Success = false,
+                    Message = "Error al obtener el total de herramientas por estado físico",
+                    Errors = new List<string> { ex.Message },
+                };
+            }
+        }
+        public async Task<BaseResponseDto<int>> GetTotalHerramientasByDisponibilidadAsync(int disponibilidadId)
+        {
+            try
+            {
+                var herramientas = await _herramientaRepository.GetAllAsync();
+                // Ajusta el valor de IdDisponibilidad según tu lógica de disponibilidad
+                int totalPorDisponibilidad = herramientas.Count(h => h.IdDisponibilidad == disponibilidadId);
+
+                return new BaseResponseDto<int>
+                {
+                    Success = true,
+                    Data = totalPorDisponibilidad,
+                    Message = "Total de herramientas por disponibilidad obtenido correctamente",
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<int>
+                {
+                    Success = false,
+                    Message = "Error al obtener el total de herramientas por disponibilidad",
+                    Errors = new List<string> { ex.Message },
+                };
+            }
+        }
+
         public async Task<BaseResponseDto<int>> GetTotalHerramientasDisponiblesAsync()
         {
             try
