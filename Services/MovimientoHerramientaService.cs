@@ -471,7 +471,8 @@ namespace pyreApi.Services
                 NombreUsuarioResponsable = movimiento.UsuarioResponsable?.Nombre,
                 TipoMovimiento = movimiento.TipoMovimiento?.NombreTipoMovimiento,
                 NombreObra = movimiento.Obra?.NombreObra,
-                EstadoDevolucion = movimiento.EstadoDevolucion?.Descripcion
+                EstadoDevolucion = movimiento.EstadoDevolucion?.Descripcion,
+                NombreProveedor = movimiento.Proveedor?.NombreProveedor
             };
         }
 
