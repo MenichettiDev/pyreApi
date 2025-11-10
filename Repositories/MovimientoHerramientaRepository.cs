@@ -156,10 +156,16 @@ namespace pyreApi.Repositories
                 .Include(m => m.EstadoDevolucion)
                 .Include(m => m.Proveedor)
                 .AsQueryable();
-
+            // Buscar por nombreHerramienta, marca o código
             if (!string.IsNullOrWhiteSpace(nombreHerramienta))
-                query = query.Where(m => m.Herramienta.NombreHerramienta != null &&
-                    m.Herramienta.NombreHerramienta.Contains(nombreHerramienta));
+            {
+                query = query.Where(m =>
+                    (m.Herramienta.NombreHerramienta != null &&
+                    m.Herramienta.NombreHerramienta.Contains(nombreHerramienta)) ||
+                    m.Herramienta.Codigo.Contains(nombreHerramienta)
+                );
+            }
+
 
             if (idFamiliaHerramienta.HasValue)
                 query = query.Where(m => m.Herramienta.IdFamilia == idFamiliaHerramienta.Value);

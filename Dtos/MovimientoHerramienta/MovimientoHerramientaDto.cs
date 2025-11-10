@@ -22,5 +22,6 @@ namespace pyreApi.DTOs.MovimientoHerramienta
         public string? TipoMovimiento { get; set; }
         public string? NombreObra { get; set; }
         public string? EstadoDevolucion { get; set; }
+        public string? NombreProveedor { get; set; }
     }
 }
