@@ -129,14 +129,19 @@ namespace pyreApi.Controllers
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver estadísticas
         public async Task<IActionResult> GetTotalHerramientasByEstadoFisico(int estadoFisicoId)
         {
-            var result = await _herramientaService.GetTotalHerramientasByEstadoFisicoAsync(estadoFisicoId);
+            var result = await _herramientaService.GetTotalHerramientasByEstadoFisicoAsync(
+                estadoFisicoId
+            );
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
         [HttpGet("count-herramientas-by-disponibilidad/{disponibilidadId}")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver estadísticas
         public async Task<IActionResult> GetTotalHerramientasByDisponibilidad(int disponibilidadId)
         {
-            var result = await _herramientaService.GetTotalHerramientasByDisponibilidadAsync(disponibilidadId);
+            var result = await _herramientaService.GetTotalHerramientasByDisponibilidadAsync(
+                disponibilidadId
+            );
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
@@ -217,9 +222,13 @@ namespace pyreApi.Controllers
 
         [HttpGet("prestamo/usuario/{idUsuarioResponsable}")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar herramientas en préstamo por usuario
-        public async Task<IActionResult> GetHerramientasEnPrestamoByUsuario(int idUsuarioResponsable)
+        public async Task<IActionResult> GetHerramientasEnPrestamoByUsuario(
+            int idUsuarioResponsable
+        )
         {
-            var result = await _herramientaService.GetHerramientasEnPrestamoByUsuarioAsync(idUsuarioResponsable);
+            var result = await _herramientaService.GetHerramientasEnPrestamoByUsuarioAsync(
+                idUsuarioResponsable
+            );
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
@@ -227,9 +236,18 @@ namespace pyreApi.Controllers
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar herramientas en reparación por proveedor
         public async Task<IActionResult> GetHerramientasEnReparacionByProveedor(int idProveedor)
         {
-            var result = await _herramientaService.GetHerramientasEnReparacionByProveedorAsync(idProveedor);
+            var result = await _herramientaService.GetHerramientasEnReparacionByProveedorAsync(
+                idProveedor
+            );
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
+        [HttpPut("bloqueo/toggle/{id}")]
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede bloquear/desbloquear herramientas
+        public async Task<IActionResult> ToggleBloqueo(int id)
+        {
+            var result = await _herramientaService.ToggleBloqueoAsync(id);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
     }
 }

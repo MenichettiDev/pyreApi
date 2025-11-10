@@ -1,4 +1,6 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Http; // <-- agregado
+using Microsoft.Extensions.DependencyInjection; // <-- agregado
 using Microsoft.Extensions.Logging; // <-- agregado
 using pyreApi.DTOs.Common;
 using pyreApi.DTOs.Herramienta;
@@ -69,30 +71,41 @@ namespace pyreApi.Services
         private readonly AuditorGeneralService _auditorGeneralService;
         private readonly ILogger<HerramientaService> _logger; // <-- agregado
 
+        // private readonly IHttpContextAccessor _httpContextAccessor; // <-- eliminado
+        private readonly IServiceProvider _serviceProvider; // <-- agregado
+
         public HerramientaService(
             HerramientaRepository repository,
             AuditorGeneralService auditorGeneralService,
-            ILogger<HerramientaService> logger // <-- agregado
+            ILogger<HerramientaService> logger, // <-- agregado
+            IServiceProvider serviceProvider // <-- cambiado: inyectamos IServiceProvider en vez de IHttpContextAccessor
         )
             : base(repository)
         {
             _herramientaRepository = repository;
             _auditorGeneralService = auditorGeneralService;
             _logger = logger; // <-- agregado
+            _serviceProvider = serviceProvider; // <-- agregado
+            // _httpContextAccessor = httpContextAccessor; // <-- eliminado
         }
+
+        // Nota: los métodos de "lista" devuelven herramientas en cualquier estado de disponibilidad (1..5)
+        // pero siempre excluyen herramientas inactivas (Activo == false). Los endpoints
+        // específicos como "available" siguen devolviendo solo disponibilidad==1 además de Activo==true.
 
         public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetAllHerramientasAsync()
         {
             try
             {
-                var herramientas = await _repository.GetAllAsync();
+                var herramientas = (await _repository.GetAllAsync()).Where(h => h.Activo).ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
                 {
                     Success = true,
                     Data = herramientaDtos,
-                    Message = "Herramientas obtenidas correctamente",
+                    Message =
+                        "Herramientas obtenidas correctamente (todas las disponibilidades; excluye inactivas)",
                 };
             }
             catch (Exception ex)
@@ -111,7 +124,7 @@ namespace pyreApi.Services
             try
             {
                 var herramienta = await _repository.GetByIdAsync(id);
-                if (herramienta == null)
+                if (herramienta == null || !herramienta.Activo)
                 {
                     return new BaseResponseDto<HerramientaDto>
                     {
@@ -273,6 +286,18 @@ namespace pyreApi.Services
                     };
                 }
 
+                // Nuevo: bloquear cualquier actualización si la herramienta está en estado 'Bloqueada' (5)
+                // pero permitirla si el usuario actual es SuperAdmin
+                if (herramienta.IdDisponibilidad == 5 && !IsCurrentUserSuperAdmin())
+                {
+                    return new BaseResponseDto<HerramientaDto>
+                    {
+                        Success = false,
+                        Message =
+                            "La herramienta está BLOQUEADA y no puede modificarse. Sólo SuperAdmin puede desbloquearla mediante PUT /api/herramienta/bloqueo/toggle/{id}.",
+                    };
+                }
+
                 // Copia del estado original antes de modificar
                 var original = new Herramienta
                 {
@@ -416,7 +441,9 @@ namespace pyreApi.Services
         {
             try
             {
-                var herramientas = await _herramientaRepository.GetAvailableToolsAsync();
+                var herramientas = (await _herramientaRepository.GetAvailableToolsAsync())
+                    .Where(h => h.Activo)
+                    .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
@@ -443,7 +470,9 @@ namespace pyreApi.Services
         {
             try
             {
-                var herramientas = await _herramientaRepository.GetByFamiliaAsync(familiaId);
+                var herramientas = (await _herramientaRepository.GetByFamiliaAsync(familiaId))
+                    .Where(h => h.Activo)
+                    .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
@@ -480,12 +509,14 @@ namespace pyreApi.Services
                 if (pageSize <= 0)
                     pageSize = 10;
 
-                var herramientas = await _herramientaRepository.GetFilteredHerramientasAsync(
-                    codigo,
-                    nombre,
-                    marca,
-                    estado
-                );
+                var herramientas = (
+                    await _herramientaRepository.GetFilteredHerramientasAsync(
+                        codigo,
+                        nombre,
+                        marca,
+                        estado
+                    )
+                ).Where(h => h.Activo); // SOLO activas
 
                 // Ordenar por IdHerramienta en orden descendente
                 var herramientasOrdenadas = herramientas.OrderByDescending(h => h.IdHerramienta);
@@ -514,7 +545,8 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = pagedResponse,
-                    Message = "Herramientas paginadas obtenidas correctamente",
+                    Message =
+                        "Herramientas paginadas obtenidas correctamente (todas las disponibilidades; excluye inactivas)",
                 };
             }
             catch (Exception ex)
@@ -546,6 +578,17 @@ namespace pyreApi.Services
                     };
                 }
 
+                // Nuevo: impedir cambio de estado si está bloqueada, salvo SuperAdmin
+                if (existingHerramienta.IdDisponibilidad == 5 && !IsCurrentUserSuperAdmin())
+                {
+                    return new BaseResponseDto<HerramientaDto>
+                    {
+                        Success = false,
+                        Message =
+                            "La herramienta está BLOQUEADA y no se permiten movimientos/actualizaciones de estado. Sólo SuperAdmin puede desbloquearla mediante PUT /api/herramienta/bloqueo/toggle/{id}.",
+                    };
+                }
+
                 existingHerramienta.Activo = updateStatusDto.Activo;
                 await _repository.UpdateAsync(existingHerramienta);
 
@@ -553,7 +596,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(existingHerramienta),
-                    Message = "Estado de la herramienta actualizado correctamente",
+                    Message = "Herramietna eliminada correctamente",
                 };
             }
             catch (Exception ex)
@@ -573,7 +616,9 @@ namespace pyreApi.Services
         {
             try
             {
-                var herramientas = await _herramientaRepository.GetByEstadoAsync(estadoFisicoId);
+                var herramientas = (await _herramientaRepository.GetByEstadoAsync(estadoFisicoId))
+                    .Where(h => h.Activo)
+                    .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
@@ -598,7 +643,9 @@ namespace pyreApi.Services
         {
             try
             {
-                var herramientas = await _herramientaRepository.GetInRepairAsync();
+                var herramientas = (await _herramientaRepository.GetInRepairAsync())
+                    .Where(h => h.Activo)
+                    .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
@@ -624,7 +671,7 @@ namespace pyreApi.Services
             try
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
-                int total = herramientas.Count();
+                int total = herramientas.Count(h => h.Activo); // SOLO activas
 
                 return new BaseResponseDto<int>
                 {
@@ -644,13 +691,16 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<int>> GetTotalHerramientasByEstadoFisicoAsync(int estadoFisicoId)
+        public async Task<BaseResponseDto<int>> GetTotalHerramientasByEstadoFisicoAsync(
+            int estadoFisicoId
+        )
         {
             try
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
-                // Ajusta el valor de IdEstadoFisico según tu lógica de estado físico
-                int totalPorEstado = herramientas.Count(h => h.IdEstadoFisico == estadoFisicoId);
+                int totalPorEstado = herramientas.Count(h =>
+                    h.IdEstadoFisico == estadoFisicoId && h.Activo
+                );
 
                 return new BaseResponseDto<int>
                 {
@@ -669,13 +719,17 @@ namespace pyreApi.Services
                 };
             }
         }
-        public async Task<BaseResponseDto<int>> GetTotalHerramientasByDisponibilidadAsync(int disponibilidadId)
+
+        public async Task<BaseResponseDto<int>> GetTotalHerramientasByDisponibilidadAsync(
+            int disponibilidadId
+        )
         {
             try
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
-                // Ajusta el valor de IdDisponibilidad según tu lógica de disponibilidad
-                int totalPorDisponibilidad = herramientas.Count(h => h.IdDisponibilidad == disponibilidadId);
+                int totalPorDisponibilidad = herramientas.Count(h =>
+                    h.IdDisponibilidad == disponibilidadId && h.Activo
+                );
 
                 return new BaseResponseDto<int>
                 {
@@ -700,8 +754,7 @@ namespace pyreApi.Services
             try
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
-                // Ajusta el valor de IdDisponibilidad según tu lógica de disponibilidad
-                int totalDisponibles = herramientas.Count(h => h.IdDisponibilidad == 1);
+                int totalDisponibles = herramientas.Count(h => h.IdDisponibilidad == 1 && h.Activo);
 
                 return new BaseResponseDto<int>
                 {
@@ -726,8 +779,7 @@ namespace pyreApi.Services
             try
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
-                // Ajusta el valor de IdDisponibilidad según tu lógica de préstamo
-                int totalEnPrestamo = herramientas.Count(h => h.IdDisponibilidad == 2);
+                int totalEnPrestamo = herramientas.Count(h => h.IdDisponibilidad == 2 && h.Activo);
 
                 return new BaseResponseDto<int>
                 {
@@ -752,8 +804,9 @@ namespace pyreApi.Services
             try
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
-                // Ajusta el valor de IdDisponibilidad según tu lógica de reparación
-                int totalEnReparacion = herramientas.Count(h => h.IdDisponibilidad == 3);
+                int totalEnReparacion = herramientas.Count(h =>
+                    h.IdDisponibilidad == 3 && h.Activo
+                );
 
                 return new BaseResponseDto<int>
                 {
@@ -779,9 +832,11 @@ namespace pyreApi.Services
         {
             try
             {
-                var herramientas = await _herramientaRepository.GetByDisponibilidadAsync(
-                    disponibilidadId
-                );
+                var herramientas = (
+                    await _herramientaRepository.GetByDisponibilidadAsync(disponibilidadId)
+                )
+                    .Where(h => h.Activo)
+                    .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
@@ -817,6 +872,17 @@ namespace pyreApi.Services
                     {
                         Success = false,
                         Message = "Herramienta no encontrada",
+                    };
+                }
+
+                // Nuevo: impedir cualquier cambio de disponibilidad si la herramienta está bloqueada, salvo SuperAdmin
+                if (existingHerramienta.IdDisponibilidad == 5 && !IsCurrentUserSuperAdmin())
+                {
+                    return new BaseResponseDto<HerramientaDto>
+                    {
+                        Success = false,
+                        Message =
+                            "La herramienta está BLOQUEADA y no se pueden cambiar sus movimientos/disponibilidad. Sólo SuperAdmin puede desbloquearla mediante PUT /api/herramienta/bloqueo/toggle/{id}.",
                     };
                 }
 
@@ -856,9 +922,11 @@ namespace pyreApi.Services
                     };
                 }
 
-                var herramientas = await _herramientaRepository.GetByMultipleDisponibilidadAsync(
-                    disponibilidadIds
-                );
+                var herramientas = (
+                    await _herramientaRepository.GetByMultipleDisponibilidadAsync(disponibilidadIds)
+                )
+                    .Where(h => h.Activo)
+                    .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
@@ -885,10 +953,14 @@ namespace pyreApi.Services
         {
             try
             {
-                var herramientas = await _herramientaRepository.GetByMultipleDisponibilidadAsync(
-                    disponibilidadIds,
-                    searchText
-                );
+                var herramientas = (
+                    await _herramientaRepository.GetByMultipleDisponibilidadAsync(
+                        disponibilidadIds,
+                        searchText
+                    )
+                )
+                    .Where(h => h.Activo)
+                    .ToList();
                 var herramientasDto = herramientas.Select(MapToDto);
 
                 var message = string.IsNullOrWhiteSpace(searchText)
@@ -908,7 +980,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener herramientas por disponibilidad",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -929,18 +1001,26 @@ namespace pyreApi.Services
             };
         }
 
-        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetHerramientasEnPrestamoByUsuarioAsync(int idUsuarioResponsable)
+        public async Task<
+            BaseResponseDto<IEnumerable<HerramientaDto>>
+        > GetHerramientasEnPrestamoByUsuarioAsync(int idUsuarioResponsable)
         {
             try
             {
-                var herramientas = await _herramientaRepository.GetHerramientasEnPrestamoByUsuarioAsync(idUsuarioResponsable);
+                var herramientas = (
+                    await _herramientaRepository.GetHerramientasEnPrestamoByUsuarioAsync(
+                        idUsuarioResponsable
+                    )
+                )
+                    .Where(h => h.Activo)
+                    .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
                 {
                     Success = true,
                     Data = herramientaDtos,
-                    Message = "Herramientas en préstamo del usuario obtenidas correctamente"
+                    Message = "Herramientas en préstamo del usuario obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -949,23 +1029,31 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las herramientas en préstamo del usuario",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<HerramientaDto>>> GetHerramientasEnReparacionByProveedorAsync(int idProveedor)
+        public async Task<
+            BaseResponseDto<IEnumerable<HerramientaDto>>
+        > GetHerramientasEnReparacionByProveedorAsync(int idProveedor)
         {
             try
             {
-                var herramientas = await _herramientaRepository.GetHerramientasEnReparacionByProveedorAsync(idProveedor);
+                var herramientas = (
+                    await _herramientaRepository.GetHerramientasEnReparacionByProveedorAsync(
+                        idProveedor
+                    )
+                )
+                    .Where(h => h.Activo)
+                    .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
                 {
                     Success = true,
                     Data = herramientaDtos,
-                    Message = "Herramientas en reparación del proveedor obtenidas correctamente"
+                    Message = "Herramientas en reparación del proveedor obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -974,7 +1062,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las herramientas en reparación del proveedor",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -1061,6 +1149,121 @@ namespace pyreApi.Services
                 h.Marca,
                 h.Serie,
             };
+        }
+
+        public async Task<BaseResponseDto<object>> ToggleBloqueoAsync(int id)
+        {
+            try
+            {
+                // Buscar la herramienta por ID
+                var herramienta = await _herramientaRepository.GetByIdAsync(id);
+
+                if (herramienta == null)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "La herramienta no existe",
+                    };
+                }
+
+                // Verificar el estado actual de disponibilidad
+                var estadoActual = herramienta.IdDisponibilidad;
+                string accion;
+                string estadoAnterior;
+                string estadoNuevo;
+
+                switch (estadoActual)
+                {
+                    case 1: // Disponible - cambiar a Bloqueada
+                        herramienta.IdDisponibilidad = 5;
+                        accion = "bloqueada";
+                        estadoAnterior = "Disponible";
+                        estadoNuevo = "Bloqueada";
+                        break;
+                    case 5: // Bloqueada - cambiar a Disponible
+                        herramienta.IdDisponibilidad = 1;
+                        accion = "desbloqueada";
+                        estadoAnterior = "Bloqueada";
+                        estadoNuevo = "Disponible";
+                        break;
+                    case 2:
+                        return new BaseResponseDto<object>
+                        {
+                            Success = false,
+                            Message =
+                                "No se puede cambiar el estado porque la herramienta está Prestada",
+                        };
+                    case 3:
+                        return new BaseResponseDto<object>
+                        {
+                            Success = false,
+                            Message =
+                                "No se puede cambiar el estado porque la herramienta está en Mantenimiento",
+                        };
+                    case 4:
+                        return new BaseResponseDto<object>
+                        {
+                            Success = false,
+                            Message =
+                                "No se puede cambiar el estado porque la herramienta está Extraviada",
+                        };
+                    default:
+                        return new BaseResponseDto<object>
+                        {
+                            Success = false,
+                            Message =
+                                "No se puede cambiar el estado de la herramienta debido a su estado actual",
+                        };
+                }
+
+                // Guardar cambios
+                await _repository.UpdateAsync(herramienta);
+
+                return new BaseResponseDto<object>
+                {
+                    Success = true,
+                    Message = $"Herramienta {accion} exitosamente",
+                    Data = new
+                    {
+                        idHerramienta = id,
+                        estadoAnterior = estadoAnterior,
+                        estadoActual = estadoNuevo,
+                    },
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<object>
+                {
+                    Success = false,
+                    Message = "Error al cambiar el estado de la herramienta",
+                    Errors = new List<string> { ex.Message },
+                };
+            }
+        }
+
+        // helper para saber si el usuario actual es SuperAdmin
+        private bool IsCurrentUserSuperAdmin()
+        {
+            try
+            {
+                // Intentamos resolver IHttpContextAccessor de manera opcional.
+                var httpContextAccessor = _serviceProvider.GetService<IHttpContextAccessor>();
+                var user = httpContextAccessor?.HttpContext?.User;
+                if (user == null)
+                    return false;
+                // Comprueba rol por IsInRole y por claim "role" en caso de que se use claim directo
+                return user.IsInRole("SuperAdmin")
+                    || user.Claims.Any(c =>
+                        (c.Type == "role" || c.Type.EndsWith("/role")) && c.Value == "SuperAdmin"
+                    )
+                    || user.Claims.Any(c => c.Type == "roles" && c.Value == "SuperAdmin");
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }
