@@ -2,91 +2,38 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http; // <-- agregado
 using Microsoft.Extensions.DependencyInjection; // <-- agregado
 using Microsoft.Extensions.Logging; // <-- agregado
+using Microsoft.EntityFrameworkCore.Storage; // <-- agregado para transacciones
 using pyreApi.DTOs.Common;
 using pyreApi.DTOs.Herramienta;
 using pyreApi.Models;
 using pyreApi.Repositories;
 using pyreApi.Services;
+using pyreApi.Data; // <-- agregado para acceso al contexto
 
 namespace pyreApi.Services
 {
     // Utilidad para comparar dos objetos y obtener solo los campos modificados
-    public static class AuditHelper
-    {
-        public static Dictionary<string, object?> GetChangedFields<T>(T before, T after)
-        {
-            var result = new Dictionary<string, object?>();
-            if (before == null || after == null)
-                return result;
-            var type = typeof(T);
-            foreach (var prop in type.GetProperties())
-            {
-                // Solo campos simples (evitar navegación y colecciones)
-                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
-                    continue;
-                if (
-                    typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType)
-                    && prop.PropertyType != typeof(string)
-                )
-                    continue;
-                var beforeValue = prop.GetValue(before);
-                var afterValue = prop.GetValue(after);
-                if (!Equals(beforeValue, afterValue))
-                {
-                    result[prop.Name] = afterValue;
-                }
-            }
-            return result;
-        }
 
-        public static Dictionary<string, object?> GetOriginalFields<T>(T before, T after)
-        {
-            var result = new Dictionary<string, object?>();
-            if (before == null || after == null)
-                return result;
-            var type = typeof(T);
-            foreach (var prop in type.GetProperties())
-            {
-                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
-                    continue;
-                if (
-                    typeof(System.Collections.IEnumerable).IsAssignableFrom(prop.PropertyType)
-                    && prop.PropertyType != typeof(string)
-                )
-                    continue;
-                var beforeValue = prop.GetValue(before);
-                var afterValue = prop.GetValue(after);
-                if (!Equals(beforeValue, afterValue))
-                {
-                    result[prop.Name] = beforeValue;
-                }
-            }
-            return result;
-        }
-    }
 
     public class HerramientaService : GenericService<Herramienta>
     {
         private readonly HerramientaRepository _herramientaRepository;
-        private readonly AuditorGeneralService _auditorGeneralService;
-        private readonly ILogger<HerramientaService> _logger; // <-- agregado
-
-        // private readonly IHttpContextAccessor _httpContextAccessor; // <-- eliminado
-        private readonly IServiceProvider _serviceProvider; // <-- agregado
+        private readonly ILogger<HerramientaService> _logger;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly ApplicationDbContext _context; // <-- agregado
 
         public HerramientaService(
             HerramientaRepository repository,
-            AuditorGeneralService auditorGeneralService,
-            ILogger<HerramientaService> logger, // <-- agregado
-            IServiceProvider serviceProvider // <-- cambiado: inyectamos IServiceProvider en vez de IHttpContextAccessor
+            ILogger<HerramientaService> logger,
+            IServiceProvider serviceProvider,
+            ApplicationDbContext context // <-- agregado
         )
             : base(repository)
         {
             _herramientaRepository = repository;
-            _auditorGeneralService = auditorGeneralService;
-            _logger = logger; // <-- agregado
-            _serviceProvider = serviceProvider; // <-- agregado
-            // _httpContextAccessor = httpContextAccessor; // <-- eliminado
+            _logger = logger;
+            _serviceProvider = serviceProvider;
+            _context = context; // <-- agregado
         }
 
         // Nota: los métodos de "lista" devuelven herramientas en cualquier estado de disponibilidad (1..5)
@@ -155,6 +102,7 @@ namespace pyreApi.Services
             CreateHerramientaDto createDto
         )
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 _logger.LogInformation(
@@ -181,47 +129,15 @@ namespace pyreApi.Services
                     result.Codigo
                 );
 
-                // Registrar auditoría de INSERT
-                // Serializar todos los campos simples relevantes para INSERT
-                var insertData = new
-                {
-                    result.IdHerramienta,
-                    result.NombreHerramienta,
-                    result.Codigo,
-                    result.CostoDolares,
-                    result.IdFamilia,
-                    result.IdEstadoFisico,
-                    result.IdDisponibilidad,
-                    result.IdPlanta,
-                    result.Tipo,
-                    result.Marca,
-                    result.Serie,
-                    result.FechaDeIngreso,
-                    result.UbicacionFisica,
-                    result.Ubicacion,
-                    result.Activo,
-                    result.DiasAlerta,
-                };
+                // Confirmar transacción
+                await transaction.CommitAsync();
 
-                var auditInsertPayload = new AuditorGeneral
-                {
-                    IdUsuario = 1, // Reemplazar con el ID del usuario actual
-                    Entidad = nameof(Herramienta),
-                    IdEntidad = result.IdHerramienta,
-                    Accion = AccionAuditoria.INSERT,
-                    ValorAnterior = null,
-                    ValorNuevo = JsonSerializer.Serialize(insertData),
-                    Observaciones = "Herramienta creada correctamente",
-                };
-
-                _logger.LogDebug(
-                    "CreateHerramientaAsync - Enviando auditoría INSERT: {audit}",
-                    JsonSerializer.Serialize(auditInsertPayload)
+                _logger.LogInformation(
+                    "CreateHerramientaAsync - Transaction committed successfully. IdHerramienta={id}",
+                    result.IdHerramienta
                 );
 
-                await _auditorGeneralService.RegisterAuditAsync(auditInsertPayload);
-
-                // Mapear los valores adicionales para la respuesta
+                // Mapear los valores adicionales para la respuesta (fuera de la transacción)
                 var herramientaDto = MapToDto(result);
                 herramientaDto.NombreFamilia = await _herramientaRepository.GetFamiliaNombre(
                     result.IdFamilia
@@ -246,6 +162,7 @@ namespace pyreApi.Services
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(
                     ex,
                     "CreateHerramientaAsync - Error al crear herramienta. DTO: {dto}",
@@ -264,6 +181,7 @@ namespace pyreApi.Services
             UpdateHerramientaDto updateDto
         )
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 _logger.LogInformation(
@@ -275,6 +193,7 @@ namespace pyreApi.Services
                 var herramienta = await _repository.GetByIdAsync(updateDto.IdHerramienta);
                 if (herramienta == null)
                 {
+                    await transaction.RollbackAsync();
                     _logger.LogWarning(
                         "UpdateHerramientaAsync - Herramienta no encontrada. Id={id}",
                         updateDto.IdHerramienta
@@ -290,6 +209,7 @@ namespace pyreApi.Services
                 // pero permitirla si el usuario actual es SuperAdmin
                 if (herramienta.IdDisponibilidad == 5 && !IsCurrentUserSuperAdmin())
                 {
+                    await transaction.RollbackAsync();
                     return new BaseResponseDto<HerramientaDto>
                     {
                         Success = false,
@@ -319,7 +239,6 @@ namespace pyreApi.Services
                     DiasAlerta = herramienta.DiasAlerta,
                 };
 
-                // Loguear solo campos simples para evitar ciclos de serialización
                 _logger.LogDebug(
                     "UpdateHerramientaAsync - Original state (shallow): {original}",
                     JsonSerializer.Serialize(ShallowTool(original))
@@ -330,7 +249,6 @@ namespace pyreApi.Services
                 // Map other fields from el DTO primero
                 MapFromUpdateDto(updateDto, herramienta);
 
-                // Loguear solo campos simples para evitar ciclos de serialización
                 _logger.LogDebug(
                     "UpdateHerramientaAsync - State after mapping DTO (shallow): {after}",
                     JsonSerializer.Serialize(ShallowTool(herramienta))
@@ -353,59 +271,12 @@ namespace pyreApi.Services
                     );
                 }
 
-                // Obtener los cambios antes de guardar
-                var cambiosAntes = AuditHelper.GetOriginalFields(original, herramienta);
-                var cambiosDespues = AuditHelper.GetChangedFields(original, herramienta);
-
-                _logger.LogDebug(
-                    "UpdateHerramientaAsync - Cambios antes (original values): {cambiosAntes}",
-                    JsonSerializer.Serialize(cambiosAntes)
-                );
-                _logger.LogDebug(
-                    "UpdateHerramientaAsync - Cambios despues (new values): {cambiosDespues}",
-                    JsonSerializer.Serialize(cambiosDespues)
-                );
-
-                // Solo registrar auditoría si hay cambios
-                if (cambiosAntes.Count > 0 && cambiosDespues.Count > 0)
-                {
-                    var auditPayload = new AuditorGeneral
-                    {
-                        IdUsuario = 1, // Reemplazar con el ID del usuario actual
-                        Entidad = nameof(Herramienta),
-                        IdEntidad = herramienta.IdHerramienta,
-                        Accion = AccionAuditoria.UPDATE,
-                        ValorAnterior = JsonSerializer.Serialize(cambiosAntes),
-                        ValorNuevo = JsonSerializer.Serialize(cambiosDespues),
-                        Observaciones = "Herramienta actualizada correctamente",
-                    };
-
-                    // Log adicional: número y nombre de la acción + valores exactos que se enviarán
-                    _logger.LogDebug(
-                        "UpdateHerramientaAsync - Audit payload details: AccionNumber={num}, AccionString={str}, ValorAnterior={va}, ValorNuevo={vn}",
-                        (int)auditPayload.Accion,
-                        auditPayload.Accion.ToString(),
-                        auditPayload.ValorAnterior,
-                        auditPayload.ValorNuevo
-                    );
-
-                    _logger.LogInformation(
-                        "UpdateHerramientaAsync - Enviando auditoría UPDATE: {audit}",
-                        JsonSerializer.Serialize(auditPayload)
-                    );
-
-                    await _auditorGeneralService.RegisterAuditAsync(auditPayload);
-                }
-                else
-                {
-                    _logger.LogInformation(
-                        "UpdateHerramientaAsync - No se registró auditoría porque no se detectaron cambios. IdHerramienta={id}",
-                        herramienta.IdHerramienta
-                    );
-                }
 
                 // Guardar cambios después del registro de auditoría
                 await _repository.UpdateAsync(herramienta);
+
+                // Confirmar transacción
+                await transaction.CommitAsync();
 
                 _logger.LogInformation(
                     "UpdateHerramientaAsync - Actualización persistida. IdHerramienta={id}",
@@ -423,6 +294,7 @@ namespace pyreApi.Services
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(
                     ex,
                     "UpdateHerramientaAsync - Error al actualizar herramienta. DTO: {dto}",
