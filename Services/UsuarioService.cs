@@ -250,14 +250,16 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<Usuario>> UpdateUsuarioAsync(UpdateUsuarioDto updateDto)
+        public async Task<BaseResponseDto<UsuarioResponseDto>> UpdateUsuarioAsync(
+            UpdateUsuarioDto updateDto
+        )
         {
             try
             {
-                var existingUser = await _usuarioRepository.GetByIdAsync(updateDto.Id);
+                var existingUser = await _usuarioRepository.GetByIdWithRolAsync(updateDto.Id);
                 if (existingUser == null)
                 {
-                    return new BaseResponseDto<Usuario>
+                    return new BaseResponseDto<UsuarioResponseDto>
                     {
                         Success = false,
                         Message =
@@ -265,50 +267,54 @@ namespace pyreApi.Services
                     };
                 }
 
-                // --- Nuevas validaciones de contexto ---
                 var modifierId = updateDto.IdUsuarioModifica;
 
-                // 1) Un usuario no puede cambiar su propio rol
-                if (
-                    modifierId == existingUser.Id
-                    && updateDto.RolId.HasValue
-                    && updateDto.RolId.Value != existingUser.RolId
-                )
-                {
-                    return new BaseResponseDto<Usuario>
-                    {
-                        Success = false,
-                        Message = "No está permitido que un usuario cambie su propio rol.",
-                    };
-                }
-
-                // 2) Un SuperAdmin no puede darse de baja a sí mismo (AccedeAlSistema = false)
+                // 2️ Un SuperAdmin no puede darse de baja a sí mismo
                 if (
                     modifierId == existingUser.Id
                     && updateDto.AccedeAlSistema.HasValue
                     && updateDto.AccedeAlSistema.Value == false
                 )
                 {
-                    var rolNombre = existingUser.Rol?.NombreRol ?? string.Empty;
-                    if (string.Equals(rolNombre, "superadmin", StringComparison.OrdinalIgnoreCase))
+                    // Necesitamos cargar la relación Rol si no está cargada
+                    if (existingUser.Rol == null)
                     {
-                        return new BaseResponseDto<Usuario>
+                        var reloadedUser = await _usuarioRepository.GetByIdWithRolAsync(
+                            existingUser.Id
+                        );
+                        if (reloadedUser != null)
                         {
-                            Success = false,
-                            Message = "Un SuperAdmin no puede darse de baja a sí mismo.",
-                        };
+                            existingUser = reloadedUser;
+                        }
+                    }
+
+                    if (existingUser.Rol?.NombreRol != null)
+                    {
+                        var rolNombre = existingUser.Rol.NombreRol;
+                        if (
+                            string.Equals(
+                                rolNombre,
+                                "superadmin",
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                        )
+                        {
+                            return new BaseResponseDto<UsuarioResponseDto>
+                            {
+                                Success = false,
+                                Message = "Un SuperAdmin no puede darse de baja a sí mismo.",
+                            };
+                        }
                     }
                 }
 
-                // --- Validaciones de unicidad ---
-
-                // Validar email único si se modifica
+                // 3️ Validar email único si se modifica
                 if (!string.IsNullOrEmpty(updateDto.Email) && updateDto.Email != existingUser.Email)
                 {
                     var existingEmail = await _usuarioRepository.GetByEmailAsync(updateDto.Email);
                     if (existingEmail != null)
                     {
-                        return new BaseResponseDto<Usuario>
+                        return new BaseResponseDto<UsuarioResponseDto>
                         {
                             Success = false,
                             Message =
@@ -317,16 +323,15 @@ namespace pyreApi.Services
                     }
                 }
 
-                // ✅ Validar legajo único si se modifica
+                // 4️ Validar legajo único si se modifica
                 if (
                     !string.IsNullOrEmpty(updateDto.Legajo)
                     && updateDto.Legajo != existingUser.Legajo
                 )
                 {
-                    // Validar longitud del legajo
                     if (updateDto.Legajo.Length > 5)
                     {
-                        return new BaseResponseDto<Usuario>
+                        return new BaseResponseDto<UsuarioResponseDto>
                         {
                             Success = false,
                             Message =
@@ -339,7 +344,7 @@ namespace pyreApi.Services
                     );
                     if (existingLegajo != null)
                     {
-                        return new BaseResponseDto<Usuario>
+                        return new BaseResponseDto<UsuarioResponseDto>
                         {
                             Success = false,
                             Message =
@@ -350,7 +355,7 @@ namespace pyreApi.Services
                     existingUser.Legajo = updateDto.Legajo;
                 }
 
-                // --- Asignación de valores actualizados ---
+                // 5️ Actualizar campos básicos
                 if (!string.IsNullOrEmpty(updateDto.Nombre))
                     existingUser.Nombre = updateDto.Nombre;
 
@@ -363,8 +368,29 @@ namespace pyreApi.Services
                 if (updateDto.Telefono != null)
                     existingUser.Telefono = updateDto.Telefono;
 
-                if (updateDto.RolId.HasValue)
+                // Solo actualizar el rol si realmente cambió Y no es el mismo usuario
+                if (updateDto.RolId.HasValue && existingUser.RolId != updateDto.RolId.Value)
+                {
+                    if (modifierId == existingUser.Id)
+                    {
+                        return new BaseResponseDto<UsuarioResponseDto>
+                        {
+                            Success = false,
+                            Message = "No está permitido que un usuario cambie su propio rol.",
+                        };
+                    }
                     existingUser.RolId = updateDto.RolId.Value;
+                }
+
+                // Verificación de seguridad para evitar advertencias de null reference
+                if (existingUser == null)
+                {
+                    return new BaseResponseDto<UsuarioResponseDto>
+                    {
+                        Success = false,
+                        Message = "Error inesperado: no se pudo cargar el usuario.",
+                    };
+                }
 
                 if (updateDto.AccedeAlSistema.HasValue)
                     existingUser.AccedeAlSistema = updateDto.AccedeAlSistema.Value;
@@ -372,15 +398,36 @@ namespace pyreApi.Services
                 if (updateDto.Avatar != null)
                     existingUser.Avatar = updateDto.Avatar;
 
+                // Actualizar contraseña si se envía en el DTO
+                if (!string.IsNullOrEmpty(updateDto.Password))
+                {
+                    // Solo hasheamos y guardamos la contraseña si el usuario puede acceder al sistema
+                    if (existingUser.AccedeAlSistema)
+                    {
+                        existingUser.PasswordHash = HashPassword(updateDto.Password);
+                    }
+                    else
+                    {
+                        // Si se envía contraseña pero el usuario no tiene acceso, la ignoramos y logueamos
+                        _logger.LogWarning(
+                            "Se recibió una contraseña para el usuario {Id} pero 'AccedeAlSistema' es false. Ignorando cambio de contraseña.",
+                            existingUser.Id
+                        );
+                    }
+                }
                 existingUser.IdUsuarioModifica = updateDto.IdUsuarioModifica;
                 existingUser.FechaModificacion = DateTime.UtcNow;
 
                 await _usuarioRepository.UpdateAsync(existingUser);
 
-                return new BaseResponseDto<Usuario>
+                // Cargar el usuario actualizado con sus relaciones para el DTO de respuesta
+                var updatedUser = await _usuarioRepository.GetByIdWithRolAsync(existingUser.Id);
+                var responseDto = MapToResponseDto(updatedUser ?? existingUser);
+
+                return new BaseResponseDto<UsuarioResponseDto>
                 {
                     Success = true,
-                    Data = existingUser,
+                    Data = responseDto,
                     Message =
                         $"Los datos del usuario {existingUser.Nombre} {existingUser.Apellido} han sido actualizados correctamente.",
                 };
@@ -388,7 +435,7 @@ namespace pyreApi.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al actualizar usuario: {Id}", updateDto.Id);
-                return new BaseResponseDto<Usuario>
+                return new BaseResponseDto<UsuarioResponseDto>
                 {
                     Success = false,
                     Message =

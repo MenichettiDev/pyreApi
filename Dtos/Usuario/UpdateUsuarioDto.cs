@@ -32,5 +32,8 @@ namespace pyreApi.DTOs.Usuario
 
         [Required(ErrorMessage = "Debe especificar el ID del usuario que modifica.")]
         public int IdUsuarioModifica { get; set; }
+
+        [MaxLength(255, ErrorMessage = "La contraseña no puede superar los 255 caracteres.")]
+        public string? Password { get; set; }
     }
 }

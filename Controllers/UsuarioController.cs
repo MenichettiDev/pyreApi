@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using pyreApi.DTOs.Usuario;
 using pyreApi.Services;
 
@@ -26,20 +26,34 @@ namespace pyreApi.Controllers
             [FromQuery] bool? estado = null,
             [FromQuery] string? nombre = null,
             [FromQuery] string? apellido = null,
-            [FromQuery(Name = "rol")] int? rolId = null)
+            [FromQuery(Name = "rol")] int? rolId = null
+        )
         {
             // Validar longitud del legajo si se proporcionó
             if (!string.IsNullOrWhiteSpace(legajo) && legajo.Length > 5)
             {
-                return BadRequest(new
-                {
-                    Success = false,
-                    Message = "El legajo no puede tener más de 5 caracteres.",
-                    Errors = new List<string> { "Legajo excede la longitud máxima permitida (5 caracteres)." }
-                });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El legajo no puede tener más de 5 caracteres.",
+                        Errors = new List<string>
+                        {
+                            "Legajo excede la longitud máxima permitida (5 caracteres).",
+                        },
+                    }
+                );
             }
 
-            var response = await _usuarioService.GetAllUsuariosPaginatedAsync(page, pageSize, legajo, estado, nombre, apellido, rolId);
+            var response = await _usuarioService.GetAllUsuariosPaginatedAsync(
+                page,
+                pageSize,
+                legajo,
+                estado,
+                nombre,
+                apellido,
+                rolId
+            );
             if (response.Success)
                 return Ok(response);
             return BadRequest(response);
@@ -61,7 +75,13 @@ namespace pyreApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El ID del usuario debe ser un número válido mayor a 0.",
+                    }
+                );
             }
 
             var response = await _usuarioService.GetUsuarioByIdAsync(id);
@@ -76,7 +96,9 @@ namespace pyreApi.Controllers
         {
             if (string.IsNullOrWhiteSpace(dni))
             {
-                return BadRequest(new { Success = false, Message = "El DNI es requerido y no puede estar vacío." });
+                return BadRequest(
+                    new { Success = false, Message = "El DNI es requerido y no puede estar vacío." }
+                );
             }
 
             var response = await _usuarioService.GetByDniAsync(dni);
@@ -102,27 +124,34 @@ namespace pyreApi.Controllers
             // Validar longitud del legajo
             if (!string.IsNullOrEmpty(createDto.Legajo) && createDto.Legajo.Length > 5)
             {
-                return BadRequest(new
-                {
-                    Success = false,
-                    Message = "El legajo no puede tener más de 5 caracteres.",
-                    Errors = new List<string> { "Legajo excede la longitud máxima permitida (5 caracteres)." }
-                });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El legajo no puede tener más de 5 caracteres.",
+                        Errors = new List<string>
+                        {
+                            "Legajo excede la longitud máxima permitida (5 caracteres).",
+                        },
+                    }
+                );
             }
 
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
+                var errors = ModelState
+                    .Values.SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage)
                     .ToList();
 
-                return BadRequest(new
-                {
-                    Success = false,
-                    Message = "Los datos proporcionados no son válidos. Por favor, revise la información ingresada.",
-                    Errors = errors
-                });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "Los datos proporcionados no son válidos. Por favor, revise la información ingresada.",
+                        Errors = errors,
+                    }
+                );
             }
 
             var response = await _usuarioService.CreateUsuarioAsync(createDto);
@@ -137,7 +166,13 @@ namespace pyreApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El ID del usuario debe ser un número válido mayor a 0.",
+                    }
+                );
             }
 
             // Obtener el ID del usuario autenticado
@@ -145,29 +180,33 @@ namespace pyreApi.Controllers
             int idUsuarioModifica = userIdClaim != null ? int.Parse(userIdClaim.Value) : 0;
             updateDto.IdUsuarioModifica = idUsuarioModifica;
 
-            // Evitar que el usuario cambie su propio rol
-            if (idUsuarioModifica == id && updateDto.RolId.HasValue)
-            {
-                return BadRequest(new { Success = false, Message = "No está permitido que un usuario cambie su propio rol." });
-            }
+            // La validación del cambio de rol se maneja en el servicio
 
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
+                var errors = ModelState
+                    .Values.SelectMany(v => v.Errors)
                     .Select(e => e.ErrorMessage)
                     .ToList();
 
-                return BadRequest(new
-                {
-                    Success = false,
-                    Message = "Los datos proporcionados para la actualización no son válidos. Por favor, revise la información ingresada.",
-                    Errors = errors
-                });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "Los datos proporcionados para la actualización no son válidos. Por favor, revise la información ingresada.",
+                        Errors = errors,
+                    }
+                );
             }
 
             if (id != updateDto.Id)
-                return BadRequest(new { Success = false, Message = "El ID proporcionado en la URL no coincide con el ID del usuario a actualizar." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El ID proporcionado en la URL no coincide con el ID del usuario a actualizar.",
+                    }
+                );
 
             updateDto.IdUsuarioModifica = idUsuarioModifica;
 
@@ -179,24 +218,47 @@ namespace pyreApi.Controllers
 
         [HttpPost("validate")]
         [AllowAnonymous] // Permitir acceso público para autenticación
-        public async Task<IActionResult> ValidateCredentials([FromBody] LoginRequestDto loginRequest)
+        public async Task<IActionResult> ValidateCredentials(
+            [FromBody] LoginRequestDto loginRequest
+        )
         {
             if (string.IsNullOrWhiteSpace(loginRequest.Legajo))
             {
-                return BadRequest(new { Success = false, Message = "El legajo es requerido para la validación de credenciales." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El legajo es requerido para la validación de credenciales.",
+                    }
+                );
             }
 
             if (loginRequest.Legajo.Length > 5)
             {
-                return BadRequest(new { Success = false, Message = "El legajo no puede tener más de 5 caracteres." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El legajo no puede tener más de 5 caracteres.",
+                    }
+                );
             }
 
             if (string.IsNullOrWhiteSpace(loginRequest.Password))
             {
-                return BadRequest(new { Success = false, Message = "La contraseña es requerida para la validación de credenciales." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "La contraseña es requerida para la validación de credenciales.",
+                    }
+                );
             }
 
-            var response = await _usuarioService.ValidateCredentialsAsync(loginRequest.Legajo, loginRequest.Password);
+            var response = await _usuarioService.ValidateCredentialsAsync(
+                loginRequest.Legajo,
+                loginRequest.Password
+            );
             if (response.Success)
                 return Ok(response);
             return Unauthorized(response);
@@ -208,7 +270,13 @@ namespace pyreApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El ID del usuario debe ser un número válido mayor a 0.",
+                    }
+                );
             }
 
             // Obtener el ID del usuario autenticado
@@ -218,7 +286,13 @@ namespace pyreApi.Controllers
             // Evitar que el usuario se elimine a sí mismo
             if (idUsuarioActual == id)
             {
-                return BadRequest(new { Success = false, Message = "No está permitido que un usuario se elimine a sí mismo." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "No está permitido que un usuario se elimine a sí mismo.",
+                    }
+                );
             }
 
             var response = await _usuarioService.DeleteAsync(id);
@@ -237,7 +311,13 @@ namespace pyreApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest(new { Success = false, Message = "El ID del usuario debe ser un número válido mayor a 0." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El ID del usuario debe ser un número válido mayor a 0.",
+                    }
+                );
             }
 
             // Obtener el ID del usuario autenticado
@@ -247,14 +327,23 @@ namespace pyreApi.Controllers
             // Evitar que el usuario cambie su propio estado activo
             if (idUsuarioActual == id)
             {
-                return BadRequest(new { Success = false, Message = "No está permitido que un usuario cambie su propio estado activo." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "No está permitido que un usuario cambie su propio estado activo.",
+                    }
+                );
             }
 
             var response = await _usuarioService.ToggleActivoAsync(id);
             if (response.Success)
                 return Ok(response);
 
-            if (response.Message?.Contains("No se encontró") == true || response.Message?.Contains("no encontrado") == true)
+            if (
+                response.Message?.Contains("No se encontró") == true
+                || response.Message?.Contains("no encontrado") == true
+            )
                 return NotFound(response);
 
             return BadRequest(response);
