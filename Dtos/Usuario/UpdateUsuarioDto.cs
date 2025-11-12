@@ -28,5 +28,9 @@ namespace pyreApi.DTOs.Usuario
         public string? Avatar { get; set; }
 
         public int IdUsuarioModifica { get; set; }
+
+        // Campo agregado para actualizar contraseña
+        [MaxLength(100)]
+        public string? Password { get; set; }
     }
 }

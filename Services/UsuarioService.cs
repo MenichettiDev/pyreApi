@@ -303,15 +303,29 @@ namespace pyreApi.Services
                 if (updateDto.Avatar != null)
                     existingUser.Avatar = updateDto.Avatar;
 
+                // Actualizar contraseña si se proporciona
+                if (!string.IsNullOrWhiteSpace(updateDto.Password))
+                {
+                    existingUser.PasswordHash = HashPassword(updateDto.Password);
+                    _logger.LogInformation("Contraseña actualizada para usuario ID: {UserId}", existingUser.Id);
+                }
+
                 existingUser.IdUsuarioModifica = updateDto.IdUsuarioModifica;
                 existingUser.FechaModificacion = DateTime.UtcNow;
 
                 await _usuarioRepository.UpdateAsync(existingUser);
+
+                var mensaje = $"Los datos del usuario {existingUser.Nombre} {existingUser.Apellido} han sido actualizados correctamente.";
+                if (!string.IsNullOrWhiteSpace(updateDto.Password))
+                {
+                    mensaje += " La contraseña también ha sido actualizada.";
+                }
+
                 return new BaseResponseDto<Usuario>
                 {
                     Success = true,
                     Data = existingUser,
-                    Message = $"Los datos del usuario {existingUser.Nombre} {existingUser.Apellido} han sido actualizados correctamente."
+                    Message = mensaje
                 };
             }
             catch (Exception ex)
