@@ -165,7 +165,7 @@ namespace pyreApi.Repositories
 
             return await query
                 .OrderBy(h => h.NombreHerramienta)
-                .Take(15) // Límite de 15 herramientas
+                .Take(5) // Límite de 15 herramientas
                 .ToListAsync();
         }
 
