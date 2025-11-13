@@ -207,6 +207,7 @@ namespace pyreApi.Services
                 IdObra = obra.IdObra,
                 Codigo = obra.Codigo,
                 NombreObra = obra.NombreObra,
+                Descripcion = obra.Descripcion,
                 Ubicacion = obra.Ubicacion,
                 FechaInicio = obra.FechaInicio,
                 FechaFin = obra.FechaFin
@@ -220,6 +221,7 @@ namespace pyreApi.Services
                 Codigo = createDto.Codigo,
                 NombreObra = createDto.NombreObra,
                 Ubicacion = createDto.Ubicacion,
+                Descripcion = createDto.Descripcion,
                 FechaInicio = createDto.FechaInicio,
                 FechaFin = createDto.FechaFin
             };
@@ -230,6 +232,7 @@ namespace pyreApi.Services
             obra.Codigo = updateDto.Codigo;
             obra.NombreObra = updateDto.NombreObra;
             obra.Ubicacion = updateDto.Ubicacion;
+            obra.Descripcion = updateDto.Descripcion;
             obra.FechaInicio = updateDto.FechaInicio;
             obra.FechaFin = updateDto.FechaFin;
         }

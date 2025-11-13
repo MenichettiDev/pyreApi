@@ -16,6 +16,8 @@ namespace pyreApi.Models
         public string NombreObra { get; set; } = string.Empty;
 
         [MaxLength(200)]
+        public string? Descripcion { get; set; }
+        [MaxLength(200)]
         public string? Ubicacion { get; set; }
 
         public DateOnly? FechaInicio { get; set; }

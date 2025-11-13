@@ -5,6 +5,7 @@ namespace pyreApi.DTOs.Obra
         public int IdObra { get; set; }
         public string Codigo { get; set; } = string.Empty;
         public string NombreObra { get; set; } = string.Empty;
+        public string? Descripcion { get; set; }
         public string? Ubicacion { get; set; }
         public DateOnly? FechaInicio { get; set; }
         public DateOnly? FechaFin { get; set; }

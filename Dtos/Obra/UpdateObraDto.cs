@@ -15,6 +15,8 @@ namespace pyreApi.DTOs.Obra
         [MaxLength(150, ErrorMessage = "El nombre de la obra no puede exceder 150 caracteres")]
         public string NombreObra { get; set; } = string.Empty;
 
+        [MaxLength(200, ErrorMessage = "La descripción no puede exceder 200 caracteres")]
+        public string? Descripcion { get; set; }
         [MaxLength(200, ErrorMessage = "La ubicación no puede exceder 200 caracteres")]
         public string? Ubicacion { get; set; }
 
