@@ -7,15 +7,19 @@ namespace pyreApi.Services
 {
     public class ObraService : GenericService<Obra>
     {
-        public ObraService(GenericRepository<Obra> repository) : base(repository)
+        private readonly GenericRepository<Cliente> _clienteRepository;
+
+        public ObraService(GenericRepository<Obra> repository, GenericRepository<Cliente> clienteRepository) : base(repository)
         {
+            _clienteRepository = clienteRepository;
         }
 
         public async Task<BaseResponseDto<IEnumerable<ObraDto>>> GetAllObrasAsync()
         {
             try
             {
-                var obras = await _repository.GetAllAsync();
+                var obras = (await _repository.GetAllAsync()).ToList();
+                await PopulateClientesAsync(obras);
                 var obraDtos = obras.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<ObraDto>>
@@ -49,6 +53,8 @@ namespace pyreApi.Services
                         Message = "Obra no encontrada"
                     };
                 }
+
+                obra.Cliente = await _clienteRepository.GetByIdAsync(obra.IdCliente);
 
                 return new BaseResponseDto<ObraDto>
                 {
@@ -134,6 +140,7 @@ namespace pyreApi.Services
             string? nombre = null,
             string? ubicacion = null,
             string? codigo = null,
+            int? idCliente = null,
             bool? activo = null)
         {
             try
@@ -141,7 +148,8 @@ namespace pyreApi.Services
                 if (page <= 0) page = 1;
                 if (pageSize <= 0) pageSize = 10;
 
-                var obras = await _repository.GetAllAsync();
+                var obras = (await _repository.GetAllAsync()).ToList();
+                await PopulateClientesAsync(obras);
                 IEnumerable<Obra> filtered = obras;
 
                 if (!string.IsNullOrWhiteSpace(nombre))
@@ -160,6 +168,11 @@ namespace pyreApi.Services
                 {
                     var codigoTrim = codigo.Trim().ToLowerInvariant();
                     filtered = filtered.Where(o => (o.Codigo ?? string.Empty).ToLowerInvariant().Contains(codigoTrim));
+                }
+
+                if (idCliente.HasValue)
+                {
+                    filtered = filtered.Where(o => o.IdCliente == idCliente.Value);
                 }
 
                 var totalRecords = filtered.Count();
@@ -200,11 +213,24 @@ namespace pyreApi.Services
             }
         }
 
+        private async Task PopulateClientesAsync(List<Obra> obras)
+        {
+            var clientes = (await _clienteRepository.GetAllAsync()).ToDictionary(c => c.IdCliente);
+
+            foreach (var obra in obras)
+            {
+                clientes.TryGetValue(obra.IdCliente, out var cliente);
+                obra.Cliente = cliente;
+            }
+        }
+
         private ObraDto MapToDto(Obra obra)
         {
             return new ObraDto
             {
                 IdObra = obra.IdObra,
+                IdCliente = obra.IdCliente,
+                ClienteNombre = obra.Cliente?.Nombre,
                 Codigo = obra.Codigo,
                 NombreObra = obra.NombreObra,
                 Ubicacion = obra.Ubicacion,
@@ -217,6 +243,7 @@ namespace pyreApi.Services
         {
             return new Obra
             {
+                IdCliente = createDto.IdCliente,
                 Codigo = createDto.Codigo,
                 NombreObra = createDto.NombreObra,
                 Ubicacion = createDto.Ubicacion,
@@ -227,6 +254,7 @@ namespace pyreApi.Services
 
         private void MapFromUpdateDto(UpdateObraDto updateDto, Obra obra)
         {
+            obra.IdCliente = updateDto.IdCliente;
             obra.Codigo = updateDto.Codigo;
             obra.NombreObra = updateDto.NombreObra;
             obra.Ubicacion = updateDto.Ubicacion;

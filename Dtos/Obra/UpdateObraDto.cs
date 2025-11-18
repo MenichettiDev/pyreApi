@@ -21,5 +21,8 @@ namespace pyreApi.DTOs.Obra
         public DateOnly? FechaInicio { get; set; }
 
         public DateOnly? FechaFin { get; set; }
+
+        [Required(ErrorMessage = "El cliente es requerido")]
+        public int IdCliente { get; set; }
     }
 }

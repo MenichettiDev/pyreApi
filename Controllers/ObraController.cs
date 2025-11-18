@@ -24,9 +24,10 @@ namespace pyreApi.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? nombre = null,
             [FromQuery] string? ubicacion = null,
-            [FromQuery] string? codigo = null)
+            [FromQuery] string? codigo = null,
+            [FromQuery] int? idCliente = null)
         {
-            var result = await _obraService.GetAllObrasPaginatedAsync(page, pageSize, nombre, ubicacion, codigo);
+            var result = await _obraService.GetAllObrasPaginatedAsync(page, pageSize, nombre, ubicacion, codigo, idCliente);
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
