@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using pyreApi.DTOs.Cliente;
 using pyreApi.Services;
 
@@ -24,9 +24,16 @@ namespace pyreApi.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? nombre = null,
             [FromQuery] string? cuit = null,
-            [FromQuery] bool? activo = null)
+            [FromQuery] bool? activo = null
+        )
         {
-            var result = await _clienteService.GetAllClientesPaginatedAsync(page, pageSize, nombre, cuit, activo);
+            var result = await _clienteService.GetAllClientesPaginatedAsync(
+                page,
+                pageSize,
+                nombre,
+                cuit,
+                activo
+            );
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
@@ -46,7 +53,9 @@ namespace pyreApi.Controllers
                 return BadRequest(ModelState);
 
             var result = await _clienteService.CreateClienteAsync(createDto);
-            return result.Success ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdCliente }, result) : BadRequest(result);
+            return result.Success
+                ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdCliente }, result)
+                : BadRequest(result);
         }
 
         [HttpPut("{id}")]
@@ -85,7 +94,13 @@ namespace pyreApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest(new { Success = false, Message = "El ID del cliente debe ser un número válido mayor a 0." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El ID del cliente debe ser un número válido mayor a 0.",
+                    }
+                );
             }
 
             var result = await _clienteService.ToggleActivoAsync(id);

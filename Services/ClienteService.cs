@@ -1,5 +1,5 @@
-using pyreApi.DTOs.Common;
 using pyreApi.DTOs.Cliente;
+using pyreApi.DTOs.Common;
 using pyreApi.Models;
 using pyreApi.Repositories;
 
@@ -7,9 +7,8 @@ namespace pyreApi.Services
 {
     public class ClienteService : GenericService<Cliente>
     {
-        public ClienteService(GenericRepository<Cliente> repository) : base(repository)
-        {
-        }
+        public ClienteService(GenericRepository<Cliente> repository)
+            : base(repository) { }
 
         public async Task<BaseResponseDto<IEnumerable<ClienteDto>>> GetAllClientesAsync()
         {
@@ -22,7 +21,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = clienteDtos,
-                    Message = "Clientes obtenidos correctamente"
+                    Message = "Clientes obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -31,7 +30,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener los clientes",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -46,7 +45,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<ClienteDto>
                     {
                         Success = false,
-                        Message = "Cliente no encontrado"
+                        Message = "Cliente no encontrado",
                     };
                 }
 
@@ -54,7 +53,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(cliente),
-                    Message = "Cliente encontrado"
+                    Message = "Cliente encontrado",
                 };
             }
             catch (Exception ex)
@@ -63,12 +62,14 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al buscar el cliente",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<ClienteDto>> CreateClienteAsync(CreateClienteDto createDto)
+        public async Task<BaseResponseDto<ClienteDto>> CreateClienteAsync(
+            CreateClienteDto createDto
+        )
         {
             try
             {
@@ -80,7 +81,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(result),
-                    Message = "Cliente creado correctamente"
+                    Message = "Cliente creado correctamente",
                 };
             }
             catch (Exception ex)
@@ -89,12 +90,14 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al crear el cliente",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<ClienteDto>> UpdateClienteAsync(UpdateClienteDto updateDto)
+        public async Task<BaseResponseDto<ClienteDto>> UpdateClienteAsync(
+            UpdateClienteDto updateDto
+        )
         {
             try
             {
@@ -104,7 +107,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<ClienteDto>
                     {
                         Success = false,
-                        Message = "Cliente no encontrado"
+                        Message = "Cliente no encontrado",
                     };
                 }
 
@@ -115,7 +118,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(existingCliente),
-                    Message = "Cliente actualizado correctamente"
+                    Message = "Cliente actualizado correctamente",
                 };
             }
             catch (Exception ex)
@@ -124,22 +127,27 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al actualizar el cliente",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<PaginatedResponseDto<ClienteDto>>> GetAllClientesPaginatedAsync(
+        public async Task<
+            BaseResponseDto<PaginatedResponseDto<ClienteDto>>
+        > GetAllClientesPaginatedAsync(
             int page,
             int pageSize,
             string? nombre = null,
             string? cuit = null,
-            bool? activo = null)
+            bool? activo = null
+        )
         {
             try
             {
-                if (page <= 0) page = 1;
-                if (pageSize <= 0) pageSize = 10;
+                if (page <= 0)
+                    page = 1;
+                if (pageSize <= 0)
+                    pageSize = 10;
 
                 var clientes = await _repository.GetAllAsync();
                 IEnumerable<Cliente> filtered = clientes;
@@ -147,7 +155,9 @@ namespace pyreApi.Services
                 if (!string.IsNullOrWhiteSpace(nombre))
                 {
                     var nombreTrim = nombre.Trim().ToLowerInvariant();
-                    filtered = filtered.Where(c => (c.Nombre ?? string.Empty).ToLowerInvariant().Contains(nombreTrim));
+                    filtered = filtered.Where(c =>
+                        (c.Nombre ?? string.Empty).ToLowerInvariant().Contains(nombreTrim)
+                    );
                 }
 
                 if (!string.IsNullOrWhiteSpace(cuit))
@@ -162,10 +172,7 @@ namespace pyreApi.Services
                 }
 
                 var totalRecords = filtered.Count();
-                var clientesPage = filtered
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
+                var clientesPage = filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
                 var clienteDtos = clientesPage.Select(MapToDto).ToList();
                 var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
@@ -178,14 +185,14 @@ namespace pyreApi.Services
                     TotalRecords = totalRecords,
                     TotalPages = totalPages,
                     HasNextPage = page < totalPages,
-                    HasPreviousPage = page > 1
+                    HasPreviousPage = page > 1,
                 };
 
                 return new BaseResponseDto<PaginatedResponseDto<ClienteDto>>
                 {
                     Success = true,
                     Data = paginatedResponse,
-                    Message = "Clientes obtenidos correctamente"
+                    Message = "Clientes obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -194,20 +201,33 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener los clientes",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<ClienteDto>>> GetAllComboAsync(string? search = null)
+        public async Task<BaseResponseDto<IEnumerable<ClienteDto>>> GetAllComboAsync(
+            string? search = null
+        )
         {
             try
             {
                 var clientes = await _repository.GetAllAsync();
                 var filteredClientes = clientes
-                    .Where(c => c.Activo && (string.IsNullOrWhiteSpace(search) ||
-                        (c.Nombre != null && c.Nombre.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                        (c.Cuit != null && c.Cuit.Contains(search, StringComparison.OrdinalIgnoreCase))))
+                    .Where(c =>
+                        c.Activo
+                        && (
+                            string.IsNullOrWhiteSpace(search)
+                            || (
+                                c.Nombre != null
+                                && c.Nombre.Contains(search, StringComparison.OrdinalIgnoreCase)
+                            )
+                            || (
+                                c.Cuit != null
+                                && c.Cuit.Contains(search, StringComparison.OrdinalIgnoreCase)
+                            )
+                        )
+                    )
                     .Take(15)
                     .ToList();
 
@@ -217,7 +237,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = clienteDtos,
-                    Message = "Clientes obtenidos correctamente"
+                    Message = "Clientes obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -226,7 +246,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener los clientes",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -242,7 +262,7 @@ namespace pyreApi.Services
                 Email = cliente.Email,
                 Direccion = cliente.Direccion,
                 Activo = cliente.Activo,
-                FechaRegistro = cliente.FechaRegistro
+                FechaRegistro = cliente.FechaRegistro,
             };
         }
 
@@ -255,7 +275,7 @@ namespace pyreApi.Services
                 Telefono = createDto.Telefono,
                 Email = createDto.Email,
                 Direccion = createDto.Direccion,
-                Activo = createDto.Activo
+                Activo = createDto.Activo,
             };
         }
 
