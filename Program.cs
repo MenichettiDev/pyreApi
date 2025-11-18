@@ -113,6 +113,7 @@ builder.Services.AddScoped<TipoAlertaService>();
 builder.Services.AddScoped<AlertaService>();
 builder.Services.AddScoped<ObraService>();
 builder.Services.AddScoped<AuditorGeneralService>();
+builder.Services.AddScoped<ClienteService>();
 
 // Configurar Swagger
 builder.Services.AddSwaggerGen(options =>

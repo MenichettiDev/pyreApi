@@ -24,9 +24,10 @@ namespace pyreApi.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? nombre = null,
             [FromQuery] string? ubicacion = null,
-            [FromQuery] string? codigo = null)
+            [FromQuery] string? codigo = null,
+            [FromQuery] int? idCliente = null)
         {
-            var result = await _obraService.GetAllObrasPaginatedAsync(page, pageSize, nombre, ubicacion, codigo);
+            var result = await _obraService.GetAllObrasPaginatedAsync(page, pageSize, nombre, ubicacion, codigo, idCliente);
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
@@ -69,6 +70,26 @@ namespace pyreApi.Controllers
         {
             var result = await _obraService.DeleteAsync(id);
             return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPatch("{id}/toggle-activo")]
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede cambiar estado activo
+        public async Task<IActionResult> ToggleActivo(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(new { Success = false, Message = "El ID de la obra debe ser un número válido mayor a 0." });
+            }
+
+            var result = await _obraService.ToggleActivoAsync(id);
+
+            if (result.Success)
+                return Ok(result);
+
+            if (result.Message?.Contains("no encontrado") == true)
+                return NotFound(result);
+
+            return BadRequest(result);
         }
     }
 }

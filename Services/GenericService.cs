@@ -183,5 +183,55 @@ namespace pyreApi.Services
                 };
             }
         }
+
+        public async Task<BaseResponseDto<bool>> ToggleActivoAsync(int id)
+        {
+            try
+            {
+                var entity = await _repository.GetByIdAsync(id);
+                if (entity == null)
+                {
+                    return new BaseResponseDto<bool>
+                    {
+                        Success = false,
+                        Message = $"{typeof(T).Name} no encontrado"
+                    };
+                }
+
+                // Usar reflexión para obtener y cambiar la propiedad Activo
+                var activoProperty = typeof(T).GetProperty("Activo");
+                if (activoProperty == null || activoProperty.PropertyType != typeof(bool))
+                {
+                    return new BaseResponseDto<bool>
+                    {
+                        Success = false,
+                        Message = $"La entidad {typeof(T).Name} no tiene una propiedad Activo válida"
+                    };
+                }
+
+                var currentValue = (bool)activoProperty.GetValue(entity)!;
+                var newValue = !currentValue;
+                activoProperty.SetValue(entity, newValue);
+
+                await _repository.UpdateAsync(entity);
+
+                var action = newValue ? "activado" : "desactivado";
+                return new BaseResponseDto<bool>
+                {
+                    Success = true,
+                    Data = newValue,
+                    Message = $"{typeof(T).Name} {action} correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<bool>
+                {
+                    Success = false,
+                    Message = $"Error al cambiar el estado del {typeof(T).Name.ToLower()}",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
     }
 }

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace pyreApi.Models
 {
@@ -6,6 +7,8 @@ namespace pyreApi.Models
     {
         [Key]
         public int IdObra { get; set; }
+        [Required]
+        public int IdCliente { get; set; }
 
         [Required]
         [MaxLength(20)]
@@ -23,6 +26,11 @@ namespace pyreApi.Models
         public DateOnly? FechaInicio { get; set; }
 
         public DateOnly? FechaFin { get; set; }
+
+        public bool Activo { get; set; } = true;
+
+        [ForeignKey(nameof(IdCliente))]
+        public Cliente Cliente { get; set; } = null!;
 
     }
 }

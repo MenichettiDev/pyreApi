@@ -9,5 +9,8 @@ namespace pyreApi.DTOs.Obra
         public string? Ubicacion { get; set; }
         public DateOnly? FechaInicio { get; set; }
         public DateOnly? FechaFin { get; set; }
+        public int IdCliente { get; set; }
+        public string? ClienteNombre { get; set; }
+        public bool Activo { get; set; }
     }
 }
