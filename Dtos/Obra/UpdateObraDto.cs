@@ -24,5 +24,7 @@ namespace pyreApi.DTOs.Obra
 
         [Required(ErrorMessage = "El cliente es requerido")]
         public int IdCliente { get; set; }
+
+        public bool Activo { get; set; }
     }
 }

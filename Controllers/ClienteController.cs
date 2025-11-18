@@ -78,5 +78,25 @@ namespace pyreApi.Controllers
             var result = await _clienteService.GetAllComboAsync(search);
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
+        [HttpPatch("{id}/toggle-activo")]
+        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede cambiar estado activo
+        public async Task<IActionResult> ToggleActivo(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(new { Success = false, Message = "El ID del cliente debe ser un número válido mayor a 0." });
+            }
+
+            var result = await _clienteService.ToggleActivoAsync(id);
+
+            if (result.Success)
+                return Ok(result);
+
+            if (result.Message?.Contains("no encontrado") == true)
+                return NotFound(result);
+
+            return BadRequest(result);
+        }
     }
 }

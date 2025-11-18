@@ -21,5 +21,7 @@ namespace pyreApi.DTOs.Obra
         public DateOnly? FechaInicio { get; set; }
 
         public DateOnly? FechaFin { get; set; }
+
+        public bool Activo { get; set; } = true;
     }
 }

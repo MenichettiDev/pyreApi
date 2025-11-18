@@ -25,6 +25,8 @@ namespace pyreApi.Models
 
         public DateOnly? FechaFin { get; set; }
 
+        public bool Activo { get; set; } = true;
+
         [ForeignKey(nameof(IdCliente))]
         public Cliente Cliente { get; set; } = null!;
 
