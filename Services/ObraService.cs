@@ -213,6 +213,53 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<IEnumerable<ObraDto>>> GetAllComboAsync(int? idCliente = null, string? search = null)
+        {
+            try
+            {
+                var obras = await _repository.GetAllAsync();
+                var filtered = obras
+                    .Where(o => o.Activo) // solo activos como en getClientesCombo
+                    .AsEnumerable();
+
+                if (idCliente.HasValue)
+                {
+                    filtered = filtered.Where(o => o.IdCliente == idCliente.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    var s = search.Trim();
+                    filtered = filtered.Where(o =>
+                        (!string.IsNullOrWhiteSpace(o.NombreObra) && o.NombreObra.Contains(s, StringComparison.OrdinalIgnoreCase)) ||
+                        (!string.IsNullOrWhiteSpace(o.Codigo) && o.Codigo.Contains(s, StringComparison.OrdinalIgnoreCase))
+                    );
+                }
+
+                var resultList = filtered
+                    .Take(5) // limitar a 5
+                    .ToList();
+
+                var obraDtos = resultList.Select(MapToDto);
+
+                return new BaseResponseDto<IEnumerable<ObraDto>>
+                {
+                    Success = true,
+                    Data = obraDtos,
+                    Message = "Obras obtenidas correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<IEnumerable<ObraDto>>
+                {
+                    Success = false,
+                    Message = "Error al obtener las obras",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
         private async Task PopulateClientesAsync(List<Obra> obras)
         {
             var clientes = (await _clienteRepository.GetAllAsync()).ToDictionary(c => c.IdCliente);
