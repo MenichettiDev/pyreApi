@@ -1,13 +1,13 @@
+using System; // agregado
+using System.Linq; // agregado
+using System.Text;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using pyreApi.DTOs.Common;
 using pyreApi.DTOs.Usuario;
 using pyreApi.Models;
 using pyreApi.Repositories;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
-using System.Text;
-using System.Linq; // agregado
-using System; // agregado
 
 namespace pyreApi.Services
 {
@@ -17,7 +17,12 @@ namespace pyreApi.Services
         private readonly ILogger<UsuarioService> _logger;
         private readonly IConfiguration _configuration;
 
-        public UsuarioService(UsuarioRepository usuarioRepository, ILogger<UsuarioService> logger, IConfiguration configuration) : base(usuarioRepository)
+        public UsuarioService(
+            UsuarioRepository usuarioRepository,
+            ILogger<UsuarioService> logger,
+            IConfiguration configuration
+        )
+            : base(usuarioRepository)
         {
             _usuarioRepository = usuarioRepository;
             _logger = logger;
@@ -31,16 +36,21 @@ namespace pyreApi.Services
             string salt = _configuration["Salt"] ?? string.Empty; // Asegura que no sea nulo
             if (string.IsNullOrEmpty(salt))
             {
-                throw new InvalidOperationException("El valor de 'Salt' no está configurado en appsettings.json.");
+                throw new InvalidOperationException(
+                    "El valor de 'Salt' no está configurado en appsettings.json."
+                );
             }
 
             // Hashear la contraseña usando el salt fijo
-            string hashedPassword = Convert.ToBase64String(KeyDerivation.Pbkdf2(
-                password: password,
-                salt: Encoding.ASCII.GetBytes(salt),
-                prf: KeyDerivationPrf.HMACSHA1,
-                iterationCount: 10000,
-                numBytesRequested: 256 / 8));
+            string hashedPassword = Convert.ToBase64String(
+                KeyDerivation.Pbkdf2(
+                    password: password,
+                    salt: Encoding.ASCII.GetBytes(salt),
+                    prf: KeyDerivationPrf.HMACSHA1,
+                    iterationCount: 10000,
+                    numBytesRequested: 256 / 8
+                )
+            );
 
             return hashedPassword;
         }
@@ -62,7 +72,7 @@ namespace pyreApi.Services
                 Avatar = usuario.Avatar,
                 FechaRegistro = usuario.FechaRegistro,
                 FechaModificacion = usuario.FechaModificacion ?? DateTime.MinValue, // Manejo explícito de nulos
-                RolNombre = usuario.Rol?.NombreRol ?? string.Empty // Asegurarse de incluir el nombre del rol
+                RolNombre = usuario.Rol?.NombreRol ?? string.Empty, // Asegurarse de incluir el nombre del rol
             };
         }
 
@@ -77,7 +87,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = usuariosDto,
-                    Message = "Usuarios obtenidos correctamente"
+                    Message = "Usuarios obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -87,7 +97,10 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "No se pudieron cargar los usuarios. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud.",
+                    },
                 };
             }
         }
@@ -102,7 +115,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<UsuarioResponseDto>
                     {
                         Success = false,
-                        Message = $"No se encontró un usuario con el ID {id}."
+                        Message = $"No se encontró un usuario con el ID {id}.",
                     };
                 }
 
@@ -111,7 +124,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = usuarioDto,
-                    Message = "Usuario encontrado"
+                    Message = "Usuario encontrado",
                 };
             }
             catch (Exception ex)
@@ -120,8 +133,12 @@ namespace pyreApi.Services
                 return new BaseResponseDto<UsuarioResponseDto>
                 {
                     Success = false,
-                    Message = $"Error al buscar el usuario con ID {id}. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Message =
+                        $"Error al buscar el usuario con ID {id}. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud.",
+                    },
                 };
             }
         }
@@ -136,7 +153,8 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = "El legajo no puede tener más de 5 caracteres. Por favor, ingrese un legajo válido."
+                        Message =
+                            "El legajo no puede tener más de 5 caracteres. Por favor, ingrese un legajo válido.",
                     };
                 }
 
@@ -147,7 +165,8 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = $"Ya existe un usuario registrado con el DNI {createDto.Dni}. Por favor, verifique los datos ingresados."
+                        Message =
+                            $"Ya existe un usuario registrado con el DNI {createDto.Dni}. Por favor, verifique los datos ingresados.",
                     };
                 }
 
@@ -160,7 +179,8 @@ namespace pyreApi.Services
                         return new BaseResponseDto<Usuario>
                         {
                             Success = false,
-                            Message = $"Ya existe un usuario registrado con el email {createDto.Email}. Por favor, use un email diferente."
+                            Message =
+                                $"Ya existe un usuario registrado con el email {createDto.Email}. Por favor, use un email diferente.",
                         };
                     }
                 }
@@ -168,13 +188,16 @@ namespace pyreApi.Services
                 // Validar si el legajo ya existe
                 if (!string.IsNullOrEmpty(createDto.Legajo))
                 {
-                    var existingLegajo = await _usuarioRepository.GetByLegajoAsync(createDto.Legajo);
+                    var existingLegajo = await _usuarioRepository.GetByLegajoAsync(
+                        createDto.Legajo
+                    );
                     if (existingLegajo != null)
                     {
                         return new BaseResponseDto<Usuario>
                         {
                             Success = false,
-                            Message = $"Ya existe un usuario registrado con el legajo {createDto.Legajo}. Por favor, use un legajo diferente."
+                            Message =
+                                $"Ya existe un usuario registrado con el legajo {createDto.Legajo}. Por favor, use un legajo diferente.",
                         };
                     }
                 }
@@ -193,7 +216,7 @@ namespace pyreApi.Services
                     IdUsuarioCrea = createDto.IdUsuarioCrea,
                     FechaRegistro = DateTime.UtcNow,
                     FechaModificacion = DateTime.UtcNow,
-                    Activo = true
+                    Activo = true,
                 };
 
                 // Si el usuario accede al sistema, hashear la contraseña proporcionada
@@ -207,7 +230,8 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = result,
-                    Message = $"El usuario {createDto.Nombre} {createDto.Apellido} ha sido creado exitosamente."
+                    Message =
+                        $"El usuario {createDto.Nombre} {createDto.Apellido} ha sido creado exitosamente.",
                 };
             }
             catch (Exception ex)
@@ -216,72 +240,122 @@ namespace pyreApi.Services
                 return new BaseResponseDto<Usuario>
                 {
                     Success = false,
-                    Message = "No se pudo crear el usuario. Por favor, verifique los datos ingresados e intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Message =
+                        "No se pudo crear el usuario. Por favor, verifique los datos ingresados e intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud.",
+                    },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<Usuario>> UpdateUsuarioAsync(UpdateUsuarioDto updateDto)
+        public async Task<BaseResponseDto<UsuarioResponseDto>> UpdateUsuarioAsync(
+            UpdateUsuarioDto updateDto
+        )
         {
             try
             {
-                var existingUser = await _usuarioRepository.GetByIdAsync(updateDto.Id);
+                var existingUser = await _usuarioRepository.GetByIdWithRolAsync(updateDto.Id);
                 if (existingUser == null)
                 {
-                    return new BaseResponseDto<Usuario>
+                    return new BaseResponseDto<UsuarioResponseDto>
                     {
                         Success = false,
-                        Message = $"No se encontró un usuario con el ID {updateDto.Id} para actualizar."
+                        Message =
+                            $"No se encontró un usuario con el ID {updateDto.Id} para actualizar.",
                     };
                 }
 
-                // --- Nuevas validaciones ---
-
-                // Id del usuario que realiza la modificación (se espera que venga en el DTO)
                 var modifierId = updateDto.IdUsuarioModifica;
 
-                // 1) Un usuario no puede cambiar su propio rol
-                if (modifierId == existingUser.Id && updateDto.RolId.HasValue && updateDto.RolId.Value != existingUser.RolId)
+                // 2️ Un SuperAdmin no puede darse de baja a sí mismo
+                if (
+                    modifierId == existingUser.Id
+                    && updateDto.AccedeAlSistema.HasValue
+                    && updateDto.AccedeAlSistema.Value == false
+                )
                 {
-                    return new BaseResponseDto<Usuario>
+                    // Necesitamos cargar la relación Rol si no está cargada
+                    if (existingUser.Rol == null)
                     {
-                        Success = false,
-                        Message = "No está permitido que un usuario cambie su propio rol."
-                    };
-                }
-
-                // 2) Un SuperAdmin no puede darse de baja a sí mismo mediante la edición (quitar AccedeAlSistema)
-                if (modifierId == existingUser.Id && updateDto.AccedeAlSistema.HasValue && updateDto.AccedeAlSistema.Value == true)
-                {
-                    var rolNombre = existingUser.Rol?.NombreRol ?? string.Empty;
-                    if (string.Equals(rolNombre, "superadmin", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return new BaseResponseDto<Usuario>
+                        var reloadedUser = await _usuarioRepository.GetByIdWithRolAsync(
+                            existingUser.Id
+                        );
+                        if (reloadedUser != null)
                         {
-                            Success = false,
-                            Message = "Un SuperAdmin no puede darse de baja a sí mismo."
-                        };
+                            existingUser = reloadedUser;
+                        }
+                    }
+
+                    if (existingUser.Rol?.NombreRol != null)
+                    {
+                        var rolNombre = existingUser.Rol.NombreRol;
+                        if (
+                            string.Equals(
+                                rolNombre,
+                                "superadmin",
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                        )
+                        {
+                            return new BaseResponseDto<UsuarioResponseDto>
+                            {
+                                Success = false,
+                                Message = "Un SuperAdmin no puede darse de baja a sí mismo.",
+                            };
+                        }
                     }
                 }
 
-                // --- Fin de nuevas validaciones ---
-
-                // Validar email único si se proporciona uno nuevo
+                // 3️ Validar email único si se modifica
                 if (!string.IsNullOrEmpty(updateDto.Email) && updateDto.Email != existingUser.Email)
                 {
                     var existingEmail = await _usuarioRepository.GetByEmailAsync(updateDto.Email);
                     if (existingEmail != null)
                     {
-                        return new BaseResponseDto<Usuario>
+                        return new BaseResponseDto<UsuarioResponseDto>
                         {
                             Success = false,
-                            Message = $"Ya existe otro usuario registrado con el email {updateDto.Email}. Por favor, use un email diferente."
+                            Message =
+                                $"Ya existe otro usuario registrado con el email {updateDto.Email}. Por favor, use un email diferente.",
                         };
                     }
                 }
 
-                // Actualizar campos
+                // 4️ Validar legajo único si se modifica
+                if (
+                    !string.IsNullOrEmpty(updateDto.Legajo)
+                    && updateDto.Legajo != existingUser.Legajo
+                )
+                {
+                    if (updateDto.Legajo.Length > 5)
+                    {
+                        return new BaseResponseDto<UsuarioResponseDto>
+                        {
+                            Success = false,
+                            Message =
+                                "El legajo no puede tener más de 5 caracteres. Por favor, ingrese un legajo válido.",
+                        };
+                    }
+
+                    var existingLegajo = await _usuarioRepository.GetByLegajoAsync(
+                        updateDto.Legajo
+                    );
+                    if (existingLegajo != null)
+                    {
+                        return new BaseResponseDto<UsuarioResponseDto>
+                        {
+                            Success = false,
+                            Message =
+                                $"Ya existe otro usuario registrado con el legajo {updateDto.Legajo}. Por favor, use un legajo diferente.",
+                        };
+                    }
+
+                    existingUser.Legajo = updateDto.Legajo;
+                }
+
+                // 5️ Actualizar campos básicos
                 if (!string.IsNullOrEmpty(updateDto.Nombre))
                     existingUser.Nombre = updateDto.Nombre;
 
@@ -294,8 +368,29 @@ namespace pyreApi.Services
                 if (updateDto.Telefono != null)
                     existingUser.Telefono = updateDto.Telefono;
 
-                if (updateDto.RolId.HasValue)
+                // Solo actualizar el rol si realmente cambió Y no es el mismo usuario
+                if (updateDto.RolId.HasValue && existingUser.RolId != updateDto.RolId.Value)
+                {
+                    if (modifierId == existingUser.Id)
+                    {
+                        return new BaseResponseDto<UsuarioResponseDto>
+                        {
+                            Success = false,
+                            Message = "No está permitido que un usuario cambie su propio rol.",
+                        };
+                    }
                     existingUser.RolId = updateDto.RolId.Value;
+                }
+
+                // Verificación de seguridad para evitar advertencias de null reference
+                if (existingUser == null)
+                {
+                    return new BaseResponseDto<UsuarioResponseDto>
+                    {
+                        Success = false,
+                        Message = "Error inesperado: no se pudo cargar el usuario.",
+                    };
+                }
 
                 if (updateDto.AccedeAlSistema.HasValue)
                     existingUser.AccedeAlSistema = updateDto.AccedeAlSistema.Value;
@@ -303,39 +398,52 @@ namespace pyreApi.Services
                 if (updateDto.Avatar != null)
                     existingUser.Avatar = updateDto.Avatar;
 
-                // Actualizar contraseña si se proporciona
-                if (!string.IsNullOrWhiteSpace(updateDto.Password))
+                // Actualizar contraseña si se envía en el DTO
+                if (!string.IsNullOrEmpty(updateDto.Password))
                 {
-                    existingUser.PasswordHash = HashPassword(updateDto.Password);
-                    _logger.LogInformation("Contraseña actualizada para usuario ID: {UserId}", existingUser.Id);
+                    // Solo hasheamos y guardamos la contraseña si el usuario puede acceder al sistema
+                    if (existingUser.AccedeAlSistema)
+                    {
+                        existingUser.PasswordHash = HashPassword(updateDto.Password);
+                    }
+                    else
+                    {
+                        // Si se envía contraseña pero el usuario no tiene acceso, la ignoramos y logueamos
+                        _logger.LogWarning(
+                            "Se recibió una contraseña para el usuario {Id} pero 'AccedeAlSistema' es false. Ignorando cambio de contraseña.",
+                            existingUser.Id
+                        );
+                    }
                 }
-
                 existingUser.IdUsuarioModifica = updateDto.IdUsuarioModifica;
                 existingUser.FechaModificacion = DateTime.UtcNow;
 
                 await _usuarioRepository.UpdateAsync(existingUser);
 
-                var mensaje = $"Los datos del usuario {existingUser.Nombre} {existingUser.Apellido} han sido actualizados correctamente.";
-                if (!string.IsNullOrWhiteSpace(updateDto.Password))
-                {
-                    mensaje += " La contraseña también ha sido actualizada.";
-                }
+                // Cargar el usuario actualizado con sus relaciones para el DTO de respuesta
+                var updatedUser = await _usuarioRepository.GetByIdWithRolAsync(existingUser.Id);
+                var responseDto = MapToResponseDto(updatedUser ?? existingUser);
 
-                return new BaseResponseDto<Usuario>
+                return new BaseResponseDto<UsuarioResponseDto>
                 {
                     Success = true,
-                    Data = existingUser,
-                    Message = mensaje
+                    Data = responseDto,
+                    Message =
+                        $"Los datos del usuario {existingUser.Nombre} {existingUser.Apellido} han sido actualizados correctamente.",
                 };
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al actualizar usuario: {Id}", updateDto.Id);
-                return new BaseResponseDto<Usuario>
+                return new BaseResponseDto<UsuarioResponseDto>
                 {
                     Success = false,
-                    Message = "No se pudieron actualizar los datos del usuario. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Message =
+                        "No se pudieron actualizar los datos del usuario. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud.",
+                    },
                 };
             }
         }
@@ -350,7 +458,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = $"No se encontró un usuario con el DNI {dni}."
+                        Message = $"No se encontró un usuario con el DNI {dni}.",
                     };
                 }
 
@@ -358,7 +466,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = usuario,
-                    Message = "Usuario encontrado correctamente."
+                    Message = "Usuario encontrado correctamente.",
                 };
             }
             catch (Exception)
@@ -366,8 +474,12 @@ namespace pyreApi.Services
                 return new BaseResponseDto<Usuario>
                 {
                     Success = false,
-                    Message = $"Error al buscar el usuario con DNI {dni}. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Message =
+                        $"Error al buscar el usuario con DNI {dni}. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud.",
+                    },
                 };
             }
         }
@@ -382,7 +494,8 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = "El legajo no puede tener más de 5 caracteres. Por favor, ingrese un legajo válido."
+                        Message =
+                            "El legajo no puede tener más de 5 caracteres. Por favor, ingrese un legajo válido.",
                     };
                 }
 
@@ -392,7 +505,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = $"No se encontró un usuario con el legajo {legajo}."
+                        Message = $"No se encontró un usuario con el legajo {legajo}.",
                     };
                 }
 
@@ -400,7 +513,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = usuario,
-                    Message = "Usuario encontrado correctamente."
+                    Message = "Usuario encontrado correctamente.",
                 };
             }
             catch (Exception ex)
@@ -408,13 +521,20 @@ namespace pyreApi.Services
                 return new BaseResponseDto<Usuario>
                 {
                     Success = false,
-                    Message = $"Error al buscar el usuario con legajo {legajo}. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." + ex.Message }
+                    Message =
+                        $"Error al buscar el usuario con legajo {legajo}. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud." + ex.Message,
+                    },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<bool>> ValidateCredentialsAsync(string legajo, string password)
+        public async Task<BaseResponseDto<bool>> ValidateCredentialsAsync(
+            string legajo,
+            string password
+        )
         {
             try
             {
@@ -424,7 +544,8 @@ namespace pyreApi.Services
                     return new BaseResponseDto<bool>
                     {
                         Success = false,
-                        Message = "El legajo no puede tener más de 5 caracteres. Por favor, ingrese un legajo válido."
+                        Message =
+                            "El legajo no puede tener más de 5 caracteres. Por favor, ingrese un legajo válido.",
                     };
                 }
 
@@ -433,7 +554,9 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = isValid,
-                    Message = isValid ? "Las credenciales son válidas." : "El legajo o la contraseña son incorrectos."
+                    Message = isValid
+                        ? "Las credenciales son válidas."
+                        : "El legajo o la contraseña son incorrectos.",
                 };
             }
             catch (Exception ex)
@@ -441,8 +564,12 @@ namespace pyreApi.Services
                 return new BaseResponseDto<bool>
                 {
                     Success = false,
-                    Message = "No se pudieron validar las credenciales. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." + ex.Message }
+                    Message =
+                        "No se pudieron validar las credenciales. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud." + ex.Message,
+                    },
                 };
             }
         }
@@ -456,7 +583,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = users,
-                    Message = "Usuarios activos obtenidos correctamente"
+                    Message = "Usuarios activos obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -464,13 +591,20 @@ namespace pyreApi.Services
                 return new BaseResponseDto<IEnumerable<Usuario>>
                 {
                     Success = false,
-                    Message = "No se pudieron cargar los usuarios activos. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." + ex.Message }
+                    Message =
+                        "No se pudieron cargar los usuarios activos. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud." + ex.Message,
+                    },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<Usuario>> AuthenticateAsync(string legajo, string password)
+        public async Task<BaseResponseDto<Usuario>> AuthenticateAsync(
+            string legajo,
+            string password
+        )
         {
             try
             {
@@ -480,7 +614,8 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = "El legajo no puede tener más de 5 caracteres. Por favor, ingrese un legajo válido."
+                        Message =
+                            "El legajo no puede tener más de 5 caracteres. Por favor, ingrese un legajo válido.",
                     };
                 }
 
@@ -494,12 +629,18 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = "Las credenciales ingresadas son incorrectas. Por favor, verifique su legajo y contraseña."
+                        Message =
+                            "Las credenciales ingresadas son incorrectas. Por favor, verifique su legajo y contraseña.",
                     };
                 }
 
-                _logger.LogInformation("Usuario encontrado: {UsuarioId}, Nombre: {Nombre}, Activo: {Activo}, AccedeAlSistema: {AccedeAlSistema}",
-                    usuario.Id, usuario.Nombre, usuario.Activo, usuario.AccedeAlSistema);
+                _logger.LogInformation(
+                    "Usuario encontrado: {UsuarioId}, Nombre: {Nombre}, Activo: {Activo}, AccedeAlSistema: {AccedeAlSistema}",
+                    usuario.Id,
+                    usuario.Nombre,
+                    usuario.Activo,
+                    usuario.AccedeAlSistema
+                );
 
                 // Check if user is active and has system access
                 if (!usuario.Activo)
@@ -508,25 +649,37 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = "Su cuenta se encuentra inactiva. Por favor, contacte al administrador del sistema para más información."
+                        Message =
+                            "Su cuenta se encuentra inactiva. Por favor, contacte al administrador del sistema para más información.",
                     };
                 }
 
                 if (!usuario.AccedeAlSistema)
                 {
-                    _logger.LogWarning("Usuario sin acceso al sistema para legajo: {Legajo}", legajo);
+                    _logger.LogWarning(
+                        "Usuario sin acceso al sistema para legajo: {Legajo}",
+                        legajo
+                    );
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = "Su cuenta no tiene permisos para acceder al sistema. Por favor, contacte al administrador."
+                        Message =
+                            "Su cuenta no tiene permisos para acceder al sistema. Por favor, contacte al administrador.",
                     };
                 }
 
                 _logger.LogInformation("Validando credenciales para legajo: {Legajo}", legajo);
 
-                var isValidPassword = await _usuarioRepository.ValidateCredentialsAsync(legajo, password);
+                var isValidPassword = await _usuarioRepository.ValidateCredentialsAsync(
+                    legajo,
+                    password
+                );
 
-                _logger.LogInformation("Resultado validación de credenciales para legajo {Legajo}: {IsValid}", legajo, isValidPassword);
+                _logger.LogInformation(
+                    "Resultado validación de credenciales para legajo {Legajo}: {IsValid}",
+                    legajo,
+                    isValidPassword
+                );
 
                 if (!isValidPassword)
                 {
@@ -534,7 +687,8 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = "Las credenciales ingresadas son incorrectas. Por favor, verifique su legajo y contraseña."
+                        Message =
+                            "Las credenciales ingresadas son incorrectas. Por favor, verifique su legajo y contraseña.",
                     };
                 }
 
@@ -544,37 +698,56 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = usuario,
-                    Message = $"¡Bienvenido/a {usuario.Nombre}! Ha iniciado sesión correctamente."
+                    Message = $"¡Bienvenido/a {usuario.Nombre}! Ha iniciado sesión correctamente.",
                 };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error durante la autenticación para legajo: {Legajo}", legajo);
+                _logger.LogError(
+                    ex,
+                    "Error durante la autenticación para legajo: {Legajo}",
+                    legajo
+                );
                 return new BaseResponseDto<Usuario>
                 {
                     Success = false,
-                    Message = "No se pudo completar el proceso de autenticación. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Message =
+                        "No se pudo completar el proceso de autenticación. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud.",
+                    },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<PaginatedResponseDto<UsuarioResponseDto>>> GetAllUsuariosPaginatedAsync(
+        public async Task<
+            BaseResponseDto<PaginatedResponseDto<UsuarioResponseDto>>
+        > GetAllUsuariosPaginatedAsync(
             int page,
             int pageSize,
             string? legajo = null,
             bool? estado = null,
             string? nombre = null,
             string? apellido = null,
-            int? rolId = null)
+            int? rolId = null
+        )
         {
             try
             {
-                if (page <= 0) page = 1;
-                if (pageSize <= 0) pageSize = 10;
+                if (page <= 0)
+                    page = 1;
+                if (pageSize <= 0)
+                    pageSize = 10;
 
                 // Obtener usuarios con filtros aplicados directamente en la base de datos
-                var usuarios = await _usuarioRepository.GetFilteredUsuariosAsync(legajo, estado, nombre, apellido, rolId);
+                var usuarios = await _usuarioRepository.GetFilteredUsuariosAsync(
+                    legajo,
+                    estado,
+                    nombre,
+                    apellido,
+                    rolId
+                );
 
                 // Ordenar por Id antes de aplicar la paginación
                 var usuariosOrdenados = usuarios.OrderBy(u => u.Id);
@@ -597,14 +770,14 @@ namespace pyreApi.Services
                     TotalRecords = totalRecords,
                     TotalPages = totalPages,
                     HasNextPage = page < totalPages,
-                    HasPreviousPage = page > 1
+                    HasPreviousPage = page > 1,
                 };
 
                 return new BaseResponseDto<PaginatedResponseDto<UsuarioResponseDto>>
                 {
                     Success = true,
                     Data = paginatedResponse,
-                    Message = "Usuarios obtenidos correctamente"
+                    Message = "Usuarios obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -614,7 +787,10 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "No se pudieron cargar los usuarios. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud.",
+                    },
                 };
             }
         }
@@ -628,7 +804,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = "El ID del usuario debe ser un número válido mayor a 0."
+                        Message = "El ID del usuario debe ser un número válido mayor a 0.",
                     };
                 }
 
@@ -638,11 +814,9 @@ namespace pyreApi.Services
                     return new BaseResponseDto<Usuario>
                     {
                         Success = false,
-                        Message = $"No se encontró un usuario con el ID {id}."
+                        Message = $"No se encontró un usuario con el ID {id}.",
                     };
                 }
-
-
 
                 existingUser.Activo = !existingUser.Activo;
                 existingUser.FechaModificacion = DateTime.UtcNow;
@@ -653,7 +827,9 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = existingUser,
-                    Message = existingUser.Activo ? "Usuario activado correctamente." : "Usuario desactivado correctamente."
+                    Message = existingUser.Activo
+                        ? "Usuario activado correctamente."
+                        : "Usuario desactivado correctamente.",
                 };
             }
             catch (Exception ex)
@@ -662,8 +838,12 @@ namespace pyreApi.Services
                 return new BaseResponseDto<Usuario>
                 {
                     Success = false,
-                    Message = "No se pudo cambiar el estado del usuario. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud." }
+                    Message =
+                        "No se pudo cambiar el estado del usuario. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud.",
+                    },
                 };
             }
         }
