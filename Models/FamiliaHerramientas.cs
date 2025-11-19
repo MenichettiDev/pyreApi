@@ -14,3 +14,10 @@ namespace pyreApi.Models
         public ICollection<Herramienta> Herramientas { get; set; } = new List<Herramienta>();
     }
 }
+// 1	Eléctrica
+// 4	Ferretería
+// 6	Hidráulica
+// 2	Mecánica
+// 3	Medición
+// 7	Neumática
+// 5	Seguridad

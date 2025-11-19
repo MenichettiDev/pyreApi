@@ -249,5 +249,18 @@ namespace pyreApi.Controllers
             var result = await _herramientaService.ToggleBloqueoAsync(id);
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
+        [HttpGet("reporteHerramientas")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles autorizados para descargar reporte
+        public async Task<IActionResult> ReporteHerramientas()
+        {
+            var response = await _herramientaService.ReporteHerramientasAsync();
+            if (!response.Success)
+                return BadRequest(response);
+
+            var fileBytes = response.Data ?? Array.Empty<byte>();
+            var fileName = $"Reporte_Herramientas_{DateTime.UtcNow:yyyyMMdd}.xlsx";
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
     }
 }
