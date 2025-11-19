@@ -91,5 +91,13 @@ namespace pyreApi.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpGet("getObrasCombo")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar el combo de obras
+        public async Task<IActionResult> GetAllCombo([FromQuery] int? idCliente = null, [FromQuery] string? search = null)
+        {
+            var result = await _obraService.GetAllComboAsync(idCliente, search);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
     }
 }
