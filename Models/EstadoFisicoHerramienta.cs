@@ -15,3 +15,8 @@ namespace pyreApi.Models
         public ICollection<MovimientoHerramienta> MovimientosHerramienta { get; set; } = new List<MovimientoHerramienta>();
     }
 }
+//4	Dañada
+// 3	Desgastada
+// 1	Excelente
+// 5	No Apta
+// 2	Usada

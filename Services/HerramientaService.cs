@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Http; // <-- agregado
 using Microsoft.Extensions.DependencyInjection; // <-- agregado
 using Microsoft.Extensions.Logging; // <-- agregado
 using Microsoft.EntityFrameworkCore.Storage; // <-- agregado para transacciones
+using ClosedXML.Excel;
+using System.Reflection;
 using pyreApi.DTOs.Common;
 using pyreApi.DTOs.Herramienta;
 using pyreApi.Models;
@@ -1135,6 +1137,227 @@ namespace pyreApi.Services
             catch
             {
                 return false;
+            }
+        }
+
+        public async Task<BaseResponseDto<byte[]>> ReporteHerramientasAsync()
+        {
+            try
+            {
+                var herramientas = (await _repository.GetAllAsync()).ToList();
+
+                // mapeos fijos solicitados
+                var disponibilidadMap = new Dictionary<int, string>
+                {
+                    {1,"Disponible"},
+                    {2,"Prestada"},
+                    {3,"Mantenimiento"},
+                    {4,"Extraviada"},
+                    {5,"Bloqueada"}
+                };
+
+                var estadoFisicoMap = new Dictionary<int, string>
+                {
+                    {4,"Dañada"},
+                    {3,"Desgastada"},
+                    {1,"Excelente"},
+                    {5,"No Apta"},
+                    {2,"Usada"}
+                };
+
+                var familiaMap = new Dictionary<int, string>
+                {
+                    {1,"Eléctrica"},
+                    {4,"Ferretería"},
+                    {6,"Hidráulica"},
+                    {2,"Mecánica"},
+                    {3,"Medición"},
+                    {7,"Neumática"},
+                    {5,"Seguridad"}
+                };
+
+                // reflection helpers para extraer propiedades comunes (si existen)
+                decimal totalCosto = 0m;
+                string GetStringProp(object obj, params string[] names)
+                {
+                    foreach (var n in names)
+                    {
+                        var p = obj.GetType().GetProperty(n, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                        if (p != null)
+                        {
+                            var v = p.GetValue(obj);
+                            if (v != null) return v.ToString()!;
+                        }
+                    }
+                    return string.Empty;
+                }
+
+                int? GetIntProp(object obj, params string[] names)
+                {
+                    foreach (var n in names)
+                    {
+                        var p = obj.GetType().GetProperty(n, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                        if (p != null)
+                        {
+                            var v = p.GetValue(obj);
+                            if (v == null) continue;
+                            if (v is int i) return i;
+                            if (int.TryParse(v.ToString(), out var parsed)) return parsed;
+                        }
+                    }
+                    return null;
+                }
+
+                decimal? GetDecimalProp(object obj, params string[] names)
+                {
+                    foreach (var n in names)
+                    {
+                        var p = obj.GetType().GetProperty(n, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                        if (p != null)
+                        {
+                            var v = p.GetValue(obj);
+                            if (v == null) continue;
+                            if (v is decimal d) return d;
+                            if (v is double db) return (decimal)db;
+                            if (v is float f) return (decimal)f;
+                            if (decimal.TryParse(v.ToString(), out var parsed)) return parsed;
+                        }
+                    }
+                    return null;
+                }
+
+                // calculos
+                var disponiblesCount = 0;
+                var prestadasCount = 0;
+                var reparacionCount = 0;
+                var activasCount = 0;
+
+                var estadoFisicoCounts = new Dictionary<string, int>();
+                foreach (var kv in estadoFisicoMap) estadoFisicoCounts[kv.Value] = 0;
+
+                foreach (var h in herramientas)
+                {
+                    var dispId = GetIntProp(h, "IdDisponibilidad");
+                    var estadoId = GetIntProp(h, "IdEstadoFisico");
+                    var activoVal = GetIntProp(h, "Activo") ?? (h.GetType().GetProperty("Activo")?.GetValue(h) is bool b && b ? 1 : 0);
+
+                    var costo = GetDecimalProp(h, "CostoDolares");
+                    if (costo.HasValue) totalCosto += costo.Value;
+
+                    if (dispId == 1) disponiblesCount++;
+                    if (dispId == 2) prestadasCount++;
+                    if (dispId == 3) reparacionCount++;
+                    if (activoVal == 1) activasCount++;
+
+                    if (estadoId.HasValue && estadoFisicoMap.TryGetValue(estadoId.Value, out var nombreEstado))
+                    {
+                        estadoFisicoCounts[nombreEstado] = estadoFisicoCounts.GetValueOrDefault(nombreEstado) + 1;
+                    }
+                }
+
+                // generar excel con ClosedXML
+                using var wb = new XLWorkbook();
+                var wsList = wb.Worksheets.Add("Herramientas");
+
+                // encabezados: intento mapear propiedades comunes
+                var headers = new List<string>
+                {
+                    "Id",
+                    "Nombre",
+                    "Codigo",
+                    "Familia",
+                    "Disponibilidad",
+                    "EstadoFisico",
+                    "Costo",
+                    "Activo"
+                };
+                for (int c = 0; c < headers.Count; c++)
+                    wsList.Cell(1, c + 1).Value = headers[c];
+
+                var row = 2;
+                foreach (var h in herramientas)
+                {
+                    var id = GetIntProp(h, "IdHerramienta")?.ToString();
+                    var nombre = GetStringProp(h, "NombreHerramienta", "Descripcion");
+                    var codigo = GetStringProp(h, "Codigo");
+                    var familiaId = GetIntProp(h, "IdFamilia");
+                    var familiaNombre = familiaId.HasValue && familiaMap.TryGetValue(familiaId.Value, out var fName) ? fName : (familiaId?.ToString() ?? string.Empty);
+                    var dispId = GetIntProp(h, "IdDisponibilidad");
+                    var dispNombre = dispId.HasValue && disponibilidadMap.TryGetValue(dispId.Value, out var dName) ? dName : (dispId?.ToString() ?? string.Empty);
+                    var estadoId = GetIntProp(h, "IdEstadoFisico");
+                    var estadoNombre = estadoId.HasValue && estadoFisicoMap.TryGetValue(estadoId.Value, out var eName) ? eName : (estadoId?.ToString() ?? string.Empty);
+                    var costo = GetDecimalProp(h, "CostoDolares")?.ToString("F2") ?? "";
+                    var activo = GetStringProp(h, "Activo");
+
+                    wsList.Cell(row, 1).Value = id;
+                    wsList.Cell(row, 2).Value = nombre;
+                    wsList.Cell(row, 3).Value = codigo;
+                    wsList.Cell(row, 4).Value = familiaNombre;
+                    wsList.Cell(row, 5).Value = dispNombre;
+                    wsList.Cell(row, 6).Value = estadoNombre;
+                    wsList.Cell(row, 7).Value = costo;
+                    wsList.Cell(row, 8).Value = activo;
+                    row++;
+                }
+
+                wsList.Columns().AdjustToContents();
+
+                // hoja resumen
+                var ws = wb.Worksheets.Add("Resumen");
+                int r = 1;
+                ws.Cell(r++, 1).Value = "Reporte de Herramientas";
+                ws.Cell(r++, 1).Value = $"Fecha: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} (UTC)";
+                r++;
+
+                ws.Cell(r, 1).Value = "Total Costo";
+                ws.Cell(r, 2).Value = totalCosto;
+                r++;
+
+                ws.Cell(r, 1).Value = "Cantidad Disponibles";
+                ws.Cell(r, 2).Value = disponiblesCount;
+                r++;
+
+                ws.Cell(r, 1).Value = "Cantidad Prestadas";
+                ws.Cell(r, 2).Value = prestadasCount;
+                r++;
+
+                ws.Cell(r, 1).Value = "Cantidad en Mantenimiento";
+                ws.Cell(r, 2).Value = reparacionCount;
+                r++;
+
+                ws.Cell(r, 1).Value = "Cantidad Activas";
+                ws.Cell(r, 2).Value = activasCount;
+                r += 2;
+
+                ws.Cell(r++, 1).Value = "Cantidades por Estado Físico";
+                foreach (var kv in estadoFisicoCounts)
+                {
+                    ws.Cell(r, 1).Value = kv.Key;
+                    ws.Cell(r, 2).Value = kv.Value;
+                    r++;
+                }
+
+                ws.Columns().AdjustToContents();
+
+                using var ms = new MemoryStream();
+                wb.SaveAs(ms);
+                var bytes = ms.ToArray();
+
+                return new BaseResponseDto<byte[]>
+                {
+                    Success = true,
+                    Data = bytes,
+                    Message = "Reporte generado correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<byte[]>
+                {
+                    Success = false,
+                    Message = "Error al generar el reporte de herramientas",
+                    Errors = new List<string> { ex.Message }
+                };
             }
         }
     }

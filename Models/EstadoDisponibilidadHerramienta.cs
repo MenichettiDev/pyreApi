@@ -14,3 +14,8 @@ namespace pyreApi.Models
         public ICollection<Herramienta> Herramientas { get; set; } = new List<Herramienta>();
     }
 }
+// 1	Disponible
+// 2	Prestada
+// 3	Mantenimiento
+// 4	Extraviada
+// 5	Bloqueada
