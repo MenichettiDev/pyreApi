@@ -14,3 +14,5 @@ namespace pyreApi.Models
         public ICollection<Alerta> Alertas { get; set; } = new List<Alerta>();
     }
 }
+// 1	Proximo a Vencer
+// 2	Vencido

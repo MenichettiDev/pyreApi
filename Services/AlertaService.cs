@@ -2,16 +2,24 @@ using pyreApi.DTOs.Common;
 using pyreApi.DTOs.Alerta;
 using pyreApi.Models;
 using pyreApi.Repositories;
+using pyreApi.Data;
 
 namespace pyreApi.Services
 {
     public class AlertaService : GenericService<Alerta>
     {
         private readonly AlertaRepository _alertaRepository;
+        private readonly MovimientoHerramientaRepository _movimientoRepository;
+        private readonly ApplicationDbContext _context;
 
-        public AlertaService(AlertaRepository repository) : base(repository)
+        public AlertaService(
+            AlertaRepository repository,
+            MovimientoHerramientaRepository movimientoRepository,
+            ApplicationDbContext context) : base(repository)
         {
             _alertaRepository = repository;
+            _movimientoRepository = movimientoRepository;
+            _context = context;
         }
 
         public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetAllAlertasAsync()
@@ -19,7 +27,9 @@ namespace pyreApi.Services
             try
             {
                 var alertas = await _repository.GetAllAsync();
-                var alertaDtos = alertas.Select(MapToDto);
+                var alertaDtos = alertas
+                    .Where(a => a.Activo)                  // <- filtrar solo activas
+                    .Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<AlertaDto>>
                 {
@@ -135,7 +145,7 @@ namespace pyreApi.Services
         {
             try
             {
-                var alertas = await _alertaRepository.GetByHerramientaAsync(idHerramienta);
+                var alertas = await _alertaRepository.GetByMovimientoHerramientaAsync(idHerramienta);
                 var alertaDtos = alertas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<AlertaDto>>
@@ -195,7 +205,7 @@ namespace pyreApi.Services
                     };
                 }
 
-                alerta.Leida = true;
+                alerta.Activo = false; // Mark as read by setting Activo to false
                 await _repository.UpdateAsync(alerta);
 
                 return new BaseResponseDto<bool>
@@ -247,8 +257,7 @@ namespace pyreApi.Services
             {
                 var alertas = await _alertaRepository.GetAllAsync();
                 var pendientes = alertas
-                    .Where(a => a.IdTipoAlerta == 1 && a.Herramienta != null &&
-                        a.FechaGeneracion.AddDays(a.Herramienta.DiasAlerta) > DateTime.Now)
+                    .Where(a => a.IdTipoAlerta == 1 && a.Activo)
                     .Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<AlertaDto>>
@@ -275,8 +284,7 @@ namespace pyreApi.Services
             {
                 var alertas = await _alertaRepository.GetAllAsync();
                 var vencidas = alertas
-                    .Where(a => a.IdTipoAlerta == 2 && a.Herramienta != null &&
-                        a.FechaGeneracion.AddDays(a.Herramienta.DiasAlerta) <= DateTime.Now)
+                    .Where(a => a.IdTipoAlerta == 2 && a.Activo)
                     .Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<AlertaDto>>
@@ -303,8 +311,7 @@ namespace pyreApi.Services
             {
                 var alertas = await _alertaRepository.GetAllAsync();
                 int count = alertas
-                    .Where(a => a.IdTipoAlerta == 1 && a.Herramienta != null &&
-                        a.FechaGeneracion.AddDays(a.Herramienta.DiasAlerta) > DateTime.Now)
+                    .Where(a => a.IdTipoAlerta == 1 && a.Activo)
                     .Count();
 
                 return new BaseResponseDto<int>
@@ -331,8 +338,7 @@ namespace pyreApi.Services
             {
                 var alertas = await _alertaRepository.GetAllAsync();
                 int count = alertas
-                    .Where(a => a.IdTipoAlerta == 2 && a.Herramienta != null &&
-                        a.FechaGeneracion.AddDays(a.Herramienta.DiasAlerta) <= DateTime.Now)
+                    .Where(a => a.IdTipoAlerta == 2 && a.Activo)
                     .Count();
 
                 return new BaseResponseDto<int>
@@ -358,12 +364,21 @@ namespace pyreApi.Services
             return new AlertaDto
             {
                 IdAlerta = alerta.IdAlerta,
-                IdHerramienta = alerta.IdHerramienta,
-                NombreHerramienta = alerta.Herramienta?.NombreHerramienta ?? string.Empty,
+                IdMovimiento = alerta.IdMovimiento,
+                NombreHerramienta = alerta.MovimientoHerramienta?.Herramienta?.NombreHerramienta ?? string.Empty,
                 IdTipoAlerta = alerta.IdTipoAlerta,
                 NombreTipoAlerta = alerta.TipoAlerta?.NombreTipoAlerta ?? string.Empty,
                 FechaGeneracion = alerta.FechaGeneracion,
-                Leida = alerta.Leida
+                FechaVencimiento = alerta.MovimientoHerramienta?.FechaEstimadaDevolucion ?? DateTime.MinValue,
+                Comentario = alerta.Comentario,
+                IdModifica = alerta.IdModifica ?? 0,
+                Activo = alerta.Activo,
+                HerramientaNombre = alerta.MovimientoHerramienta?.Herramienta?.NombreHerramienta,
+                ResponsableNombre = alerta.MovimientoHerramienta?.IdUsuarioResponsable.HasValue == true
+                    ? alerta.MovimientoHerramienta?.UsuarioResponsable?.Nombre
+                    : alerta.MovimientoHerramienta?.Proveedor?.NombreProveedor,
+                TipoMovimiento = alerta.MovimientoHerramienta?.IdTipoMovimiento == 1 ? "Préstamo"
+                    : "Mantenimiento"
             };
         }
 
@@ -371,15 +386,79 @@ namespace pyreApi.Services
         {
             return new Alerta
             {
-                IdHerramienta = createDto.IdHerramienta,
-                IdTipoAlerta = createDto.IdTipoAlerta
+                IdMovimiento = createDto.IdMovimiento,
+                IdTipoAlerta = createDto.IdTipoAlerta,
+                Comentario = createDto.Comentario,
+                FechaGeneracion = DateTime.UtcNow,
+                Activo = true
             };
         }
 
         private void MapFromUpdateDto(UpdateAlertaDto updateDto, Alerta alerta)
         {
-            alerta.IdHerramienta = updateDto.IdHerramienta;
-            alerta.Leida = updateDto.Leida;
+            alerta.IdMovimiento = updateDto.IdMovimiento;
+            alerta.IdTipoAlerta = updateDto.IdTipoAlerta;
+            alerta.Comentario = updateDto.Comentario;
+            alerta.IdModifica = updateDto.IdModifica;
+            alerta.Activo = updateDto.Activo;
+        }
+
+        public async Task<BaseResponseDto<AlertaDto>> UpdateAlertaAndMovimientoAsync(UpdateAlertaMovimientoDto updateDto)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Obtener la alerta
+                var alerta = await _alertaRepository.GetByIdAsync(updateDto.IdAlerta);
+                if (alerta == null)
+                {
+                    return new BaseResponseDto<AlertaDto>
+                    {
+                        Success = false,
+                        Message = "Alerta no encontrada"
+                    };
+                }
+
+                // Obtener el movimiento relacionado
+                var movimiento = await _movimientoRepository.GetByIdAsync(alerta.IdMovimiento);
+                if (movimiento == null)
+                {
+                    return new BaseResponseDto<AlertaDto>
+                    {
+                        Success = false,
+                        Message = "Movimiento relacionado no encontrado"
+                    };
+                }
+
+                // Actualizar el movimiento
+                movimiento.FechaEstimadaDevolucion = updateDto.FechaEstimadaDevolucion;
+                await _movimientoRepository.UpdateAsync(movimiento);
+
+                // Actualizar la alerta
+                alerta.Comentario = updateDto.Comentario;
+                alerta.IdModifica = updateDto.IdModifica;
+                alerta.Activo = false; // Marcar la alerta como leída
+                await _alertaRepository.UpdateAsync(alerta);
+
+                await transaction.CommitAsync();
+
+                return new BaseResponseDto<AlertaDto>
+                {
+                    Success = true,
+                    Data = MapToDto(alerta),
+                    Message = "Alerta y movimiento actualizados correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return new BaseResponseDto<AlertaDto>
+                {
+                    Success = false,
+                    Message = "Error al actualizar la alerta y movimiento",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
         }
     }
 }

@@ -171,6 +171,7 @@ namespace pyreApi.Services
             }
         }
 
+
         public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetByHerramientaAsync(int herramientaId)
         {
             try
@@ -506,5 +507,6 @@ namespace pyreApi.Services
             movimiento.EstadoHerramientaAlDevolver = updateDto.EstadoHerramientaAlDevolver;
             movimiento.Observaciones = updateDto.Observaciones;
         }
+
     }
 }

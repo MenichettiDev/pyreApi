@@ -113,5 +113,19 @@ namespace pyreApi.Controllers
             var result = await _alertaService.GetCountAlertasVencidasAsync();
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
+        [HttpPatch("{id}/update-with-movement")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor")] // Solo roles con permisos de modificación
+        public async Task<IActionResult> UpdateAlertaAndMovimiento(int id, [FromBody] UpdateAlertaMovimientoDto updateDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (id != updateDto.IdAlerta)
+                return BadRequest("El ID de la URL no coincide con el ID del objeto");
+
+            var result = await _alertaService.UpdateAlertaAndMovimientoAsync(updateDto);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
     }
 }

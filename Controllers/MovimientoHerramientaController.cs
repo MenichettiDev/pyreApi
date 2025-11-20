@@ -122,6 +122,8 @@ namespace pyreApi.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
+
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar movimientos
         public async Task<IActionResult> Delete(int id)

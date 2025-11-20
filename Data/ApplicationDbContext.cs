@@ -75,11 +75,18 @@ namespace pyreApi.Data
                 .HasForeignKey(h => h.IdPlanta)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Alerta → Herramienta
+            // Alerta → MovimientoHerramienta
             modelBuilder.Entity<Alerta>()
-                .HasOne(a => a.Herramienta)
+                .HasOne(a => a.MovimientoHerramienta)
                 .WithMany(h => h.Alertas)
-                .HasForeignKey(a => a.IdHerramienta)
+                .HasForeignKey(a => a.IdMovimiento)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Alerta → Usuario
+            modelBuilder.Entity<Alerta>()
+                .HasOne(a => a.Usuario)
+                .WithMany(h => h.Alertas)
+                .HasForeignKey(a => a.IdModifica)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Alerta → TipoAlerta
