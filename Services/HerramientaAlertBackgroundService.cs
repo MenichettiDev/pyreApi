@@ -8,8 +8,8 @@ using pyreApi.Repositories;
 namespace pyreApi.Services
 {
     /// <summary>
-    /// Servicio en segundo plano que se ejecuta diariamente para generar alertas de herramientas
-    /// basadas en su fecha de vencimiento y estado de disponibilidad.
+    /// Servicio en segundo plano que se ejecuta diariamente para generar alertas de herramientas vencidas
+    /// basadas en herramientas en estado Prestada (2) o Mantenimiento (3).
     /// </summary>
     public class HerramientaAlertBackgroundService : BackgroundService
     {
@@ -25,10 +25,6 @@ namespace pyreApi.Services
             _logger = logger;
         }
 
-        /// <summary>
-        /// Método principal que ejecuta el proceso de verificación de alertas de manera continua.
-        /// Se ejecuta cada 24 horas hasta que se cancele el servicio.
-        /// </summary>
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
@@ -36,7 +32,6 @@ namespace pyreApi.Services
                 try
                 {
                     await ProcessHerramientaAlertsAsync();
-                    // _logger.LogInformation("Proceso de alertas de herramientas completado a las {Time}", DateTime.UtcNow);
                 }
                 catch (Exception ex)
                 {
@@ -48,8 +43,8 @@ namespace pyreApi.Services
         }
 
         /// <summary>
-        /// Procesa todas las herramientas activas que están en estado Prestada (2) o Mantenimiento (3)
-        /// para verificar si requieren alertas por vencimiento.
+        /// Procesa todas las herramientas en estado Prestada (2) o Mantenimiento (3)
+        /// para verificar si tienen préstamos o reparaciones vencidos.
         /// </summary>
         private async Task ProcessHerramientaAlertsAsync()
         {
@@ -60,11 +55,8 @@ namespace pyreApi.Services
             var alertaRepository = scope.ServiceProvider.GetRequiredService<GenericRepository<Alerta>>();
 
             // Obtener herramientas activas que están en estado Prestada (2) o Mantenimiento (3)
-            // Solo estas necesitan seguimiento de vencimiento
             var herramientasActivas = await herramientaRepository.FindAsync(h =>
                 h.Activo && (h.IdDisponibilidad == 2 || h.IdDisponibilidad == 3));
-
-            // _logger.LogInformation("Procesando {Count} herramientas activas en estado Prestada o Mantenimiento", herramientasActivas.Count());
 
             foreach (var herramienta in herramientasActivas)
             {
@@ -73,120 +65,64 @@ namespace pyreApi.Services
         }
 
         /// <summary>
-        /// Evalúa una herramienta específica para determinar si necesita generar alertas.
-        /// Usa la fecha de devolución probable del último movimiento para calcular el vencimiento.
+        /// Evalúa una herramienta específica para determinar si tiene movimientos vencidos.
+        /// Busca el último movimiento tipo Prestamo (1) o Envio Reparacion (3).
         /// </summary>
-        /// <param name="herramienta">La herramienta a evaluar</param>
-        /// <param name="movimientoRepository">Repositorio para obtener movimientos</param>
-        /// <param name="alertaService">Servicio para crear alertas</param>
-        /// <param name="alertaRepository">Repositorio para consultar alertas existentes</param>
         private async Task ProcessHerramientaAlert(
             Herramienta herramienta,
             GenericRepository<MovimientoHerramienta> movimientoRepository,
             AlertaService alertaService,
             GenericRepository<Alerta> alertaRepository)
         {
-            // Obtener el último movimiento de la herramienta que tenga fecha estimada de devolución
+            // Obtener el último movimiento de tipo Prestamo (1) o Envio Reparacion (3)
+            // que tenga fecha estimada de devolución
             var ultimoMovimiento = (await movimientoRepository.FindAsync(m =>
                 m.IdHerramienta == herramienta.IdHerramienta &&
+                (m.IdTipoMovimiento == 1 || m.IdTipoMovimiento == 3) &&
                 m.FechaEstimadaDevolucion.HasValue))
                 .OrderByDescending(m => m.Fecha)
                 .FirstOrDefault();
 
             if (ultimoMovimiento?.FechaEstimadaDevolucion == null)
             {
-                // _logger.LogInformation("Herramienta {HerramientaId} no tiene movimientos con fecha estimada de devolución",
-                // herramienta.IdHerramienta);
                 return;
             }
 
-            // La fecha de vencimiento es la fecha estimada de devolución del último movimiento
+            // Verificar si el movimiento está vencido
             var fechaVencimiento = ultimoMovimiento.FechaEstimadaDevolucion.Value;
+            var fechaActual = DateTime.UtcNow;
 
-            // La fecha de warning es la fecha de vencimiento menos los días de alerta configurados
-            var fechaWarning = fechaVencimiento.AddDays(-herramienta.DiasAlerta);
-
-            // Calcular días restantes hasta el vencimiento
-            var diasRestantesVencimiento = (fechaVencimiento - DateTime.UtcNow).Days;
-            var diasRestantesWarning = (fechaWarning - DateTime.UtcNow).Days;
-
-            // _logger.LogInformation("Herramienta {HerramientaId}: Vencimiento={FechaVencimiento}, Warning={FechaWarning}, DíasRestantesVencimiento={DiasVencimiento}",
-            //     herramienta.IdHerramienta, fechaVencimiento, fechaWarning, diasRestantesVencimiento);
-            // _logger.LogInformation("Herramienta {HerramientaId}: FechaVencimiento={FechaVencimiento}, FechaActual={FechaActual}, DíasRestantes={DiasRestantes}",
-            //     herramienta.IdHerramienta, fechaVencimiento, DateTime.UtcNow, diasRestantesVencimiento);
-
-
-            // Verificar si ya existe una alerta no leída para esta herramienta
-            var alertaExistente = await alertaRepository.FindAsync(a =>
-                a.IdHerramienta == herramienta.IdHerramienta && !a.Leida);
-
-            // Lógica de generación de alertas basada en fechas
-            if (diasRestantesVencimiento <= 0)
+            if (fechaActual > fechaVencimiento)
             {
-                //             _logger.LogInformation("Herramienta {HerramientaId} está VENCIDA - días restantes: {Dias}",
-                //    herramienta.IdHerramienta, diasRestantesVencimiento);
-                // Caso 1: Herramienta vencida (fecha de devolución ya pasó)
-                // Generar alerta tipo 2 (Vencido)
-                await CreateAlertIfNotExists(alertaExistente, herramienta.IdHerramienta, 2, alertaService, "vencida");
-            }
-            else if (diasRestantesWarning <= 0 && diasRestantesVencimiento > 0)
-            {
-                // Caso 2: Herramienta en período de warning (entre fecha warning y fecha vencimiento)
-                // Generar alerta tipo 1 (Próximo a vencer)
-                // Solo si el período total es mayor a los días de alerta (para evitar alertas en préstamos muy cortos)
-                var diasTotalPrestamo = (fechaVencimiento - ultimoMovimiento.Fecha).Days;
-                if (diasTotalPrestamo > herramienta.DiasAlerta)
+                // Verificar si ya existe una alerta activa para este movimiento
+                var alertaExistente = await alertaRepository.FindAsync(a =>
+                    a.IdMovimiento == ultimoMovimiento.IdMovimiento &&
+                    a.IdTipoAlerta == 2 &&
+                    a.Activo);
+
+                if (!alertaExistente.Any())
                 {
-                    await CreateAlertIfNotExists(alertaExistente, herramienta.IdHerramienta, 1, alertaService, "próxima a vencer");
+                    // Crear alerta de vencimiento
+                    var createAlertaDto = new CreateAlertaDto
+                    {
+                        IdMovimiento = ultimoMovimiento.IdMovimiento,
+                        IdTipoAlerta = 2, // Vencido
+                        Comentario = null
+                    };
+
+                    var result = await alertaService.CreateAlertaAsync(createAlertaDto);
+
+                    if (result.Success)
+                    {
+                        _logger.LogInformation("Alerta de vencimiento creada para herramienta {HerramientaId}, movimiento {MovimientoId}",
+                            herramienta.IdHerramienta, ultimoMovimiento.IdMovimiento);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Error al crear alerta para herramienta {HerramientaId}: {Error}",
+                            herramienta.IdHerramienta, result.Message);
+                    }
                 }
-            }
-            // Caso 3: Herramienta aún no en período de warning - No requiere alerta
-        }
-
-        /// <summary>
-        /// Crea una nueva alerta si no existe ya una del mismo tipo para la herramienta.
-        /// Evita duplicar alertas del mismo tipo para la misma herramienta.
-        /// </summary>
-        /// <param name="alertasExistentes">Alertas no leídas existentes para la herramienta</param>
-        /// <param name="idHerramienta">ID de la herramienta</param>
-        /// <param name="tipoAlerta">Tipo de alerta a crear (1=Próximo a vencer, 2=Vencido)</param>
-        /// <param name="alertaService">Servicio para crear la alerta</param>
-        /// <param name="descripcionEstado">Descripción del estado para logging</param>
-        private async Task CreateAlertIfNotExists(
-            IEnumerable<Alerta> alertasExistentes,
-            int idHerramienta,
-            int tipoAlerta,
-            AlertaService alertaService,
-            string descripcionEstado)
-        {
-            // Verificar si ya existe una alerta del mismo tipo para esta herramienta
-            var alertaDelTipoExiste = alertasExistentes.Any(a => a.IdTipoAlerta == tipoAlerta);
-
-            if (!alertaDelTipoExiste)
-            {
-                var createAlertaDto = new CreateAlertaDto
-                {
-                    IdHerramienta = idHerramienta,
-                    IdTipoAlerta = tipoAlerta
-                };
-
-                var result = await alertaService.CreateAlertaAsync(createAlertaDto);
-
-                if (result.Success)
-                {
-                    // _logger.LogInformation("Alerta creada para herramienta {HerramientaId} ({Estado}), tipo {TipoAlerta}",
-                    //     idHerramienta, descripcionEstado, tipoAlerta);
-                }
-                else
-                {
-                    _logger.LogWarning("Error al crear alerta para herramienta {HerramientaId}: {Error}",
-                        idHerramienta, result.Message);
-                }
-            }
-            else
-            {
-                _logger.LogInformation("Alerta tipo {TipoAlerta} ya existe para herramienta {HerramientaId}",
-                    tipoAlerta, idHerramienta);
             }
         }
     }

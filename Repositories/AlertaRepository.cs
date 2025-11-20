@@ -13,7 +13,12 @@ namespace pyreApi.Repositories
         public override async Task<IEnumerable<Alerta>> GetAllAsync()
         {
             return await _dbSet
-                .Include(a => a.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.UsuarioResponsable)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Proveedor)
                 .Include(a => a.TipoAlerta)
                 .ToListAsync();
         }
@@ -21,33 +26,53 @@ namespace pyreApi.Repositories
         public override async Task<Alerta?> GetByIdAsync(int id)
         {
             return await _dbSet
-                .Include(a => a.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.UsuarioResponsable)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Proveedor)
                 .Include(a => a.TipoAlerta)
                 .FirstOrDefaultAsync(a => a.IdAlerta == id);
         }
 
-        public async Task<IEnumerable<Alerta>> GetByHerramientaAsync(int idHerramienta)
+        public async Task<IEnumerable<Alerta>> GetByMovimientoHerramientaAsync(int idHerramienta)
         {
             return await _dbSet
-                .Include(a => a.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.UsuarioResponsable)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Proveedor)
                 .Include(a => a.TipoAlerta)
-                .Where(a => a.IdHerramienta == idHerramienta)
+                .Where(a => a.MovimientoHerramienta.IdHerramienta == idHerramienta)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<Alerta>> GetUnreadAsync()
         {
             return await _dbSet
-                .Include(a => a.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.UsuarioResponsable)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Proveedor)
                 .Include(a => a.TipoAlerta)
-                .Where(a => !a.Leida)
+                .Where(a => a.Activo)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<Alerta>> GetByTipoAlertaAsync(int idTipoAlerta)
         {
             return await _dbSet
-                .Include(a => a.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.UsuarioResponsable)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Proveedor)
                 .Include(a => a.TipoAlerta)
                 .Where(a => a.IdTipoAlerta == idTipoAlerta)
                 .ToListAsync();

@@ -9,7 +9,7 @@ namespace pyreApi.Models
         public int IdAlerta { get; set; }
 
         [Required]
-        public int IdHerramienta { get; set; }
+        public int IdMovimiento { get; set; }
 
         [Required]
         public int IdTipoAlerta { get; set; }
@@ -17,12 +17,17 @@ namespace pyreApi.Models
         [Required]
         public DateTime FechaGeneracion { get; set; }
 
-        public bool Leida { get; set; } = false;
+        public string? Comentario { get; set; }
+        public int? IdModifica { get; set; }
 
-        [ForeignKey(nameof(IdHerramienta))]
-        public Herramienta Herramienta { get; set; } = null!;
+        public bool Activo { get; set; } = true;
+
+        [ForeignKey(nameof(IdMovimiento))]
+        public MovimientoHerramienta MovimientoHerramienta { get; set; } = null!;
 
         [ForeignKey(nameof(IdTipoAlerta))]
         public TipoAlerta TipoAlerta { get; set; } = null!;
+        [ForeignKey(nameof(IdModifica))]
+        public Usuario Usuario { get; set; } = null!;
     }
 }

@@ -49,5 +49,12 @@ namespace pyreApi.Models
 
         [ForeignKey("EstadoHerramientaAlDevolver")]
         public EstadoFisicoHerramienta? EstadoDevolucion { get; set; }
+
+        public ICollection<Alerta> Alertas { get; set; } = new List<Alerta>();
     }
 }
+// 1	Prestamo
+// 2	Devolucion
+// 3	Envio Reparación
+// 4	Baja
+// 5	Alta

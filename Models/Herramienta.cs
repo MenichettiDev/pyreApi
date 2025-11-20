@@ -66,6 +66,6 @@ namespace pyreApi.Models
 
         public ICollection<MovimientoHerramienta> Movimientos { get; set; } =
             new List<MovimientoHerramienta>();
-        public ICollection<Alerta> Alertas { get; set; } = new List<Alerta>();
+
     }
 }
