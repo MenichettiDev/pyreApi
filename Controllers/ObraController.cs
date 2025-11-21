@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using pyreApi.DTOs.Obra;
 using pyreApi.Services;
 
@@ -25,9 +25,17 @@ namespace pyreApi.Controllers
             [FromQuery] string? nombre = null,
             [FromQuery] string? ubicacion = null,
             [FromQuery] string? codigo = null,
-            [FromQuery] int? idCliente = null)
+            [FromQuery] int? idCliente = null
+        )
         {
-            var result = await _obraService.GetAllObrasPaginatedAsync(page, pageSize, nombre, ubicacion, codigo, idCliente);
+            var result = await _obraService.GetAllObrasPaginatedAsync(
+                page,
+                pageSize,
+                nombre,
+                ubicacion,
+                codigo,
+                idCliente
+            );
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
@@ -46,8 +54,13 @@ namespace pyreApi.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            if (createDto.IdCliente <= 0)
+                return BadRequest("El ID del cliente debe ser un número válido mayor a 0.");
+
             var result = await _obraService.CreateObraAsync(createDto);
-            return result.Success ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdObra }, result) : BadRequest(result);
+            return result.Success
+                ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdObra }, result)
+                : BadRequest(result);
         }
 
         [HttpPut("{id}")]
@@ -59,6 +72,9 @@ namespace pyreApi.Controllers
 
             if (id != updateDto.IdObra)
                 return BadRequest("El ID de la URL no coincide con el ID del objeto");
+
+            if (updateDto.IdCliente <= 0)
+                return BadRequest("El ID del cliente debe ser un número válido mayor a 0.");
 
             var result = await _obraService.UpdateObraAsync(updateDto);
             return result.Success ? Ok(result) : BadRequest(result);
@@ -78,7 +94,13 @@ namespace pyreApi.Controllers
         {
             if (id <= 0)
             {
-                return BadRequest(new { Success = false, Message = "El ID de la obra debe ser un número válido mayor a 0." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El ID de la obra debe ser un número válido mayor a 0.",
+                    }
+                );
             }
 
             var result = await _obraService.ToggleActivoAsync(id);
@@ -94,7 +116,10 @@ namespace pyreApi.Controllers
 
         [HttpGet("getObrasCombo")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar el combo de obras
-        public async Task<IActionResult> GetAllCombo([FromQuery] int? idCliente = null, [FromQuery] string? search = null)
+        public async Task<IActionResult> GetAllCombo(
+            [FromQuery] int? idCliente = null,
+            [FromQuery] string? search = null
+        )
         {
             var result = await _obraService.GetAllComboAsync(idCliente, search);
             return result.Success ? Ok(result) : BadRequest(result);

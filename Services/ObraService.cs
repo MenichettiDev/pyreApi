@@ -78,7 +78,17 @@ namespace pyreApi.Services
         {
             try
             {
-                var obra = MapFromCreateDto(createDto);
+                var obra = new Obra
+                {
+                    IdCliente = createDto.IdCliente,
+                    Codigo = createDto.Codigo,
+                    NombreObra = createDto.NombreObra,
+                    Ubicacion = createDto.Ubicacion,
+                    Descripcion = createDto.Descripcion,
+                    FechaInicio = createDto.FechaInicio,
+                    FechaFin = createDto.FechaFin,
+                    Activo = createDto.Activo
+                };
                 var result = await _repository.AddAsync(obra);
 
                 return new BaseResponseDto<ObraDto>
@@ -113,7 +123,14 @@ namespace pyreApi.Services
                     };
                 }
 
-                MapFromUpdateDto(updateDto, existingObra);
+                existingObra.IdCliente = updateDto.IdCliente;
+                existingObra.Codigo = updateDto.Codigo;
+                existingObra.NombreObra = updateDto.NombreObra;
+                existingObra.Ubicacion = updateDto.Ubicacion;
+                existingObra.Descripcion = updateDto.Descripcion;
+                existingObra.FechaInicio = updateDto.FechaInicio;
+                existingObra.FechaFin = updateDto.FechaFin;
+                existingObra.Activo = updateDto.Activo;
                 await _repository.UpdateAsync(existingObra);
 
                 return new BaseResponseDto<ObraDto>
