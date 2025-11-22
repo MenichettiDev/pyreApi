@@ -47,6 +47,7 @@ namespace pyreApi.Models
         public string? Ubicacion { get; set; }
 
         public bool Activo { get; set; } = true;
+        public bool Eliminado { get; set; } = false;
 
         [Required]
         public int IdDisponibilidad { get; set; }

@@ -23,6 +23,7 @@ namespace pyreApi.Models
         [MaxLength(255)]
         public string? Direccion { get; set; }
         public bool Activo { get; set; }
+        public bool Eliminado { get; set; } = false;
         public DateTime FechaRegistro { get; set; }
     }
 }

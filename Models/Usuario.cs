@@ -32,7 +32,6 @@ namespace pyreApi.Models
 
         public bool AccedeAlSistema { get; set; } = true;
 
-        public bool Activo { get; set; } = true;
 
         [MaxLength(45)]
         public string? Avatar { get; set; }
@@ -47,6 +46,8 @@ namespace pyreApi.Models
 
         [MaxLength(500)] // Añadir longitud máxima para el hash
         public string? PasswordHash { get; set; }
+        public bool Activo { get; set; } = true;
+        public bool Eliminado { get; set; } = false;
 
         [ForeignKey("RolId")]
         public Rol Rol { get; set; } = null!;
