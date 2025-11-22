@@ -33,7 +33,9 @@ namespace pyreApi.Controllers
             [FromQuery] string? codigo = null,
             [FromQuery] string? nombre = null,
             [FromQuery] string? marca = null,
-            [FromQuery] bool? estado = null
+            [FromQuery] bool? estado = null,
+            [FromQuery] int? idDisponibilidad = null
+
         )
         {
             var result = await _herramientaService.GetPagedAsync(
@@ -42,7 +44,8 @@ namespace pyreApi.Controllers
                 codigo,
                 nombre,
                 marca,
-                estado
+                estado,
+                idDisponibilidad
             );
             return result.Success ? Ok(result) : BadRequest(result);
         }

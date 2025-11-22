@@ -373,7 +373,8 @@ namespace pyreApi.Services
             string? codigo = null,
             string? nombre = null,
             string? marca = null,
-            bool? estado = null
+            bool? estado = null,
+            int? idDisponibilidad = null
         )
         {
             try
@@ -388,7 +389,8 @@ namespace pyreApi.Services
                         codigo,
                         nombre,
                         marca,
-                        estado
+                        estado,
+                        idDisponibilidad
                     )
                 ).Where(h => h.Activo); // SOLO activas
 

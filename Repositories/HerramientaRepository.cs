@@ -115,7 +115,8 @@ namespace pyreApi.Repositories
             string? codigo,
             string? nombre,
             string? marca,
-            bool? estado
+            bool? estado,
+            int? idDisponibilidad
         )
         {
             var query = _dbSet
@@ -138,6 +139,9 @@ namespace pyreApi.Repositories
 
             if (estado.HasValue)
                 query = query.Where(h => h.Activo == estado.Value);
+
+            if (idDisponibilidad != null)
+                query = query.Where(h => h.IdDisponibilidad == idDisponibilidad); // Aplicar filtro de disponibilidad
 
             return await query.OrderBy(h => h.IdHerramienta).ToListAsync();
         }
