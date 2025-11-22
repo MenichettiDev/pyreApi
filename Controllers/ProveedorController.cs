@@ -67,7 +67,7 @@ namespace pyreApi.Controllers
         [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar proveedores
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _proveedorService.DeleteAsync(id);
+            var result = await _proveedorService.DeleteAsyncLogico(id);
             return result.Success ? Ok(result) : BadRequest(result);
         }
 

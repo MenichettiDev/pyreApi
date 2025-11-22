@@ -143,6 +143,8 @@ namespace pyreApi.Services
                 var proveedores = await _repository.GetAllAsync();
                 IEnumerable<Proveedor> filtered = proveedores;
 
+                filtered = filtered.Where(p => p.Eliminado == false);
+
                 if (!string.IsNullOrWhiteSpace(nombre))
                 {
                     var nombreTrim = nombre.Trim().ToLowerInvariant();
@@ -226,6 +228,41 @@ namespace pyreApi.Services
                     Success = false,
                     Message = "Error al obtener los proveedores",
                     Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<object>> DeleteAsyncLogico(int id)
+        {
+            try
+            {
+                var proveedor = await _repository.GetByIdAsync(id);
+                if (proveedor == null || proveedor.Eliminado)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "Proveedor no encontrado",
+                    };
+                }
+
+                // Eliminación lógica
+                proveedor.Eliminado = true;
+                await _repository.UpdateAsync(proveedor);
+
+                return new BaseResponseDto<object>
+                {
+                    Success = true,
+                    Message = "Proveedor eliminado correctamente",
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<object>
+                {
+                    Success = false,
+                    Message = "Error al eliminar el proveedor",
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }

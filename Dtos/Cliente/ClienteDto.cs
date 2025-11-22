@@ -9,6 +9,7 @@ namespace pyreApi.DTOs.Cliente
         public string? Email { get; set; }
         public string? Direccion { get; set; }
         public bool Activo { get; set; }
+        public bool Eliminado { get; set; }
         public DateTime FechaRegistro { get; set; }
     }
 }

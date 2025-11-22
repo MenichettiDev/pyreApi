@@ -847,5 +847,41 @@ namespace pyreApi.Services
                 };
             }
         }
+
+        public async Task<BaseResponseDto<object>> DeleteAsyncLogico(int id)
+        {
+            try
+            {
+                var usuario = await _repository.GetByIdAsync(id);
+                if (usuario == null || usuario.Eliminado)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "Usuario no encontrado",
+                    };
+                }
+
+                // Eliminación lógica
+                usuario.Eliminado = true;
+                usuario.FechaModificacion = DateTime.UtcNow;
+                await _repository.UpdateAsync(usuario);
+
+                return new BaseResponseDto<object>
+                {
+                    Success = true,
+                    Message = "Usuario eliminado correctamente",
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<object>
+                {
+                    Success = false,
+                    Message = "Error al eliminar el usuario",
+                    Errors = new List<string> { ex.Message },
+                };
+            }
+        }
     }
 }

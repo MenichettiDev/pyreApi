@@ -1362,5 +1362,40 @@ namespace pyreApi.Services
                 };
             }
         }
+
+        public async Task<BaseResponseDto<object>> DeleteAsyncLogico(int id)
+        {
+            try
+            {
+                var herramienta = await _repository.GetByIdAsync(id);
+                if (herramienta == null || herramienta.Eliminado)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "Herramienta no encontrada",
+                    };
+                }
+
+                // Eliminación lógica
+                herramienta.Eliminado = true;
+                await _repository.UpdateAsync(herramienta);
+
+                return new BaseResponseDto<object>
+                {
+                    Success = true,
+                    Message = "Herramienta eliminada correctamente",
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<object>
+                {
+                    Success = false,
+                    Message = "Error al eliminar la herramienta",
+                    Errors = new List<string> { ex.Message },
+                };
+            }
+        }
     }
 }

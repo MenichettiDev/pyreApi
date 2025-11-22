@@ -89,7 +89,7 @@ namespace pyreApi.Controllers
         [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar herramientas
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _herramientaService.DeleteAsync(id);
+            var result = await _herramientaService.DeleteAsyncLogico(id);
             return result.Success ? Ok(result) : BadRequest(result);
         }
 

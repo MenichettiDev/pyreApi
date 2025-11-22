@@ -29,12 +29,13 @@ namespace pyreApi.DTOs.Herramienta
         [Required(ErrorMessage = "La planta es requerida")]
         public int IdPlanta { get; set; } = 1;
 
-        public bool Activo { get; set; } = true;
 
         [Required(ErrorMessage = "El estado de disponibilidad es requerido")]
         public int IdDisponibilidad { get; set; }
 
         [Range(0, int.MaxValue, ErrorMessage = "Los días de alerta deben ser un número positivo")]
         public int DiasAlerta { get; set; }
+        public bool Activo { get; set; } = true;
+        public bool Eliminado { get; set; } = false;
     }
 }

@@ -152,6 +152,8 @@ namespace pyreApi.Services
                 var clientes = await _repository.GetAllAsync();
                 IEnumerable<Cliente> filtered = clientes;
 
+                filtered = filtered.Where(c => c.Eliminado == false);
+
                 if (!string.IsNullOrWhiteSpace(nombre))
                 {
                     var nombreTrim = nombre.Trim().ToLowerInvariant();
@@ -246,6 +248,41 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener los clientes",
+                    Errors = new List<string> { ex.Message },
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<object>> DeleteAsyncLogico(int id)
+        {
+            try
+            {
+                var cliente = await _repository.GetByIdAsync(id);
+                if (cliente == null || cliente.Eliminado)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "Cliente no encontrado",
+                    };
+                }
+
+                // Eliminación lógica
+                cliente.Eliminado = true;
+                await _repository.UpdateAsync(cliente);
+
+                return new BaseResponseDto<object>
+                {
+                    Success = true,
+                    Message = "Cliente eliminado correctamente",
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<object>
+                {
+                    Success = false,
+                    Message = "Error al eliminar el cliente",
                     Errors = new List<string> { ex.Message },
                 };
             }

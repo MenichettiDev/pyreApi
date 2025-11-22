@@ -84,7 +84,7 @@ namespace pyreApi.Controllers
         [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar obras
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _obraService.DeleteAsync(id);
+            var result = await _obraService.DeleteAsyncLogico(id);
             return result.Success ? Ok(result) : BadRequest(result);
         }
 

@@ -12,5 +12,6 @@ namespace pyreApi.DTOs.Obra
         public int IdCliente { get; set; }
         public string? ClienteNombre { get; set; }
         public bool Activo { get; set; }
+        public bool Eliminado { get; set; }
     }
 }

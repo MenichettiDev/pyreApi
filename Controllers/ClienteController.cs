@@ -76,7 +76,7 @@ namespace pyreApi.Controllers
         [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar clientes
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _clienteService.DeleteAsync(id);
+            var result = await _clienteService.DeleteAsyncLogico(id);
             return result.Success ? Ok(result) : BadRequest(result);
         }
 

@@ -169,6 +169,8 @@ namespace pyreApi.Services
                 await PopulateClientesAsync(obras);
                 IEnumerable<Obra> filtered = obras;
 
+                filtered = filtered.Where(o => o.Eliminado == false);
+
                 if (!string.IsNullOrWhiteSpace(nombre))
                 {
                     var nombreTrim = nombre.Trim().ToLowerInvariant();
@@ -273,6 +275,41 @@ namespace pyreApi.Services
                     Success = false,
                     Message = "Error al obtener las obras",
                     Errors = new List<string> { ex.Message }
+                };
+            }
+        }
+
+        public async Task<BaseResponseDto<object>> DeleteAsyncLogico(int id)
+        {
+            try
+            {
+                var obra = await _repository.GetByIdAsync(id);
+                if (obra == null || obra.Eliminado)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "Obra no encontrada",
+                    };
+                }
+
+                // Eliminación lógica
+                obra.Eliminado = true;
+                await _repository.UpdateAsync(obra);
+
+                return new BaseResponseDto<object>
+                {
+                    Success = true,
+                    Message = "Obra eliminada correctamente",
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<object>
+                {
+                    Success = false,
+                    Message = "Error al eliminar la obra",
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }

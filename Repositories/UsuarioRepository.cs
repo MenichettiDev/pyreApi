@@ -202,6 +202,8 @@ namespace pyreApi.Repositories
                 .Include(u => u.Rol) // Asegurarse de incluir la relación con Rol
                 .AsQueryable();
 
+            query = query.Where(u => u.Eliminado == false);
+
             if (!string.IsNullOrWhiteSpace(legajo))
                 query = query.Where(u => u.Legajo != null && u.Legajo == legajo);
 

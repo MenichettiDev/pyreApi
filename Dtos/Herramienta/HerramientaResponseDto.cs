@@ -13,6 +13,7 @@ namespace pyreApi.DTOs.Herramienta
         public string? UbicacionFisica { get; set; }
         public string? Ubicacion { get; set; }
         public bool Activo { get; set; }
+        public bool Eliminado { get; set; }
         public int IdFamilia { get; set; }
         public int IdEstadoFisico { get; set; }
         public int IdDisponibilidad { get; set; }

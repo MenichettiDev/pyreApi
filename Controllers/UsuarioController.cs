@@ -295,7 +295,7 @@ namespace pyreApi.Controllers
                 );
             }
 
-            var response = await _usuarioService.DeleteAsync(id);
+            var response = await _usuarioService.DeleteAsyncLogico(id);
             if (response.Success)
                 return Ok(response);
 
