@@ -883,5 +883,91 @@ namespace pyreApi.Services
                 };
             }
         }
+
+        public async Task<BaseResponseDto<object>> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto)
+        {
+            try
+            {
+                // Verificar que el usuario existe
+                var usuario = await _usuarioRepository.GetByIdAsync(userId);
+                if (usuario == null)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "Usuario no encontrado."
+                    };
+                }
+
+                // Verificar que el usuario está activo y puede acceder al sistema
+                if (!usuario.Activo)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "Su cuenta se encuentra inactiva. No puede cambiar la contraseña."
+                    };
+                }
+
+                if (!usuario.AccedeAlSistema)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "Su cuenta no tiene permisos para acceder al sistema."
+                    };
+                }
+
+                // Validar contraseña actual
+                var isCurrentPasswordValid = await _usuarioRepository.ValidateUserPasswordAsync(userId, changePasswordDto.CurrentPassword);
+                if (!isCurrentPasswordValid)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "La contraseña actual es incorrecta."
+                    };
+                }
+
+                // Verificar que la nueva contraseña no sea igual a la actual
+                var isSamePassword = await _usuarioRepository.ValidateUserPasswordAsync(userId, changePasswordDto.NewPassword);
+                if (isSamePassword)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "La nueva contraseña debe ser diferente a la contraseña actual."
+                    };
+                }
+
+                // Hashear la nueva contraseña
+                usuario.PasswordHash = HashPassword(changePasswordDto.NewPassword);
+                usuario.FechaModificacion = DateTime.UtcNow;
+                usuario.IdUsuarioModifica = userId; // El usuario se modifica a sí mismo
+
+                await _usuarioRepository.UpdateAsync(usuario);
+
+                _logger.LogInformation("Password cambiado exitosamente para usuario ID: {UserId}", userId);
+
+                return new BaseResponseDto<object>
+                {
+                    Success = true,
+                    Message = "Su contraseña ha sido cambiada exitosamente."
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cambiar contraseña para usuario ID: {UserId}", userId);
+                return new BaseResponseDto<object>
+                {
+                    Success = false,
+                    Message = "No se pudo cambiar la contraseña. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud."
+                    }
+                };
+            }
+        }
     }
 }

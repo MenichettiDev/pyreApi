@@ -348,6 +348,47 @@ namespace pyreApi.Controllers
 
             return BadRequest(response);
         }
+
+        [HttpPost("change-password")]
+        [Authorize] // Solo requiere autenticación, cualquier rol puede cambiar su propia contraseña
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Values.SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "Los datos proporcionados no son válidos. Por favor, revise la información ingresada.",
+                        Errors = errors,
+                    }
+                );
+            }
+
+            // Obtener el ID del usuario autenticado
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return Unauthorized(
+                    new
+                    {
+                        Success = false,
+                        Message = "No se pudo identificar al usuario. Por favor, inicie sesión nuevamente."
+                    }
+                );
+            }
+
+            var response = await _usuarioService.ChangePasswordAsync(userId, changePasswordDto);
+            if (response.Success)
+                return Ok(response);
+
+            return BadRequest(response);
+        }
     }
 
     // Clase única para login por legajo
