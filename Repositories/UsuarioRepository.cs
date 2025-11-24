@@ -253,5 +253,28 @@ namespace pyreApi.Repositories
                 return false;
             }
         }
+
+        public async Task<bool> ValidateUserPasswordAsync(int userId, string password)
+        {
+            var usuario = await _context.Usuarios.FindAsync(userId);
+            if (usuario == null || string.IsNullOrEmpty(usuario.PasswordHash))
+                return false;
+
+            string salt = _configuration["Salt"] ?? string.Empty;
+            if (string.IsNullOrEmpty(salt))
+                throw new InvalidOperationException("El valor de 'Salt' no está configurado.");
+
+            string hashedPassword = Convert.ToBase64String(
+                KeyDerivation.Pbkdf2(
+                    password: password,
+                    salt: Encoding.ASCII.GetBytes(salt),
+                    prf: KeyDerivationPrf.HMACSHA1,
+                    iterationCount: 10000,
+                    numBytesRequested: 256 / 8
+                )
+            );
+
+            return usuario.PasswordHash == hashedPassword;
+        }
     }
 }
