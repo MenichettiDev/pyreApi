@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using pyreApi.DTOs.Alerta;
 using pyreApi.Services;
 
@@ -41,7 +41,9 @@ namespace pyreApi.Controllers
                 return BadRequest(ModelState);
 
             var result = await _alertaService.CreateAlertaAsync(createDto);
-            return result.Success ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdAlerta }, result) : BadRequest(result);
+            return result.Success
+                ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdAlerta }, result)
+                : BadRequest(result);
         }
 
         [HttpPut("{id}")]
@@ -116,7 +118,10 @@ namespace pyreApi.Controllers
 
         [HttpPatch("{id}/update-with-movement")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor")] // Solo roles con permisos de modificación
-        public async Task<IActionResult> UpdateAlertaAndMovimiento(int id, [FromBody] UpdateAlertaMovimientoDto updateDto)
+        public async Task<IActionResult> UpdateAlertaAndMovimiento(
+            int id,
+            [FromBody] UpdateAlertaMovimientoDto updateDto
+        )
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);

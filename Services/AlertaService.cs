@@ -1,8 +1,9 @@
-using pyreApi.DTOs.Common;
+using Microsoft.EntityFrameworkCore;
+using pyreApi.Data;
 using pyreApi.DTOs.Alerta;
+using pyreApi.DTOs.Common;
 using pyreApi.Models;
 using pyreApi.Repositories;
-using pyreApi.Data;
 
 namespace pyreApi.Services
 {
@@ -15,7 +16,9 @@ namespace pyreApi.Services
         public AlertaService(
             AlertaRepository repository,
             MovimientoHerramientaRepository movimientoRepository,
-            ApplicationDbContext context) : base(repository)
+            ApplicationDbContext context
+        )
+            : base(repository)
         {
             _alertaRepository = repository;
             _movimientoRepository = movimientoRepository;
@@ -28,14 +31,14 @@ namespace pyreApi.Services
             {
                 var alertas = await _repository.GetAllAsync();
                 var alertaDtos = alertas
-                    .Where(a => a.Activo)                  // <- filtrar solo activas
+                    .Where(a => a.Activo) // <- filtrar solo activas
                     .Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<AlertaDto>>
                 {
                     Success = true,
                     Data = alertaDtos,
-                    Message = "Alertas obtenidas correctamente"
+                    Message = "Alertas obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -44,7 +47,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las alertas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -59,7 +62,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<AlertaDto>
                     {
                         Success = false,
-                        Message = "Alerta no encontrada"
+                        Message = "Alerta no encontrada",
                     };
                 }
 
@@ -67,7 +70,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(alerta),
-                    Message = "Alerta encontrada"
+                    Message = "Alerta encontrada",
                 };
             }
             catch (Exception ex)
@@ -76,7 +79,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al buscar la alerta",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -92,7 +95,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(result),
-                    Message = "Alerta creada correctamente"
+                    Message = "Alerta creada correctamente",
                 };
             }
             catch (Exception ex)
@@ -101,7 +104,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al crear la alerta",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -116,7 +119,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<AlertaDto>
                     {
                         Success = false,
-                        Message = "Alerta no encontrada"
+                        Message = "Alerta no encontrada",
                     };
                 }
 
@@ -127,7 +130,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(existingAlerta),
-                    Message = "Alerta actualizada correctamente"
+                    Message = "Alerta actualizada correctamente",
                 };
             }
             catch (Exception ex)
@@ -136,23 +139,27 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al actualizar la alerta",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetAlertasByHerramientaAsync(int idHerramienta)
+        public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetAlertasByHerramientaAsync(
+            int idHerramienta
+        )
         {
             try
             {
-                var alertas = await _alertaRepository.GetByMovimientoHerramientaAsync(idHerramienta);
+                var alertas = await _alertaRepository.GetByMovimientoHerramientaAsync(
+                    idHerramienta
+                );
                 var alertaDtos = alertas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<AlertaDto>>
                 {
                     Success = true,
                     Data = alertaDtos,
-                    Message = "Alertas obtenidas correctamente"
+                    Message = "Alertas obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -161,7 +168,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las alertas de la herramienta",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -177,7 +184,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = alertaDtos,
-                    Message = "Alertas no leídas obtenidas correctamente"
+                    Message = "Alertas no leídas obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -186,7 +193,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las alertas no leídas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -201,7 +208,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<bool>
                     {
                         Success = false,
-                        Message = "Alerta no encontrada"
+                        Message = "Alerta no encontrada",
                     };
                 }
 
@@ -212,7 +219,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = true,
-                    Message = "Alerta marcada como leída"
+                    Message = "Alerta marcada como leída",
                 };
             }
             catch (Exception ex)
@@ -221,12 +228,14 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al marcar la alerta como leída",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetByTipoAlertaAsync(int idTipoAlerta)
+        public async Task<BaseResponseDto<IEnumerable<AlertaDto>>> GetByTipoAlertaAsync(
+            int idTipoAlerta
+        )
         {
             try
             {
@@ -237,7 +246,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = alertaDtos,
-                    Message = "Alertas por tipo obtenidas correctamente"
+                    Message = "Alertas por tipo obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -246,7 +255,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las alertas por tipo",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -264,7 +273,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = pendientes,
-                    Message = "Alertas pendientes obtenidas correctamente"
+                    Message = "Alertas pendientes obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -273,7 +282,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las alertas pendientes",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -283,15 +292,13 @@ namespace pyreApi.Services
             try
             {
                 var alertas = await _alertaRepository.GetAllAsync();
-                var vencidas = alertas
-                    .Where(a => a.IdTipoAlerta == 2 && a.Activo)
-                    .Select(MapToDto);
+                var vencidas = alertas.Where(a => a.IdTipoAlerta == 2 && a.Activo).Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<AlertaDto>>
                 {
                     Success = true,
                     Data = vencidas,
-                    Message = "Alertas vencidas obtenidas correctamente"
+                    Message = "Alertas vencidas obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -300,7 +307,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las alertas vencidas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -310,15 +317,13 @@ namespace pyreApi.Services
             try
             {
                 var alertas = await _alertaRepository.GetAllAsync();
-                int count = alertas
-                    .Where(a => a.IdTipoAlerta == 1 && a.Activo)
-                    .Count();
+                int count = alertas.Where(a => a.IdTipoAlerta == 1 && a.Activo).Count();
 
                 return new BaseResponseDto<int>
                 {
                     Success = true,
                     Data = count,
-                    Message = "Cantidad de alertas pendientes obtenida correctamente"
+                    Message = "Cantidad de alertas pendientes obtenida correctamente",
                 };
             }
             catch (Exception ex)
@@ -327,7 +332,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener la cantidad de alertas pendientes",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -337,15 +342,13 @@ namespace pyreApi.Services
             try
             {
                 var alertas = await _alertaRepository.GetAllAsync();
-                int count = alertas
-                    .Where(a => a.IdTipoAlerta == 2 && a.Activo)
-                    .Count();
+                int count = alertas.Where(a => a.IdTipoAlerta == 2 && a.Activo).Count();
 
                 return new BaseResponseDto<int>
                 {
                     Success = true,
                     Data = count,
-                    Message = "Cantidad de alertas vencidas obtenida correctamente"
+                    Message = "Cantidad de alertas vencidas obtenida correctamente",
                 };
             }
             catch (Exception ex)
@@ -354,31 +357,62 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener la cantidad de alertas vencidas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
         private AlertaDto MapToDto(Alerta alerta)
         {
+            // Cargar el usuario responsable si no está cargado
+            var movimiento = alerta.MovimientoHerramienta;
+            if (movimiento?.UsuarioResponsable == null && movimiento?.IdUsuarioResponsable > 0)
+            {
+                // Intentar cargar desde contexto
+                var usuario = _context
+                    .Set<Usuario>()
+                    .FirstOrDefault(u => u.Id == movimiento.IdUsuarioResponsable);
+                if (usuario != null && movimiento != null)
+                {
+                    movimiento.UsuarioResponsable = usuario;
+                }
+            }
+
+            // Construir responsableNombre concatenando Nombre + Apellido
+            string responsableNombre = string.Empty;
+            if (
+                movimiento?.IdUsuarioResponsable.HasValue == true
+                && movimiento?.UsuarioResponsable != null
+            )
+            {
+                responsableNombre =
+                    $"{movimiento.UsuarioResponsable.Nombre ?? string.Empty} {movimiento.UsuarioResponsable.Apellido ?? string.Empty}".Trim();
+            }
+            else if (movimiento?.Proveedor != null)
+            {
+                responsableNombre = movimiento.Proveedor.NombreProveedor;
+            }
+
             return new AlertaDto
             {
                 IdAlerta = alerta.IdAlerta,
                 IdMovimiento = alerta.IdMovimiento,
-                NombreHerramienta = alerta.MovimientoHerramienta?.Herramienta?.NombreHerramienta ?? string.Empty,
+                NombreHerramienta =
+                    alerta.MovimientoHerramienta?.Herramienta?.NombreHerramienta ?? string.Empty,
                 IdTipoAlerta = alerta.IdTipoAlerta,
                 NombreTipoAlerta = alerta.TipoAlerta?.NombreTipoAlerta ?? string.Empty,
                 FechaGeneracion = alerta.FechaGeneracion,
-                FechaVencimiento = alerta.MovimientoHerramienta?.FechaEstimadaDevolucion ?? DateTime.MinValue,
+                FechaVencimiento =
+                    alerta.MovimientoHerramienta?.FechaEstimadaDevolucion ?? DateTime.MinValue,
                 Comentario = alerta.Comentario,
                 IdModifica = alerta.IdModifica ?? 0,
                 Activo = alerta.Activo,
                 HerramientaNombre = alerta.MovimientoHerramienta?.Herramienta?.NombreHerramienta,
-                ResponsableNombre = alerta.MovimientoHerramienta?.IdUsuarioResponsable.HasValue == true
-                    ? alerta.MovimientoHerramienta?.UsuarioResponsable?.Nombre
-                    : alerta.MovimientoHerramienta?.Proveedor?.NombreProveedor,
-                TipoMovimiento = alerta.MovimientoHerramienta?.IdTipoMovimiento == 1 ? "Préstamo"
-                    : "Mantenimiento"
+                ResponsableNombre = responsableNombre,
+                TipoMovimiento =
+                    alerta.MovimientoHerramienta?.IdTipoMovimiento == 1
+                        ? "Préstamo"
+                        : "Mantenimiento",
             };
         }
 
@@ -390,7 +424,7 @@ namespace pyreApi.Services
                 IdTipoAlerta = createDto.IdTipoAlerta,
                 Comentario = createDto.Comentario,
                 FechaGeneracion = DateTime.UtcNow,
-                Activo = true
+                Activo = true,
             };
         }
 
@@ -403,7 +437,9 @@ namespace pyreApi.Services
             alerta.Activo = updateDto.Activo;
         }
 
-        public async Task<BaseResponseDto<AlertaDto>> UpdateAlertaAndMovimientoAsync(UpdateAlertaMovimientoDto updateDto)
+        public async Task<BaseResponseDto<AlertaDto>> UpdateAlertaAndMovimientoAsync(
+            UpdateAlertaMovimientoDto updateDto
+        )
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -415,7 +451,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<AlertaDto>
                     {
                         Success = false,
-                        Message = "Alerta no encontrada"
+                        Message = "Alerta no encontrada",
                     };
                 }
 
@@ -426,7 +462,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<AlertaDto>
                     {
                         Success = false,
-                        Message = "Movimiento relacionado no encontrado"
+                        Message = "Movimiento relacionado no encontrado",
                     };
                 }
 
@@ -446,7 +482,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(alerta),
-                    Message = "Alerta y movimiento actualizados correctamente"
+                    Message = "Alerta y movimiento actualizados correctamente",
                 };
             }
             catch (Exception ex)
@@ -456,7 +492,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al actualizar la alerta y movimiento",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
