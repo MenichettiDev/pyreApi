@@ -89,6 +89,51 @@ namespace pyreApi.Controllers
                 return Ok(response);
             return NotFound(response);
         }
+        [HttpGet("{id}/myself")]
+        [Authorize]
+        public async Task<IActionResult> GetMyself(int id)
+        {
+            if (id <= 0)
+            {
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El ID del usuario debe ser un número válido mayor a 0.",
+                    }
+                );
+            }
+
+            // Obtener el ID del usuario autenticado
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int authenticatedUserId))
+            {
+                return Unauthorized(
+                    new
+                    {
+                        Success = false,
+                        Message = "No se pudo identificar al usuario autenticado. Por favor, inicie sesión nuevamente."
+                    }
+                );
+            }
+
+            // Validar que el usuario solo pueda acceder a sus propios datos
+            if (authenticatedUserId != id)
+            {
+                return Forbid(
+                    new
+                    {
+                        Success = false,
+                        Message = "No tiene permisos para acceder a los datos de otro usuario. Solo puede consultar su propia información."
+                    }.ToString()
+                );
+            }
+
+            var response = await _usuarioService.GetMyselfAsync(id);
+            if (response.Success)
+                return Ok(response);
+            return NotFound(response);
+        }
 
         [HttpGet("dni/{dni}")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor")] // SuperAdmin, Administrador y Supervisor

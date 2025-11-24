@@ -970,5 +970,62 @@ namespace pyreApi.Services
                 };
             }
         }
+
+        public async Task<BaseResponseDto<UsuarioResponseDto>> GetMyselfAsync(int userId)
+        {
+            try
+            {
+                var usuario = await _usuarioRepository.GetByIdWithRolAsync(userId);
+
+                if (usuario == null)
+                {
+                    return new BaseResponseDto<UsuarioResponseDto>
+                    {
+                        Success = false,
+                        Message = $"No se encontró un usuario con el ID {userId}.",
+                    };
+                }
+
+                if (!usuario.Activo)
+                {
+                    return new BaseResponseDto<UsuarioResponseDto>
+                    {
+                        Success = false,
+                        Message = "Su cuenta se encuentra inactiva. Por favor, contacte al administrador del sistema.",
+                    };
+                }
+
+                if (!usuario.AccedeAlSistema)
+                {
+                    return new BaseResponseDto<UsuarioResponseDto>
+                    {
+                        Success = false,
+                        Message = "Su cuenta no tiene permisos para acceder al sistema.",
+                    };
+                }
+
+                var usuarioDto = MapToResponseDto(usuario);
+
+                return new BaseResponseDto<UsuarioResponseDto>
+                {
+                    Success = true,
+                    Data = usuarioDto,
+                    Message = "Datos del usuario obtenidos correctamente.",
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener datos propios del usuario ID: {UserId}", userId);
+                return new BaseResponseDto<UsuarioResponseDto>
+                {
+                    Success = false,
+                    Message = "No se pudieron obtener sus datos. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud.",
+                    },
+                };
+            }
+        }
     }
 }
