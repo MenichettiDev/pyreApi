@@ -1,9 +1,9 @@
+using Microsoft.EntityFrameworkCore; // <-- agregado
+using pyreApi.Data;
 using pyreApi.DTOs.Common;
 using pyreApi.DTOs.MovimientoHerramienta;
 using pyreApi.Models;
 using pyreApi.Repositories;
-using pyreApi.Data;
-
 
 namespace pyreApi.Services
 {
@@ -16,25 +16,32 @@ namespace pyreApi.Services
         public MovimientoHerramientaService(
             MovimientoHerramientaRepository movimientoRepository,
             HerramientaRepository herramientaRepository,
-            ApplicationDbContext context) : base(movimientoRepository)
+            ApplicationDbContext context
+        )
+            : base(movimientoRepository)
         {
             _movimientoRepository = movimientoRepository;
             _herramientaRepository = herramientaRepository;
             _context = context;
         }
 
-        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetAllMovimientosAsync()
+        public async Task<
+            BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
+        > GetAllMovimientosAsync()
         {
             try
             {
                 var movimientos = await _movimientoRepository.GetAllAsync();
-                var movimientoDtos = movimientos.Select(MapToDto);
+                var movimientosList = movimientos.ToList();
+                foreach (var m in movimientosList)
+                    await EnsureUsuarioResponsableLoaded(m);
+                var movimientoDtos = movimientosList.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
                 {
                     Success = true,
                     Data = movimientoDtos,
-                    Message = "Movimientos obtenidos correctamente"
+                    Message = "Movimientos obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -43,7 +50,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener los movimientos",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -58,15 +65,17 @@ namespace pyreApi.Services
                     return new BaseResponseDto<MovimientoHerramientaDto>
                     {
                         Success = false,
-                        Message = "Movimiento no encontrado"
+                        Message = "Movimiento no encontrado",
                     };
                 }
+
+                await EnsureUsuarioResponsableLoaded(movimiento);
 
                 return new BaseResponseDto<MovimientoHerramientaDto>
                 {
                     Success = true,
                     Data = MapToDto(movimiento),
-                    Message = "Movimiento encontrado"
+                    Message = "Movimiento encontrado",
                 };
             }
             catch (Exception ex)
@@ -75,53 +84,79 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al buscar el movimiento",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<MovimientoHerramientaDto>> CreateMovimientoAsync(CreateMovimientoDto createDto)
+        public async Task<BaseResponseDto<MovimientoHerramientaDto>> CreateMovimientoAsync(
+            CreateMovimientoDto createDto
+        )
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // Validar que la herramienta existe
-                var herramienta = await _herramientaRepository.GetByIdAsync(createDto.IdHerramienta);
+                var herramienta = await _herramientaRepository.GetByIdAsync(
+                    createDto.IdHerramienta
+                );
                 if (herramienta == null)
                 {
                     return new BaseResponseDto<MovimientoHerramientaDto>
                     {
                         Success = false,
-                        Message = "Herramienta no encontrada"
+                        Message = "Herramienta no encontrada",
                     };
                 }
 
                 // Validar que la transición de estado es válida
-                if (!IsValidStateTransition(herramienta.IdDisponibilidad, createDto.IdTipoMovimiento))
+                if (
+                    !IsValidStateTransition(
+                        herramienta.IdDisponibilidad,
+                        createDto.IdTipoMovimiento
+                    )
+                )
                 {
                     return new BaseResponseDto<MovimientoHerramientaDto>
                     {
                         Success = false,
-                        Message = GetStateTransitionErrorMessage(herramienta.IdDisponibilidad, createDto.IdTipoMovimiento)
+                        Message = GetStateTransitionErrorMessage(
+                            herramienta.IdDisponibilidad,
+                            createDto.IdTipoMovimiento
+                        ),
                     };
                 }
 
                 var movimiento = MapFromCreateDto(createDto);
-                var result = await _movimientoRepository.AddAsync(movimiento);
+                var added = await _movimientoRepository.AddAsync(movimiento);
 
                 // Determinar y actualizar el nuevo estado de disponibilidad
-                var nuevoEstadoDisponibilidad = DetermineNewAvailabilityStatus(createDto.IdTipoMovimiento);
+                var nuevoEstadoDisponibilidad = DetermineNewAvailabilityStatus(
+                    createDto.IdTipoMovimiento
+                );
                 herramienta.IdDisponibilidad = nuevoEstadoDisponibilidad;
                 await _herramientaRepository.UpdateAsync(herramienta);
 
                 // Confirmar la transacción
                 await transaction.CommitAsync();
 
+                // Recargar el movimiento con las relaciones para garantizar que venga el apellido del responsable
+                var movimientoConRel = await _context
+                    .Set<MovimientoHerramienta>()
+                    .Include(m => m.UsuarioResponsable)
+                    .Include(m => m.UsuarioGenera)
+                    .Include(m => m.Herramienta)
+                    .Include(m => m.TipoMovimiento)
+                    .Include(m => m.Obra)
+                    .Include(m => m.EstadoDevolucion)
+                    .Include(m => m.Proveedor)
+                    .FirstOrDefaultAsync(m => m.IdMovimiento == added.IdMovimiento);
+
                 return new BaseResponseDto<MovimientoHerramientaDto>
                 {
                     Success = true,
-                    Data = MapToDto(result),
-                    Message = "Movimiento registrado correctamente"
+                    Data = MapToDto(movimientoConRel ?? added),
+                    Message = "Movimiento registrado correctamente",
                 };
             }
             catch (Exception ex)
@@ -131,33 +166,49 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al registrar el movimiento",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<MovimientoHerramientaDto>> UpdateMovimientoAsync(UpdateMovimientoHerramientaDto updateDto)
+        public async Task<BaseResponseDto<MovimientoHerramientaDto>> UpdateMovimientoAsync(
+            UpdateMovimientoHerramientaDto updateDto
+        )
         {
             try
             {
-                var existingMovimiento = await _movimientoRepository.GetByIdAsync(updateDto.IdMovimiento);
+                var existingMovimiento = await _movimientoRepository.GetByIdAsync(
+                    updateDto.IdMovimiento
+                );
                 if (existingMovimiento == null)
                 {
                     return new BaseResponseDto<MovimientoHerramientaDto>
                     {
                         Success = false,
-                        Message = "Movimiento no encontrado"
+                        Message = "Movimiento no encontrado",
                     };
                 }
 
                 MapFromUpdateDto(updateDto, existingMovimiento);
                 await _movimientoRepository.UpdateAsync(existingMovimiento);
 
+                // Recargar con relaciones para asegurarnos de incluir apellido del responsable
+                var movimientoConRel = await _context
+                    .Set<MovimientoHerramienta>()
+                    .Include(m => m.UsuarioResponsable)
+                    .Include(m => m.UsuarioGenera)
+                    .Include(m => m.Herramienta)
+                    .Include(m => m.TipoMovimiento)
+                    .Include(m => m.Obra)
+                    .Include(m => m.EstadoDevolucion)
+                    .Include(m => m.Proveedor)
+                    .FirstOrDefaultAsync(m => m.IdMovimiento == existingMovimiento.IdMovimiento);
+
                 return new BaseResponseDto<MovimientoHerramientaDto>
                 {
                     Success = true,
-                    Data = MapToDto(existingMovimiento),
-                    Message = "Movimiento actualizado correctamente"
+                    Data = MapToDto(movimientoConRel ?? existingMovimiento),
+                    Message = "Movimiento actualizado correctamente",
                 };
             }
             catch (Exception ex)
@@ -166,24 +217,28 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al actualizar el movimiento",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-
-        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetByHerramientaAsync(int herramientaId)
+        public async Task<
+            BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
+        > GetByHerramientaAsync(int herramientaId)
         {
             try
             {
                 var movimientos = await _movimientoRepository.GetByHerramientaAsync(herramientaId);
-                var movimientoDtos = movimientos.Select(MapToDto);
+                var movimientosList = movimientos.ToList();
+                foreach (var m in movimientosList)
+                    await EnsureUsuarioResponsableLoaded(m);
+                var movimientoDtos = movimientosList.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
                 {
                     Success = true,
                     Data = movimientoDtos,
-                    Message = "Historial de movimientos obtenido correctamente"
+                    Message = "Historial de movimientos obtenido correctamente",
                 };
             }
             catch (Exception ex)
@@ -192,23 +247,31 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener el historial de movimientos",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetByDateRangeAsync(DateTime startDate, DateTime endDate)
+        public async Task<
+            BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
+        > GetByDateRangeAsync(DateTime startDate, DateTime endDate)
         {
             try
             {
-                var movimientos = await _movimientoRepository.GetMovimientosByDateRangeAsync(startDate, endDate);
-                var movimientoDtos = movimientos.Select(MapToDto);
+                var movimientos = await _movimientoRepository.GetMovimientosByDateRangeAsync(
+                    startDate,
+                    endDate
+                );
+                var movimientosList = movimientos.ToList();
+                foreach (var m in movimientosList)
+                    await EnsureUsuarioResponsableLoaded(m);
+                var movimientoDtos = movimientosList.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
                 {
                     Success = true,
                     Data = movimientoDtos,
-                    Message = "Movimientos por rango de fechas obtenidos correctamente"
+                    Message = "Movimientos por rango de fechas obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -217,12 +280,14 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener movimientos por rango de fechas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<PaginatedResponseDto<MovimientoHerramientaDto>>> GetAllMovimientosPaginatedAsync(
+        public async Task<
+            BaseResponseDto<PaginatedResponseDto<MovimientoHerramientaDto>>
+        > GetAllMovimientosPaginatedAsync(
             int page,
             int pageSize,
             string? nombreHerramienta = null,
@@ -234,17 +299,29 @@ namespace pyreApi.Services
             int? idProveedor = null,
             int? idEstadoFisico = null,
             DateTime? fechaDesde = null,
-            DateTime? fechaHasta = null)
+            DateTime? fechaHasta = null
+        )
         {
             try
             {
-                if (page <= 0) page = 1;
-                if (pageSize <= 0) pageSize = 10;
+                if (page <= 0)
+                    page = 1;
+                if (pageSize <= 0)
+                    pageSize = 10;
 
                 // Obtener movimientos con filtros aplicados directamente en la base de datos
                 var movimientos = await _movimientoRepository.GetFilteredMovimientosAsync(
-                    nombreHerramienta, idFamiliaHerramienta, idUsuarioGenera, idUsuarioResponsable,
-                    idTipoMovimiento, idObra, idProveedor, idEstadoFisico, fechaDesde, fechaHasta);
+                    nombreHerramienta,
+                    idFamiliaHerramienta,
+                    idUsuarioGenera,
+                    idUsuarioResponsable,
+                    idTipoMovimiento,
+                    idObra,
+                    idProveedor,
+                    idEstadoFisico,
+                    fechaDesde,
+                    fechaHasta
+                );
 
                 // Ordenar por fecha descendente antes de aplicar la paginación
                 var movimientosOrdenados = movimientos.OrderByDescending(m => m.Fecha);
@@ -255,6 +332,10 @@ namespace pyreApi.Services
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToList();
+
+                // Asegurar carga de apellido de responsable en la página
+                foreach (var m in movimientosPage)
+                    await EnsureUsuarioResponsableLoaded(m);
 
                 var movimientosDto = movimientosPage.Select(MapToDto).ToList();
                 var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
@@ -267,14 +348,14 @@ namespace pyreApi.Services
                     TotalRecords = totalRecords,
                     TotalPages = totalPages,
                     HasNextPage = page < totalPages,
-                    HasPreviousPage = page > 1
+                    HasPreviousPage = page > 1,
                 };
 
                 return new BaseResponseDto<PaginatedResponseDto<MovimientoHerramientaDto>>
                 {
                     Success = true,
                     Data = paginatedResponse,
-                    Message = "Movimientos obtenidos correctamente"
+                    Message = "Movimientos obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -282,31 +363,41 @@ namespace pyreApi.Services
                 return new BaseResponseDto<PaginatedResponseDto<MovimientoHerramientaDto>>
                 {
                     Success = false,
-                    Message = "No se pudieron cargar los movimientos. Por favor, intente nuevamente.",
-                    Errors = new List<string> { "Error interno del servidor al procesar la solicitud: " + ex.Message }
+                    Message =
+                        "No se pudieron cargar los movimientos. Por favor, intente nuevamente.",
+                    Errors = new List<string>
+                    {
+                        "Error interno del servidor al procesar la solicitud: " + ex.Message,
+                    },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<MovimientoHerramientaDto>> GetLatestMovimientoByHerramientaAsync(int herramientaId)
+        public async Task<
+            BaseResponseDto<MovimientoHerramientaDto>
+        > GetLatestMovimientoByHerramientaAsync(int herramientaId)
         {
             try
             {
-                var movimiento = await _movimientoRepository.GetLatestMovimientoByHerramientaAsync(herramientaId);
+                var movimiento = await _movimientoRepository.GetLatestMovimientoByHerramientaAsync(
+                    herramientaId
+                );
                 if (movimiento == null)
                 {
                     return new BaseResponseDto<MovimientoHerramientaDto>
                     {
                         Success = false,
-                        Message = "No se encontraron movimientos para esta herramienta"
+                        Message = "No se encontraron movimientos para esta herramienta",
                     };
                 }
+
+                await EnsureUsuarioResponsableLoaded(movimiento);
 
                 return new BaseResponseDto<MovimientoHerramientaDto>
                 {
                     Success = true,
                     Data = MapToDto(movimiento),
-                    Message = "Último movimiento obtenido correctamente"
+                    Message = "Último movimiento obtenido correctamente",
                 };
             }
             catch (Exception ex)
@@ -315,23 +406,28 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener el último movimiento",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>> GetLatest5BorrowedToolsAsync()
+        public async Task<
+            BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
+        > GetLatest5BorrowedToolsAsync()
         {
             try
             {
                 var movimientos = await _movimientoRepository.GetLatest5BorrowedToolsAsync();
-                var movimientoDtos = movimientos.Select(MapToDto);
+                var movimientosList = movimientos.ToList();
+                foreach (var m in movimientosList)
+                    await EnsureUsuarioResponsableLoaded(m);
+                var movimientoDtos = movimientosList.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<MovimientoHerramientaDto>>
                 {
                     Success = true,
                     Data = movimientoDtos,
-                    Message = "Últimas 5 herramientas prestadas obtenidas correctamente"
+                    Message = "Últimas 5 herramientas prestadas obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -340,12 +436,14 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las últimas herramientas prestadas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<HerramientaRankingDto>>> GetMostBorrowedToolsLast30DaysAsync()
+        public async Task<
+            BaseResponseDto<IEnumerable<HerramientaRankingDto>>
+        > GetMostBorrowedToolsLast30DaysAsync()
         {
             try
             {
@@ -356,11 +454,16 @@ namespace pyreApi.Services
                     return new HerramientaRankingDto
                     {
                         IdHerramienta = (int)itemType.GetProperty("IdHerramienta")?.GetValue(item)!,
-                        CodigoHerramienta = (string?)itemType.GetProperty("CodigoHerramienta")?.GetValue(item),
-                        NombreHerramienta = (string?)itemType.GetProperty("NombreHerramienta")?.GetValue(item),
-                        FamiliaHerramienta = (string?)itemType.GetProperty("FamiliaHerramienta")?.GetValue(item),
-                        TotalPrestamos = (int)itemType.GetProperty("TotalPrestamos")?.GetValue(item)!,
-                        UltimoPrestamo = (DateTime?)itemType.GetProperty("UltimoPrestamo")?.GetValue(item)
+                        CodigoHerramienta = (string?)
+                            itemType.GetProperty("CodigoHerramienta")?.GetValue(item),
+                        NombreHerramienta = (string?)
+                            itemType.GetProperty("NombreHerramienta")?.GetValue(item),
+                        FamiliaHerramienta = (string?)
+                            itemType.GetProperty("FamiliaHerramienta")?.GetValue(item),
+                        TotalPrestamos = (int)
+                            itemType.GetProperty("TotalPrestamos")?.GetValue(item)!,
+                        UltimoPrestamo = (DateTime?)
+                            itemType.GetProperty("UltimoPrestamo")?.GetValue(item),
                     };
                 });
 
@@ -368,7 +471,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = rankingDtos,
-                    Message = "Ranking de herramientas más prestadas obtenido correctamente"
+                    Message = "Ranking de herramientas más prestadas obtenido correctamente",
                 };
             }
             catch (Exception ex)
@@ -377,7 +480,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener el ranking de herramientas más prestadas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -391,30 +494,33 @@ namespace pyreApi.Services
                 3 => 3, // Envío Reparación -> Mantenimiento
                 4 => 4, // Baja -> Extraviada (o podrías crear otro estado)
                 5 => 1, // Alta -> Disponible
-                _ => throw new ArgumentException($"Tipo de movimiento no válido: {tipoMovimientoId}")
+                _ => throw new ArgumentException(
+                    $"Tipo de movimiento no válido: {tipoMovimientoId}"
+                ),
             };
         }
+
         private bool IsValidStateTransition(int estadoActual, int tipoMovimiento)
         {
             return (estadoActual, tipoMovimiento) switch
             {
                 // Desde Disponible (1)
-                (1, 1) => true,  // Disponible -> Préstamo
-                (1, 3) => true,  // Disponible -> Envío Reparación
-                (1, 4) => true,  // Disponible -> Baja
+                (1, 1) => true, // Disponible -> Préstamo
+                (1, 3) => true, // Disponible -> Envío Reparación
+                (1, 4) => true, // Disponible -> Baja
 
                 // Desde Prestada (2)
-                (2, 2) => true,  // Prestada -> Devolución
-                (2, 4) => true,  // Prestada -> Baja (en caso de extravío)
+                (2, 2) => true, // Prestada -> Devolución
+                (2, 4) => true, // Prestada -> Baja (en caso de extravío)
 
                 // Desde Mantenimiento (3)
-                (3, 2) => true,  // Mantenimiento -> Devolución (finalizar reparación)
+                (3, 2) => true, // Mantenimiento -> Devolución (finalizar reparación)
                 // (3, 4) => true,  // Mantenimiento -> Baja (no se puede reparar)
 
                 // Desde Extraviada (4)
-                (4, 5) => true,  // Extraviada -> Alta (si se recupera)
+                (4, 5) => true, // Extraviada -> Alta (si se recupera)
 
-                _ => false
+                _ => false,
             };
         }
 
@@ -434,7 +540,7 @@ namespace pyreApi.Services
                 2 => "Prestada",
                 3 => "Mantenimiento",
                 4 => "Extraviada",
-                _ => "Desconocido"
+                _ => "Desconocido",
             };
         }
 
@@ -447,7 +553,7 @@ namespace pyreApi.Services
                 3 => "Envío Reparación",
                 4 => "Baja",
                 5 => "Alta",
-                _ => "Desconocido"
+                _ => "Desconocido",
             };
         }
 
@@ -469,11 +575,15 @@ namespace pyreApi.Services
                 CodigoHerramienta = movimiento.Herramienta?.Codigo,
                 NombreHerramienta = movimiento.Herramienta?.NombreHerramienta,
                 NombreUsuarioGenera = movimiento.UsuarioGenera?.Nombre,
-                NombreUsuarioResponsable = movimiento.UsuarioResponsable?.Nombre,
+                // Se ajusta para enviar Nombre + Apellido del responsable siempre que exista
+                NombreUsuarioResponsable =
+                    movimiento.UsuarioResponsable != null
+                        ? $"{movimiento.UsuarioResponsable?.Nombre ?? string.Empty} {movimiento.UsuarioResponsable?.Apellido ?? string.Empty}".Trim()
+                        : null,
                 TipoMovimiento = movimiento.TipoMovimiento?.NombreTipoMovimiento,
                 NombreObra = movimiento.Obra?.NombreObra,
                 EstadoDevolucion = movimiento.EstadoDevolucion?.Descripcion,
-                NombreProveedor = movimiento.Proveedor?.NombreProveedor
+                NombreProveedor = movimiento.Proveedor?.NombreProveedor,
             };
         }
 
@@ -488,13 +598,17 @@ namespace pyreApi.Services
                 IdObra = createDto.IdObra,
                 IdProveedor = createDto.IdProveedor,
                 FechaEstimadaDevolucion = createDto.FechaEstimadaDevolucion,
+                // Corregido: usar la propiedad correcta presente en los DTOs
                 EstadoHerramientaAlDevolver = createDto.EstadoHerramientaAlDevolver,
                 Observaciones = createDto.Observaciones,
-                Fecha = DateTime.UtcNow
+                Fecha = DateTime.UtcNow,
             };
         }
 
-        private void MapFromUpdateDto(UpdateMovimientoHerramientaDto updateDto, MovimientoHerramienta movimiento)
+        private void MapFromUpdateDto(
+            UpdateMovimientoHerramientaDto updateDto,
+            MovimientoHerramienta movimiento
+        )
         {
             movimiento.IdHerramienta = updateDto.IdHerramienta;
             movimiento.IdUsuarioGenera = updateDto.IdUsuarioGenera;
@@ -504,9 +618,26 @@ namespace pyreApi.Services
             movimiento.IdObra = updateDto.IdObra;
             movimiento.IdProveedor = updateDto.IdProveedor;
             movimiento.FechaEstimadaDevolucion = updateDto.FechaEstimadaDevolucion;
+            // Corregido: usar la propiedad correcta presente en los DTOs
             movimiento.EstadoHerramientaAlDevolver = updateDto.EstadoHerramientaAlDevolver;
             movimiento.Observaciones = updateDto.Observaciones;
         }
 
+        // Nuevo helper para cargar el UsuarioResponsable si falta
+        private async Task EnsureUsuarioResponsableLoaded(MovimientoHerramienta movimiento)
+        {
+            if (movimiento == null)
+                return;
+
+            if (movimiento.UsuarioResponsable == null && movimiento.IdUsuarioResponsable > 0)
+            {
+                // Intentar cargar desde el contexto para obtener Apellido
+                var usuario = await _context
+                    .Set<Usuario>()
+                    .FirstOrDefaultAsync(u => u.Id == movimiento.IdUsuarioResponsable);
+                if (usuario != null)
+                    movimiento.UsuarioResponsable = usuario;
+            }
+        }
     }
 }
