@@ -5,13 +5,21 @@ using pyreApi.Repositories;
 
 namespace pyreApi.Services
 {
+#pragma warning disable CS8601 // Posible asignación de referencia nula
     public class ObraService : GenericService<Obra>
     {
         private readonly GenericRepository<Cliente> _clienteRepository;
+        private readonly GenericRepository<Obra> _obraRepository;
 
-        public ObraService(GenericRepository<Obra> repository, GenericRepository<Cliente> clienteRepository) : base(repository)
+        public ObraService(
+            GenericRepository<Obra> repository,
+            GenericRepository<Cliente> clienteRepository
+        )
+            : base(repository)
         {
-            _clienteRepository = clienteRepository;
+            _clienteRepository =
+                clienteRepository ?? throw new ArgumentNullException(nameof(clienteRepository));
+            _obraRepository = repository ?? throw new ArgumentNullException(nameof(repository));
         }
 
         public async Task<BaseResponseDto<IEnumerable<ObraDto>>> GetAllObrasAsync()
@@ -26,7 +34,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = obraDtos,
-                    Message = "Obras obtenidas correctamente"
+                    Message = "Obras obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -35,7 +43,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las obras",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -50,7 +58,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<ObraDto>
                     {
                         Success = false,
-                        Message = "Obra no encontrada"
+                        Message = "Obra no encontrada",
                     };
                 }
 
@@ -60,7 +68,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(obra),
-                    Message = "Obra encontrada"
+                    Message = "Obra encontrada",
                 };
             }
             catch (Exception ex)
@@ -69,7 +77,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al buscar la obra",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -87,7 +95,7 @@ namespace pyreApi.Services
                     Descripcion = createDto.Descripcion,
                     FechaInicio = createDto.FechaInicio,
                     FechaFin = createDto.FechaFin,
-                    Activo = createDto.Activo
+                    Activo = createDto.Activo,
                 };
                 var result = await _repository.AddAsync(obra);
 
@@ -95,7 +103,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(result),
-                    Message = "Obra creada correctamente"
+                    Message = "Obra creada correctamente",
                 };
             }
             catch (Exception ex)
@@ -104,7 +112,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al crear la obra",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -119,7 +127,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<ObraDto>
                     {
                         Success = false,
-                        Message = "Obra no encontrada"
+                        Message = "Obra no encontrada",
                     };
                 }
 
@@ -137,7 +145,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(existingObra),
-                    Message = "Obra actualizada correctamente"
+                    Message = "Obra actualizada correctamente",
                 };
             }
             catch (Exception ex)
@@ -146,7 +154,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al actualizar la obra",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -158,12 +166,15 @@ namespace pyreApi.Services
             string? ubicacion = null,
             string? codigo = null,
             int? idCliente = null,
-            bool? activo = null)
+            bool? activo = null
+        )
         {
             try
             {
-                if (page <= 0) page = 1;
-                if (pageSize <= 0) pageSize = 10;
+                if (page <= 0)
+                    page = 1;
+                if (pageSize <= 0)
+                    pageSize = 10;
 
                 var obras = (await _repository.GetAllAsync()).ToList();
                 await PopulateClientesAsync(obras);
@@ -174,19 +185,25 @@ namespace pyreApi.Services
                 if (!string.IsNullOrWhiteSpace(nombre))
                 {
                     var nombreTrim = nombre.Trim().ToLowerInvariant();
-                    filtered = filtered.Where(o => (o.NombreObra ?? string.Empty).ToLowerInvariant().Contains(nombreTrim));
+                    filtered = filtered.Where(o =>
+                        (o.NombreObra ?? string.Empty).ToLowerInvariant().Contains(nombreTrim)
+                    );
                 }
 
                 if (!string.IsNullOrWhiteSpace(ubicacion))
                 {
                     var ubicacionTrim = ubicacion.Trim().ToLowerInvariant();
-                    filtered = filtered.Where(o => (o.Ubicacion ?? string.Empty).ToLowerInvariant().Contains(ubicacionTrim));
+                    filtered = filtered.Where(o =>
+                        (o.Ubicacion ?? string.Empty).ToLowerInvariant().Contains(ubicacionTrim)
+                    );
                 }
 
                 if (!string.IsNullOrWhiteSpace(codigo))
                 {
                     var codigoTrim = codigo.Trim().ToLowerInvariant();
-                    filtered = filtered.Where(o => (o.Codigo ?? string.Empty).ToLowerInvariant().Contains(codigoTrim));
+                    filtered = filtered.Where(o =>
+                        (o.Codigo ?? string.Empty).ToLowerInvariant().Contains(codigoTrim)
+                    );
                 }
 
                 if (idCliente.HasValue)
@@ -195,10 +212,7 @@ namespace pyreApi.Services
                 }
 
                 var totalRecords = filtered.Count();
-                var obrasPage = filtered
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
+                var obrasPage = filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
                 var obraDtos = obrasPage.Select(MapToDto).ToList();
                 var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
@@ -211,14 +225,14 @@ namespace pyreApi.Services
                     TotalRecords = totalRecords,
                     TotalPages = totalPages,
                     HasNextPage = page < totalPages,
-                    HasPreviousPage = page > 1
+                    HasPreviousPage = page > 1,
                 };
 
                 return new BaseResponseDto<PaginatedResponseDto<ObraDto>>
                 {
                     Success = true,
                     Data = paginatedResponse,
-                    Message = "Obras obtenidas correctamente"
+                    Message = "Obras obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -227,12 +241,15 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las obras",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<ObraDto>>> GetAllComboAsync(int? idCliente = null, string? search = null)
+        public async Task<BaseResponseDto<IEnumerable<ObraDto>>> GetAllComboAsync(
+            int? idCliente = null,
+            string? search = null
+        )
         {
             try
             {
@@ -250,8 +267,14 @@ namespace pyreApi.Services
                 {
                     var s = search.Trim();
                     filtered = filtered.Where(o =>
-                        (!string.IsNullOrWhiteSpace(o.NombreObra) && o.NombreObra.Contains(s, StringComparison.OrdinalIgnoreCase)) ||
-                        (!string.IsNullOrWhiteSpace(o.Codigo) && o.Codigo.Contains(s, StringComparison.OrdinalIgnoreCase))
+                        (
+                            !string.IsNullOrWhiteSpace(o.NombreObra)
+                            && o.NombreObra.Contains(s, StringComparison.OrdinalIgnoreCase)
+                        )
+                        || (
+                            !string.IsNullOrWhiteSpace(o.Codigo)
+                            && o.Codigo.Contains(s, StringComparison.OrdinalIgnoreCase)
+                        )
                     );
                 }
 
@@ -265,7 +288,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = obraDtos,
-                    Message = "Obras obtenidas correctamente"
+                    Message = "Obras obtenidas correctamente",
                 };
             }
             catch (Exception ex)
@@ -274,7 +297,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener las obras",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -338,7 +361,7 @@ namespace pyreApi.Services
                 Ubicacion = obra.Ubicacion,
                 FechaInicio = obra.FechaInicio,
                 FechaFin = obra.FechaFin,
-                Activo = obra.Activo
+                Activo = obra.Activo,
             };
         }
 
@@ -353,7 +376,7 @@ namespace pyreApi.Services
                 Descripcion = createDto.Descripcion,
                 FechaInicio = createDto.FechaInicio,
                 FechaFin = createDto.FechaFin,
-                Activo = createDto.Activo
+                Activo = createDto.Activo,
             };
         }
 
@@ -369,4 +392,5 @@ namespace pyreApi.Services
             obra.Activo = updateDto.Activo;
         }
     }
+#pragma warning restore CS8601
 }

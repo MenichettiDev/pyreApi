@@ -795,7 +795,8 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<Usuario>> ToggleActivoAsync(int id)
+        // Cambiar la firma del método para indicar ocultación intencional del miembro base
+        public new async Task<BaseResponseDto<Usuario>> ToggleActivoAsync(int id)
         {
             try
             {
