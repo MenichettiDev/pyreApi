@@ -712,6 +712,7 @@ namespace pyreApi.Services
                     await _herramientaRepository.GetByDisponibilidadAsync(disponibilidadId)
                 )
                     .Where(h => h.Activo)
+                    .Where(h => h.Eliminado == false)
                     .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 

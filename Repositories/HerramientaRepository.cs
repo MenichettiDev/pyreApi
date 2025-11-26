@@ -31,13 +31,19 @@ namespace pyreApi.Repositories
 
         public async Task<IEnumerable<Herramienta>> GetByEstadoAsync(int estadoId)
         {
-            return await _dbSet
+            var query = _dbSet
                 .Include(h => h.Familia)
                 .Include(h => h.EstadoFisico)
                 .Include(h => h.EstadoDisponibilidad)
                 .Include(h => h.Planta)
-                .Where(h => h.IdEstadoFisico == estadoId)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (estadoId != 0)
+            {
+                query = query.Where(h => h.IdEstadoFisico == estadoId);
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<IEnumerable<Herramienta>> GetByFamiliaAsync(int familiaId)
@@ -169,7 +175,6 @@ namespace pyreApi.Repositories
 
             return await query
                 .OrderBy(h => h.NombreHerramienta)
-                .Take(5) // Límite de 15 herramientas
                 .ToListAsync();
         }
 

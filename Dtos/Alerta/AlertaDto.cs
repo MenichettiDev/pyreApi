@@ -13,6 +13,7 @@ namespace pyreApi.DTOs.Alerta
         public int IdModifica { get; set; }
         public bool Activo { get; set; }
         public string? HerramientaNombre { get; set; }
+        public string? HerramientaCodigo { get; set; }
         public string? ResponsableNombre { get; set; }
         public string? TipoMovimiento { get; set; }
         public string? UsuarioModificaNombre { get; set; }

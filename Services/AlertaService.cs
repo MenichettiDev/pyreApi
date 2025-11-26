@@ -31,7 +31,7 @@ namespace pyreApi.Services
             {
                 var alertas = await _repository.GetAllAsync();
                 var alertaDtos = alertas
-                    .Where(a => a.Activo) // <- filtrar solo activas
+                    .Where(a => a.Activo)
                     .Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<AlertaDto>>
@@ -408,6 +408,7 @@ namespace pyreApi.Services
                 IdModifica = alerta.IdModifica ?? 0,
                 Activo = alerta.Activo,
                 HerramientaNombre = alerta.MovimientoHerramienta?.Herramienta?.NombreHerramienta,
+                HerramientaCodigo = alerta.MovimientoHerramienta?.Herramienta?.Codigo,
                 ResponsableNombre = responsableNombre,
                 TipoMovimiento =
                     alerta.MovimientoHerramienta?.IdTipoMovimiento == 1
