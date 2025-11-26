@@ -120,13 +120,7 @@ namespace pyreApi.Controllers
             // Validar que el usuario solo pueda acceder a sus propios datos
             if (authenticatedUserId != id)
             {
-                return Forbid(
-                    new
-                    {
-                        Success = false,
-                        Message = "No tiene permisos para acceder a los datos de otro usuario. Solo puede consultar su propia información."
-                    }.ToString()
-                );
+                return Forbid();
             }
 
             var response = await _usuarioService.GetMyselfAsync(id);
