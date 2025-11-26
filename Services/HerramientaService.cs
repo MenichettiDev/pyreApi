@@ -392,7 +392,8 @@ namespace pyreApi.Services
                         estado,
                         idDisponibilidad
                     )
-                ).Where(h => h.Activo); // SOLO activas
+                ).Where(h => h.Activo)
+                .Where(h => h.Eliminado == false);
 
                 // Ordenar por IdHerramienta en orden descendente
                 var herramientasOrdenadas = herramientas.OrderByDescending(h => h.IdHerramienta);
@@ -837,6 +838,7 @@ namespace pyreApi.Services
                     )
                 )
                     .Where(h => h.Activo)
+                    .Where(h => h.Eliminado == false)
                     .ToList();
                 var herramientasDto = herramientas.Select(MapToDto);
 
