@@ -205,7 +205,7 @@ namespace pyreApi.Repositories
             query = query.Where(u => u.Eliminado == false);
 
             if (!string.IsNullOrWhiteSpace(legajo))
-                query = query.Where(u => u.Legajo != null && u.Legajo == legajo);
+                query = query.Where(u => u.Legajo != null && u.Legajo.Contains(legajo));
 
             if (estado.HasValue)
                 query = query.Where(u => u.Activo == estado.Value);
