@@ -255,7 +255,8 @@ namespace pyreApi.Services
             {
                 var obras = await _repository.GetAllAsync();
                 var filtered = obras
-                    .Where(o => o.Activo) // solo activos como en getClientesCombo
+                    .Where(o => o.Activo && !o.Eliminado)
+
                     .AsEnumerable();
 
                 if (idCliente.HasValue)

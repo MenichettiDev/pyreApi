@@ -209,6 +209,7 @@ namespace pyreApi.Services
                     .Where(p => string.IsNullOrWhiteSpace(search) ||
                         (p.NombreProveedor != null && p.NombreProveedor.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
                         (p.Contacto != null && p.Contacto.Contains(search, StringComparison.OrdinalIgnoreCase)))
+                        .Where(p => p.Activo && !p.Eliminado)
                     .Take(15)
                     .ToList();
 

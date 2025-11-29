@@ -217,7 +217,7 @@ namespace pyreApi.Services
                 var clientes = await _repository.GetAllAsync();
                 var filteredClientes = clientes
                     .Where(c =>
-                        c.Activo
+                        c.Activo && !c.Eliminado
                         && (
                             string.IsNullOrWhiteSpace(search)
                             || (

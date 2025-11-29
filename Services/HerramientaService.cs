@@ -46,7 +46,7 @@ namespace pyreApi.Services
         {
             try
             {
-                var herramientas = (await _repository.GetAllAsync()).Where(h => h.Activo).ToList();
+                var herramientas = (await _repository.GetAllAsync()).Where(h => h.Activo && !h.Eliminado).ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
@@ -316,7 +316,7 @@ namespace pyreApi.Services
             try
             {
                 var herramientas = (await _herramientaRepository.GetAvailableToolsAsync())
-                    .Where(h => h.Activo)
+                    .Where(h => h.Activo && !h.Eliminado)
                     .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
@@ -494,7 +494,7 @@ namespace pyreApi.Services
             try
             {
                 var herramientas = (await _herramientaRepository.GetByEstadoAsync(estadoFisicoId))
-                    .Where(h => h.Activo)
+                    .Where(h => h.Activo && h.Eliminado == false)
                     .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
@@ -521,7 +521,7 @@ namespace pyreApi.Services
             try
             {
                 var herramientas = (await _herramientaRepository.GetInRepairAsync())
-                    .Where(h => h.Activo)
+                    .Where(h => h.Activo && !h.Eliminado)
                     .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
@@ -548,7 +548,7 @@ namespace pyreApi.Services
             try
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
-                int total = herramientas.Count(h => h.Activo); // SOLO activas
+                int total = herramientas.Count(h => h.Activo && !h.Eliminado); // SOLO activas y no eliminadas
 
                 return new BaseResponseDto<int>
                 {
@@ -576,7 +576,7 @@ namespace pyreApi.Services
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
                 int totalPorEstado = herramientas.Count(h =>
-                    h.IdEstadoFisico == estadoFisicoId && h.Activo
+                    h.IdEstadoFisico == estadoFisicoId && h.Activo && !h.Eliminado
                 );
 
                 return new BaseResponseDto<int>
@@ -605,7 +605,7 @@ namespace pyreApi.Services
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
                 int totalPorDisponibilidad = herramientas.Count(h =>
-                    h.IdDisponibilidad == disponibilidadId && h.Activo
+                    h.IdDisponibilidad == disponibilidadId && h.Activo && !h.Eliminado
                 );
 
                 return new BaseResponseDto<int>
@@ -631,7 +631,7 @@ namespace pyreApi.Services
             try
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
-                int totalDisponibles = herramientas.Count(h => h.IdDisponibilidad == 1 && h.Activo);
+                int totalDisponibles = herramientas.Count(h => h.IdDisponibilidad == 1 && h.Activo && !h.Eliminado);
 
                 return new BaseResponseDto<int>
                 {
@@ -803,7 +803,7 @@ namespace pyreApi.Services
                 var herramientas = (
                     await _herramientaRepository.GetByMultipleDisponibilidadAsync(disponibilidadIds)
                 )
-                    .Where(h => h.Activo)
+                    .Where(h => h.Activo && !h.Eliminado)
                     .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
@@ -1149,7 +1149,9 @@ namespace pyreApi.Services
         {
             try
             {
-                var herramientas = (await _repository.GetAllAsync()).ToList();
+                var herramientas = (await _repository.GetAllAsync())
+                .Where(h => !h.Eliminado)
+                .ToList();
 
                 // mapeos fijos solicitados
                 var disponibilidadMap = new Dictionary<int, string>
