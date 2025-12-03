@@ -212,7 +212,11 @@ namespace pyreApi.Services
                 }
 
                 var totalRecords = filtered.Count();
-                var obrasPage = filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+                var obrasPage = filtered
+                    .OrderByDescending(o => o.FechaInicio)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
 
                 var obraDtos = obrasPage.Select(MapToDto).ToList();
                 var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
