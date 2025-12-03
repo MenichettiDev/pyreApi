@@ -288,6 +288,41 @@ namespace pyreApi.Services
             }
         }
 
+        public async Task<BaseResponseDto<object>> ToggleActivoAsync(int id)
+        {
+            try
+            {
+                var cliente = await _repository.GetByIdAsync(id);
+                if (cliente == null || cliente.Eliminado)
+                {
+                    return new BaseResponseDto<object>
+                    {
+                        Success = false,
+                        Message = "Cliente no encontrado",
+                    };
+                }
+
+                cliente.Activo = !cliente.Activo;
+                await _repository.UpdateAsync(cliente);
+
+                return new BaseResponseDto<object>
+                {
+                    Success = true,
+                    Data = new { Activo = cliente.Activo },
+                    Message = $"Cliente {(cliente.Activo ? "activado" : "desactivado")} correctamente",
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<object>
+                {
+                    Success = false,
+                    Message = "Error al cambiar el estado del cliente",
+                    Errors = new List<string> { ex.Message },
+                };
+            }
+        }
+
         private ClienteDto MapToDto(Cliente cliente)
         {
             return new ClienteDto

@@ -25,7 +25,6 @@ namespace pyreApi.Data
         public DbSet<TipoAlerta> TipoAlerta { get; set; }
         public DbSet<TipoMovimientoHerramienta> TipoMovimientoHerramienta { get; set; }
         public DbSet<Proveedor> Proveedor { get; set; }
-        public DbSet<Usuario> Usuarios { get; set; } // Agregar esta línea para mapear la entidad Usuario
 
         protected override void OnModelCreating(ModelBuilder modelBuilder) // Mapeo de tablas y relaciones
         {
@@ -40,6 +39,7 @@ namespace pyreApi.Data
             modelBuilder.Entity<FamiliaHerramientas>().ToTable("familiaherramientas");
             modelBuilder.Entity<Planta>().ToTable("planta");
             modelBuilder.Entity<Obra>().ToTable("obra");
+            modelBuilder.Entity<Cliente>().ToTable("cliente"); // Mapeo agregado para la entidad Cliente
             modelBuilder.Entity<Herramienta>().ToTable("herramienta");
             modelBuilder.Entity<MovimientoHerramienta>().ToTable("movimientoherramienta");
             modelBuilder.Entity<Alerta>().ToTable("alerta");
