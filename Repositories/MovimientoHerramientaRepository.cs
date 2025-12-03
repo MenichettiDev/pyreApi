@@ -6,9 +6,8 @@ namespace pyreApi.Repositories
 {
     public class MovimientoHerramientaRepository : GenericRepository<MovimientoHerramienta>
     {
-        public MovimientoHerramientaRepository(ApplicationDbContext context) : base(context)
-        {
-        }
+        public MovimientoHerramientaRepository(ApplicationDbContext context)
+            : base(context) { }
 
         public override async Task<IEnumerable<MovimientoHerramienta>> GetAllAsync()
         {
@@ -35,7 +34,9 @@ namespace pyreApi.Repositories
                 .FirstOrDefaultAsync(m => m.IdMovimiento == id);
         }
 
-        public async Task<IEnumerable<MovimientoHerramienta>> GetByHerramientaAsync(int herramientaId)
+        public async Task<IEnumerable<MovimientoHerramienta>> GetByHerramientaAsync(
+            int herramientaId
+        )
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
@@ -49,7 +50,9 @@ namespace pyreApi.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<MovimientoHerramienta>> GetByUsuarioResponsableAsync(int usuarioId)
+        public async Task<IEnumerable<MovimientoHerramienta>> GetByUsuarioResponsableAsync(
+            int usuarioId
+        )
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
@@ -63,7 +66,9 @@ namespace pyreApi.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<MovimientoHerramienta>> GetByTipoMovimientoAsync(int tipoMovimientoId)
+        public async Task<IEnumerable<MovimientoHerramienta>> GetByTipoMovimientoAsync(
+            int tipoMovimientoId
+        )
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
@@ -76,7 +81,10 @@ namespace pyreApi.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<MovimientoHerramienta>> GetMovimientosByDateRangeAsync(DateTime startDate, DateTime endDate)
+        public async Task<IEnumerable<MovimientoHerramienta>> GetMovimientosByDateRangeAsync(
+            DateTime startDate,
+            DateTime endDate
+        )
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
@@ -90,7 +98,9 @@ namespace pyreApi.Repositories
                 .ToListAsync();
         }
 
-        public async Task<MovimientoHerramienta?> GetLastMovimientoByHerramientaAsync(int herramientaId)
+        public async Task<MovimientoHerramienta?> GetLastMovimientoByHerramientaAsync(
+            int herramientaId
+        )
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
@@ -142,13 +152,14 @@ namespace pyreApi.Repositories
             int? idProveedor,
             int? idEstadoFisico,
             DateTime? fechaDesde,
-            DateTime? fechaHasta)
+            DateTime? fechaHasta
+        )
         {
             var query = _dbSet
                 .Include(m => m.Herramienta)
-                    .ThenInclude(h => h.Familia)
+                .ThenInclude(h => h.Familia)
                 .Include(m => m.Herramienta)
-                    .ThenInclude(h => h.EstadoFisico)
+                .ThenInclude(h => h.EstadoFisico)
                 .Include(m => m.UsuarioGenera)
                 .Include(m => m.UsuarioResponsable)
                 .Include(m => m.TipoMovimiento)
@@ -160,12 +171,12 @@ namespace pyreApi.Repositories
             if (!string.IsNullOrWhiteSpace(nombreHerramienta))
             {
                 query = query.Where(m =>
-                    (m.Herramienta.NombreHerramienta != null &&
-                    m.Herramienta.NombreHerramienta.Contains(nombreHerramienta)) ||
-                    m.Herramienta.Codigo.Contains(nombreHerramienta)
+                    (
+                        m.Herramienta.NombreHerramienta != null
+                        && m.Herramienta.NombreHerramienta.Contains(nombreHerramienta)
+                    ) || m.Herramienta.Codigo.Contains(nombreHerramienta)
                 );
             }
-
 
             if (idFamiliaHerramienta.HasValue)
                 query = query.Where(m => m.Herramienta.IdFamilia == idFamiliaHerramienta.Value);
@@ -197,7 +208,9 @@ namespace pyreApi.Repositories
             return await query.OrderByDescending(m => m.Fecha).ToListAsync();
         }
 
-        public async Task<MovimientoHerramienta?> GetLatestMovimientoByHerramientaAsync(int herramientaId)
+        public async Task<MovimientoHerramienta?> GetLatestMovimientoByHerramientaAsync(
+            int herramientaId
+        )
         {
             return await _dbSet
                 .Include(m => m.Herramienta)
@@ -232,14 +245,14 @@ namespace pyreApi.Repositories
 
             return await _dbSet
                 .Include(m => m.Herramienta)
-                    .ThenInclude(h => h.Familia)
+                .ThenInclude(h => h.Familia)
                 .Where(m => m.IdTipoMovimiento == 1 && m.Fecha >= thirtyDaysAgo) // Solo préstamos de últimos 30 días
                 .GroupBy(m => new
                 {
                     m.IdHerramienta,
                     m.Herramienta.Codigo,
                     m.Herramienta.NombreHerramienta,
-                    FamiliaHerramienta = m.Herramienta.Familia.NombreFamilia
+                    FamiliaHerramienta = m.Herramienta.Familia.NombreFamilia,
                 })
                 .Select(g => new
                 {
@@ -248,7 +261,7 @@ namespace pyreApi.Repositories
                     NombreHerramienta = g.Key.NombreHerramienta,
                     FamiliaHerramienta = g.Key.FamiliaHerramienta,
                     TotalPrestamos = g.Count(),
-                    UltimoPrestamo = g.Max(m => m.Fecha)
+                    UltimoPrestamo = g.Max(m => m.Fecha),
                 })
                 .OrderByDescending(x => x.TotalPrestamos)
                 .ThenByDescending(x => x.UltimoPrestamo)
