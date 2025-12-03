@@ -17,6 +17,7 @@ namespace pyreApi.Data
         public DbSet<FamiliaHerramientas> FamiliaHerramientas { get; set; }
         public DbSet<Planta> Planta { get; set; }
         public DbSet<Obra> Obra { get; set; }
+        public DbSet<Cliente> Cliente { get; set; }
         public DbSet<Herramienta> Herramienta { get; set; }
         public DbSet<MovimientoHerramienta> MovimientoHerramienta { get; set; }
         public DbSet<Alerta> Alerta { get; set; }
