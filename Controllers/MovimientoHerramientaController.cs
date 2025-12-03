@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using pyreApi.DTOs.MovimientoHerramienta;
 using pyreApi.Services;
 
@@ -31,12 +31,23 @@ namespace pyreApi.Controllers
             [FromQuery] int? idProveedor = null,
             [FromQuery] int? idEstadoFisico = null,
             [FromQuery] DateTime? fechaDesde = null,
-            [FromQuery] DateTime? fechaHasta = null)
+            [FromQuery] DateTime? fechaHasta = null
+        )
         {
             var result = await _movimientoService.GetAllMovimientosPaginatedAsync(
-                page, pageSize, nombreHerramienta, idFamiliaHerramienta, idUsuarioGenera,
-                idUsuarioResponsable, idTipoMovimiento, idObra, idProveedor,
-                idEstadoFisico, fechaDesde, fechaHasta);
+                page,
+                pageSize,
+                nombreHerramienta,
+                idFamiliaHerramienta,
+                idUsuarioGenera,
+                idUsuarioResponsable,
+                idTipoMovimiento,
+                idObra,
+                idProveedor,
+                idEstadoFisico,
+                fechaDesde,
+                fechaHasta
+            );
 
             return result.Success ? Ok(result) : BadRequest(result);
         }
@@ -69,13 +80,18 @@ namespace pyreApi.Controllers
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden ver último movimiento
         public async Task<IActionResult> GetLatestByHerramienta(int herramientaId)
         {
-            var result = await _movimientoService.GetLatestMovimientoByHerramientaAsync(herramientaId);
+            var result = await _movimientoService.GetLatestMovimientoByHerramientaAsync(
+                herramientaId
+            );
             return result.Success ? Ok(result) : NotFound(result);
         }
 
         [HttpGet("daterange")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden filtrar por fechas
-        public async Task<IActionResult> GetByDateRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+        public async Task<IActionResult> GetByDateRange(
+            [FromQuery] DateTime startDate,
+            [FromQuery] DateTime endDate
+        )
         {
             var result = await _movimientoService.GetByDateRangeAsync(startDate, endDate);
             return result.Success ? Ok(result) : BadRequest(result);
@@ -105,12 +121,17 @@ namespace pyreApi.Controllers
                 return BadRequest(ModelState);
 
             var result = await _movimientoService.CreateMovimientoAsync(createDto);
-            return result.Success ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdMovimiento }, result) : BadRequest(result);
+            return result.Success
+                ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdMovimiento }, result)
+                : BadRequest(result);
         }
 
         [HttpPut("{id}")]
         [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede actualizar movimientos
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateMovimientoHerramientaDto updateDto)
+        public async Task<IActionResult> Update(
+            int id,
+            [FromBody] UpdateMovimientoHerramientaDto updateDto
+        )
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -121,8 +142,6 @@ namespace pyreApi.Controllers
             var result = await _movimientoService.UpdateMovimientoAsync(updateDto);
             return result.Success ? Ok(result) : BadRequest(result);
         }
-
-
 
         [HttpDelete("{id}")]
         [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede eliminar movimientos
