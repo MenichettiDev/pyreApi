@@ -27,6 +27,10 @@ namespace pyreApi.Services
             try
             {
                 var obras = (await _repository.GetAllAsync()).ToList();
+
+                // Ordenar de la más nueva a la más vieja por FechaInicio
+                obras = obras.OrderByDescending(o => o.FechaInicio).ToList();
+
                 await PopulateClientesAsync(obras);
                 var obraDtos = obras.Select(MapToDto);
 
@@ -211,6 +215,9 @@ namespace pyreApi.Services
                     filtered = filtered.Where(o => o.IdCliente == idCliente.Value);
                 }
 
+                // Ordenar de la más nueva a la más vieja por FechaInicio antes de paginar
+                filtered = filtered.OrderByDescending(o => o.FechaInicio);
+
                 var totalRecords = filtered.Count();
                 var obrasPage = filtered
                     .OrderByDescending(o => o.FechaInicio)
@@ -258,10 +265,7 @@ namespace pyreApi.Services
             try
             {
                 var obras = await _repository.GetAllAsync();
-                var filtered = obras
-                    .Where(o => o.Activo && !o.Eliminado)
-
-                    .AsEnumerable();
+                var filtered = obras.Where(o => o.Activo && !o.Eliminado).AsEnumerable();
 
                 if (idCliente.HasValue)
                 {
@@ -283,7 +287,9 @@ namespace pyreApi.Services
                     );
                 }
 
+                // Ordenar de la más nueva a la más vieja por FechaInicio y luego limitar a 5
                 var resultList = filtered
+                    .OrderByDescending(o => o.FechaInicio)
                     .Take(5) // limitar a 5
                     .ToList();
 
