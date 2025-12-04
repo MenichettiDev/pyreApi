@@ -214,8 +214,8 @@ namespace pyreApi.Services
                     AccedeAlSistema = true,
                     Avatar = "default.png",
                     IdUsuarioCrea = createDto.IdUsuarioCrea,
-                    FechaRegistro = DateTime.UtcNow,
-                    FechaModificacion = DateTime.UtcNow,
+                    FechaRegistro = DateTime.Now,
+                    FechaModificacion = DateTime.Now,
                     Activo = true,
                 };
 
@@ -416,7 +416,7 @@ namespace pyreApi.Services
                     }
                 }
                 existingUser.IdUsuarioModifica = updateDto.IdUsuarioModifica;
-                existingUser.FechaModificacion = DateTime.UtcNow;
+                existingUser.FechaModificacion = DateTime.Now;
 
                 await _usuarioRepository.UpdateAsync(existingUser);
 
@@ -820,7 +820,7 @@ namespace pyreApi.Services
                 }
 
                 existingUser.Activo = !existingUser.Activo;
-                existingUser.FechaModificacion = DateTime.UtcNow;
+                existingUser.FechaModificacion = DateTime.Now;
 
                 await _usuarioRepository.UpdateAsync(existingUser);
 
@@ -865,7 +865,7 @@ namespace pyreApi.Services
 
                 // Eliminación lógica
                 usuario.Eliminado = true;
-                usuario.FechaModificacion = DateTime.UtcNow;
+                usuario.FechaModificacion = DateTime.Now;
                 await _repository.UpdateAsync(usuario);
 
                 return new BaseResponseDto<object>
@@ -943,7 +943,7 @@ namespace pyreApi.Services
 
                 // Hashear la nueva contraseña
                 usuario.PasswordHash = HashPassword(changePasswordDto.NewPassword);
-                usuario.FechaModificacion = DateTime.UtcNow;
+                usuario.FechaModificacion = DateTime.Now;
                 usuario.IdUsuarioModifica = userId; // El usuario se modifica a sí mismo
 
                 await _usuarioRepository.UpdateAsync(usuario);

@@ -228,7 +228,7 @@ namespace pyreApi.Repositories
 
         public async Task<IEnumerable<object>> GetMostBorrowedToolsLast30DaysAsync()
         {
-            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            var thirtyDaysAgo = DateTime.Now.AddDays(-30);
 
             return await _dbSet
                 .Include(m => m.Herramienta)

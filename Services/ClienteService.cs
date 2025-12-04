@@ -74,7 +74,7 @@ namespace pyreApi.Services
             try
             {
                 var cliente = MapFromCreateDto(createDto);
-                cliente.FechaRegistro = DateTime.UtcNow;
+                cliente.FechaRegistro = DateTime.Now;
                 var result = await _repository.AddAsync(cliente);
 
                 return new BaseResponseDto<ClienteDto>

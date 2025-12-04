@@ -601,7 +601,7 @@ namespace pyreApi.Services
                 // Corregido: usar la propiedad correcta presente en los DTOs
                 EstadoHerramientaAlDevolver = createDto.EstadoHerramientaAlDevolver,
                 Observaciones = createDto.Observaciones,
-                Fecha = DateTime.UtcNow,
+                Fecha = DateTime.Now,
             };
         }
 

@@ -18,7 +18,7 @@ namespace pyreApi.Models
         public long IdAuditoria { get; set; }
 
         [Required]
-        public DateTime FechaHora { get; set; } = DateTime.UtcNow;
+        public DateTime FechaHora { get; set; } = DateTime.Now;
 
         [Required]
         public int IdUsuario { get; set; }

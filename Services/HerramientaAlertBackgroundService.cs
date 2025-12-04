@@ -90,7 +90,7 @@ namespace pyreApi.Services
 
             // Verificar si el movimiento está vencido
             var fechaVencimiento = ultimoMovimiento.FechaEstimadaDevolucion.Value;
-            var fechaActual = DateTime.UtcNow;
+            var fechaActual = DateTime.Now;
 
             if (fechaActual > fechaVencimiento)
             {

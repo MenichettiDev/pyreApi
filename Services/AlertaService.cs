@@ -424,7 +424,7 @@ namespace pyreApi.Services
                 IdMovimiento = createDto.IdMovimiento,
                 IdTipoAlerta = createDto.IdTipoAlerta,
                 Comentario = createDto.Comentario,
-                FechaGeneracion = DateTime.UtcNow,
+                FechaGeneracion = DateTime.Now,
                 Activo = true,
             };
         }

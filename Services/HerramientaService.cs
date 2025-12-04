@@ -1313,7 +1313,7 @@ namespace pyreApi.Services
                 var ws = wb.Worksheets.Add("Resumen");
                 int r = 1;
                 ws.Cell(r++, 1).Value = "Reporte de Herramientas";
-                ws.Cell(r++, 1).Value = $"Fecha: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} (UTC)";
+                ws.Cell(r++, 1).Value = $"Fecha: {DateTime.Now:yyyy-MM-dd HH:mm:ss} (UTC)";
                 r++;
 
                 ws.Cell(r, 1).Value = "Total Costo";
