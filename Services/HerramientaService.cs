@@ -229,7 +229,6 @@ namespace pyreApi.Services
                     CostoDolares = herramienta.CostoDolares,
                     IdFamilia = herramienta.IdFamilia,
                     IdEstadoFisico = herramienta.IdEstadoFisico,
-                    IdDisponibilidad = herramienta.IdDisponibilidad,
                     IdPlanta = herramienta.IdPlanta,
                     Tipo = herramienta.Tipo,
                     Marca = herramienta.Marca,
@@ -1004,7 +1003,6 @@ namespace pyreApi.Services
             herramienta.IdEstadoFisico = updateDto.IdEstadoFisico;
             herramienta.IdPlanta = updateDto.IdPlanta;
             herramienta.Activo = updateDto.Activo;
-            herramienta.IdDisponibilidad = updateDto.IdDisponibilidad;
         }
 
         // Agregar método helper privado (colócalo dentro de la clase HerramientaService, por ejemplo antes de GenerateCodigo)

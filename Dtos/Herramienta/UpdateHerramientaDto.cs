@@ -46,8 +46,5 @@ namespace pyreApi.DTOs.Herramienta
         public string? Ubicacion { get; set; }
 
         public bool Activo { get; set; }
-
-        [Required(ErrorMessage = "El estado de disponibilidad es requerido")]
-        public int IdDisponibilidad { get; set; }
     }
 }
