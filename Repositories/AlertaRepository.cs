@@ -77,5 +77,19 @@ namespace pyreApi.Repositories
                 .Where(a => a.IdTipoAlerta == idTipoAlerta)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Alerta>> GetByMovimientoAsync(int idMovimiento)
+        {
+            return await _dbSet
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Herramienta)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.UsuarioResponsable)
+                .Include(a => a.MovimientoHerramienta)
+                    .ThenInclude(m => m.Proveedor)
+                .Include(a => a.TipoAlerta)
+                .Where(a => a.IdMovimiento == idMovimiento)
+                .ToListAsync();
+        }
     }
 }

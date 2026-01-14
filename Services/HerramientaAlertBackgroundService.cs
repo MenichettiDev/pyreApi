@@ -27,19 +27,26 @@ namespace pyreApi.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            _logger.LogInformation("HerramientaAlertBackgroundService iniciado");
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
+                    _logger.LogInformation("Iniciando proceso de verificación de alertas de herramientas");
                     await ProcessHerramientaAlertsAsync();
+                    _logger.LogInformation("Proceso de verificación de alertas completado");
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error al procesar alertas de herramientas");
                 }
 
+                _logger.LogInformation("Esperando {Delay} antes del próximo ciclo", _period);
                 await Task.Delay(_period, stoppingToken);
             }
+
+            _logger.LogInformation("HerramientaAlertBackgroundService detenido");
         }
 
         /// <summary>
@@ -58,9 +65,19 @@ namespace pyreApi.Services
             var herramientasActivas = await herramientaRepository.FindAsync(h =>
                 h.Activo && (h.IdDisponibilidad == 2 || h.IdDisponibilidad == 3));
 
+            _logger.LogInformation("Encontradas {CantidadHerramientas} herramientas en estado Prestada o Mantenimiento para evaluar",
+                herramientasActivas.Count());
+
             foreach (var herramienta in herramientasActivas)
             {
-                await ProcessHerramientaAlert(herramienta, movimientoRepository, alertaService, alertaRepository);
+                try
+                {
+                    await ProcessHerramientaAlert(herramienta, movimientoRepository, alertaService, alertaRepository);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error al procesar alerta para herramienta {HerramientaId}", herramienta.IdHerramienta);
+                }
             }
         }
 
@@ -74,6 +91,9 @@ namespace pyreApi.Services
             AlertaService alertaService,
             GenericRepository<Alerta> alertaRepository)
         {
+            _logger.LogDebug("Evaluando herramienta {HerramientaId} ({Codigo}) en estado {Estado}",
+                herramienta.IdHerramienta, herramienta.Codigo, herramienta.IdDisponibilidad);
+
             // Obtener el último movimiento de tipo Prestamo (1) o Envio Reparacion (3)
             // que tenga fecha estimada de devolución
             var ultimoMovimiento = (await movimientoRepository.FindAsync(m =>
@@ -85,8 +105,13 @@ namespace pyreApi.Services
 
             if (ultimoMovimiento?.FechaEstimadaDevolucion == null)
             {
+                _logger.LogDebug("No se encontró movimiento con fecha estimada para herramienta {HerramientaId}",
+                    herramienta.IdHerramienta);
                 return;
             }
+
+            _logger.LogDebug("Último movimiento para herramienta {HerramientaId}: MovimientoId {MovimientoId}, Tipo {TipoMovimiento}, Fecha estimada {FechaEstimada}",
+                herramienta.IdHerramienta, ultimoMovimiento.IdMovimiento, ultimoMovimiento.IdTipoMovimiento, ultimoMovimiento.FechaEstimadaDevolucion);
 
             // Verificar si el movimiento está vencido
             var fechaVencimiento = ultimoMovimiento.FechaEstimadaDevolucion.Value;
@@ -94,6 +119,9 @@ namespace pyreApi.Services
 
             if (fechaActual > fechaVencimiento)
             {
+                _logger.LogInformation("Herramienta {HerramientaId} tiene movimiento vencido. Fecha límite: {FechaLimite}, Fecha actual: {FechaActual}",
+                    herramienta.IdHerramienta, fechaVencimiento, fechaActual);
+
                 // Verificar si ya existe una alerta activa para este movimiento
                 var alertaExistente = await alertaRepository.FindAsync(a =>
                     a.IdMovimiento == ultimoMovimiento.IdMovimiento &&
@@ -102,6 +130,9 @@ namespace pyreApi.Services
 
                 if (!alertaExistente.Any())
                 {
+                    _logger.LogInformation("Creando nueva alerta de vencimiento para herramienta {HerramientaId}, movimiento {MovimientoId}",
+                        herramienta.IdHerramienta, ultimoMovimiento.IdMovimiento);
+
                     // Crear alerta de vencimiento
                     var createAlertaDto = new CreateAlertaDto
                     {
@@ -114,7 +145,7 @@ namespace pyreApi.Services
 
                     if (result.Success)
                     {
-                        _logger.LogInformation("Alerta de vencimiento creada para herramienta {HerramientaId}, movimiento {MovimientoId}",
+                        _logger.LogInformation("Alerta de vencimiento creada exitosamente para herramienta {HerramientaId}, movimiento {MovimientoId}",
                             herramienta.IdHerramienta, ultimoMovimiento.IdMovimiento);
                     }
                     else
@@ -123,6 +154,16 @@ namespace pyreApi.Services
                             herramienta.IdHerramienta, result.Message);
                     }
                 }
+                else
+                {
+                    _logger.LogDebug("Ya existe alerta activa para movimiento {MovimientoId} de herramienta {HerramientaId}",
+                        ultimoMovimiento.IdMovimiento, herramienta.IdHerramienta);
+                }
+            }
+            else
+            {
+                _logger.LogDebug("Herramienta {HerramientaId} no está vencida. Fecha límite: {FechaLimite}",
+                    herramienta.IdHerramienta, fechaVencimiento);
             }
         }
     }

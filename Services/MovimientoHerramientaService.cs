@@ -12,17 +12,20 @@ namespace pyreApi.Services
         private readonly MovimientoHerramientaRepository _movimientoRepository;
         private readonly HerramientaRepository _herramientaRepository;
         private readonly ApplicationDbContext _context;
+        private readonly AlertaService _alertaService;
 
         public MovimientoHerramientaService(
             MovimientoHerramientaRepository movimientoRepository,
             HerramientaRepository herramientaRepository,
-            ApplicationDbContext context
+            ApplicationDbContext context,
+            AlertaService alertaService
         )
             : base(movimientoRepository)
         {
             _movimientoRepository = movimientoRepository;
             _herramientaRepository = herramientaRepository;
             _context = context;
+            _alertaService = alertaService;
         }
 
         public async Task<
@@ -109,6 +112,9 @@ namespace pyreApi.Services
                     };
                 }
 
+                // Capturar el estado inicial de la herramienta ANTES de actualizarlo
+                var estadoInicialHerramienta = herramienta.IdDisponibilidad;
+
                 // Validar que la transición de estado es válida
                 if (
                     !IsValidStateTransition(
@@ -136,6 +142,38 @@ namespace pyreApi.Services
                 );
                 herramienta.IdDisponibilidad = nuevoEstadoDisponibilidad;
                 await _herramientaRepository.UpdateAsync(herramienta);
+
+                //Alertas - Usar el estado inicial para determinar si resolver alertas
+                // Si es una devolución Y la herramienta estaba prestada, resolver alertas automáticamente
+                if (createDto.IdTipoMovimiento == 2 && estadoInicialHerramienta == 2) // Devolución desde Prestada
+                {
+                    // Buscar el último movimiento de préstamo de esta herramienta
+                    var ultimoPrestamo = await _context.Set<MovimientoHerramienta>()
+                        .Where(m => m.IdHerramienta == createDto.IdHerramienta
+                                && m.IdTipoMovimiento == 1) // Préstamo
+                        .OrderByDescending(m => m.Fecha)
+                        .FirstOrDefaultAsync();
+
+                    if (ultimoPrestamo != null)
+                    {
+                        await _alertaService.ResolveAlertasByMovimientoAsync(ultimoPrestamo.IdMovimiento);
+                    }
+                }
+                // Si es una devolución Y la herramienta estaba en mantenimiento, resolver alertas de reparación
+                else if (createDto.IdTipoMovimiento == 2 && estadoInicialHerramienta == 3) // Devolución desde Mantenimiento
+                {
+                    // Buscar el último movimiento de envío a reparación de esta herramienta
+                    var ultimaReparacion = await _context.Set<MovimientoHerramienta>()
+                        .Where(m => m.IdHerramienta == createDto.IdHerramienta
+                                && m.IdTipoMovimiento == 3) // Envío Reparación
+                        .OrderByDescending(m => m.Fecha)
+                        .FirstOrDefaultAsync();
+
+                    if (ultimaReparacion != null)
+                    {
+                        await _alertaService.ResolveAlertasByMovimientoAsync(ultimaReparacion.IdMovimiento);
+                    }
+                }
 
                 // Confirmar la transacción
                 await transaction.CommitAsync();

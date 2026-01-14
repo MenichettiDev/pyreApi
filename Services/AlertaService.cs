@@ -497,5 +497,46 @@ namespace pyreApi.Services
                 };
             }
         }
+
+        public async Task<BaseResponseDto<bool>> ResolveAlertasByMovimientoAsync(int idMovimiento)
+        {
+            try
+            {
+                var alertas = await _alertaRepository.GetByMovimientoAsync(idMovimiento);
+                var alertasActivas = alertas.Where(a => a.Activo).ToList();
+
+                if (!alertasActivas.Any())
+                {
+                    return new BaseResponseDto<bool>
+                    {
+                        Success = true,
+                        Data = true,
+                        Message = "No hay alertas activas para resolver",
+                    };
+                }
+
+                foreach (var alerta in alertasActivas)
+                {
+                    alerta.Activo = false;
+                    await _repository.UpdateAsync(alerta);
+                }
+
+                return new BaseResponseDto<bool>
+                {
+                    Success = true,
+                    Data = true,
+                    Message = $"Se resolvieron {alertasActivas.Count} alerta(s) automáticamente",
+                };
+            }
+            catch (Exception ex)
+            {
+                return new BaseResponseDto<bool>
+                {
+                    Success = false,
+                    Message = "Error al resolver las alertas automáticamente",
+                    Errors = new List<string> { ex.Message },
+                };
+            }
+        }
     }
 }
