@@ -1,5 +1,6 @@
 using System; // agregado
 using System.Linq; // agregado
+using System.Net.Mail;
 using System.Text;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.Extensions.Configuration;
@@ -170,9 +171,23 @@ namespace pyreApi.Services
                     };
                 }
 
-                // Validar si el email ya existe
-                if (!string.IsNullOrEmpty(createDto.Email))
+                // Validar formato y unicidad del email si se proporciona
+                if (!string.IsNullOrWhiteSpace(createDto.Email))
                 {
+                    try
+                    {
+                        var _ = new MailAddress(createDto.Email);
+                    }
+                    catch
+                    {
+                        return new BaseResponseDto<Usuario>
+                        {
+                            Success = false,
+                            Message =
+                                "El formato del email no es válido. Por favor, ingrese un email correcto.",
+                        };
+                    }
+
                     var existingEmail = await _usuarioRepository.GetByEmailAsync(createDto.Email);
                     if (existingEmail != null)
                     {
@@ -308,9 +323,26 @@ namespace pyreApi.Services
                     }
                 }
 
-                // 3️ Validar email único si se modifica
-                if (!string.IsNullOrEmpty(updateDto.Email) && updateDto.Email != existingUser.Email)
+                // 3️ Validar formato y unicidad del email si se modifica
+                if (
+                    !string.IsNullOrWhiteSpace(updateDto.Email)
+                    && updateDto.Email != existingUser.Email
+                )
                 {
+                    try
+                    {
+                        var _ = new MailAddress(updateDto.Email);
+                    }
+                    catch
+                    {
+                        return new BaseResponseDto<UsuarioResponseDto>
+                        {
+                            Success = false,
+                            Message =
+                                "El formato del email no es válido. Por favor, ingrese un email correcto.",
+                        };
+                    }
+
                     var existingEmail = await _usuarioRepository.GetByEmailAsync(updateDto.Email);
                     if (existingEmail != null)
                     {
@@ -885,7 +917,10 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<object>> ChangePasswordAsync(int userId, ChangePasswordDto changePasswordDto)
+        public async Task<BaseResponseDto<object>> ChangePasswordAsync(
+            int userId,
+            ChangePasswordDto changePasswordDto
+        )
         {
             try
             {
@@ -896,7 +931,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<object>
                     {
                         Success = false,
-                        Message = "Usuario no encontrado."
+                        Message = "Usuario no encontrado.",
                     };
                 }
 
@@ -906,7 +941,8 @@ namespace pyreApi.Services
                     return new BaseResponseDto<object>
                     {
                         Success = false,
-                        Message = "Su cuenta se encuentra inactiva. No puede cambiar la contraseña."
+                        Message =
+                            "Su cuenta se encuentra inactiva. No puede cambiar la contraseña.",
                     };
                 }
 
@@ -915,29 +951,35 @@ namespace pyreApi.Services
                     return new BaseResponseDto<object>
                     {
                         Success = false,
-                        Message = "Su cuenta no tiene permisos para acceder al sistema."
+                        Message = "Su cuenta no tiene permisos para acceder al sistema.",
                     };
                 }
 
                 // Validar contraseña actual
-                var isCurrentPasswordValid = await _usuarioRepository.ValidateUserPasswordAsync(userId, changePasswordDto.CurrentPassword);
+                var isCurrentPasswordValid = await _usuarioRepository.ValidateUserPasswordAsync(
+                    userId,
+                    changePasswordDto.CurrentPassword
+                );
                 if (!isCurrentPasswordValid)
                 {
                     return new BaseResponseDto<object>
                     {
                         Success = false,
-                        Message = "La contraseña actual es incorrecta."
+                        Message = "La contraseña actual es incorrecta.",
                     };
                 }
 
                 // Verificar que la nueva contraseña no sea igual a la actual
-                var isSamePassword = await _usuarioRepository.ValidateUserPasswordAsync(userId, changePasswordDto.NewPassword);
+                var isSamePassword = await _usuarioRepository.ValidateUserPasswordAsync(
+                    userId,
+                    changePasswordDto.NewPassword
+                );
                 if (isSamePassword)
                 {
                     return new BaseResponseDto<object>
                     {
                         Success = false,
-                        Message = "La nueva contraseña debe ser diferente a la contraseña actual."
+                        Message = "La nueva contraseña debe ser diferente a la contraseña actual.",
                     };
                 }
 
@@ -948,25 +990,32 @@ namespace pyreApi.Services
 
                 await _usuarioRepository.UpdateAsync(usuario);
 
-                _logger.LogInformation("Password cambiado exitosamente para usuario ID: {UserId}", userId);
+                _logger.LogInformation(
+                    "Password cambiado exitosamente para usuario ID: {UserId}",
+                    userId
+                );
 
                 return new BaseResponseDto<object>
                 {
                     Success = true,
-                    Message = "Su contraseña ha sido cambiada exitosamente."
+                    Message = "Su contraseña ha sido cambiada exitosamente.",
                 };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al cambiar contraseña para usuario ID: {UserId}", userId);
+                _logger.LogError(
+                    ex,
+                    "Error al cambiar contraseña para usuario ID: {UserId}",
+                    userId
+                );
                 return new BaseResponseDto<object>
                 {
                     Success = false,
                     Message = "No se pudo cambiar la contraseña. Por favor, intente nuevamente.",
                     Errors = new List<string>
                     {
-                        "Error interno del servidor al procesar la solicitud."
-                    }
+                        "Error interno del servidor al procesar la solicitud.",
+                    },
                 };
             }
         }
@@ -991,7 +1040,8 @@ namespace pyreApi.Services
                     return new BaseResponseDto<UsuarioResponseDto>
                     {
                         Success = false,
-                        Message = "Su cuenta se encuentra inactiva. Por favor, contacte al administrador del sistema.",
+                        Message =
+                            "Su cuenta se encuentra inactiva. Por favor, contacte al administrador del sistema.",
                     };
                 }
 
@@ -1015,7 +1065,11 @@ namespace pyreApi.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener datos propios del usuario ID: {UserId}", userId);
+                _logger.LogError(
+                    ex,
+                    "Error al obtener datos propios del usuario ID: {UserId}",
+                    userId
+                );
                 return new BaseResponseDto<UsuarioResponseDto>
                 {
                     Success = false,
