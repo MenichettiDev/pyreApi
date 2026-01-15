@@ -48,7 +48,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede crear obras
+        [Authorize(Roles = "SuperAdmin,Administrador")] // SuperAdmin y Administrador pueden crear obras
         public async Task<IActionResult> Create([FromBody] CreateObraDto createDto)
         {
             if (!ModelState.IsValid)
@@ -64,14 +64,14 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede actualizar obras
+        [Authorize(Roles = "SuperAdmin,Administrador")] // SuperAdmin y Administrador pueden actualizar obras
         public async Task<IActionResult> Update(int id, [FromBody] UpdateObraDto updateDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (id != updateDto.IdObra)
-                return BadRequest("El ID de la URL no coincide con el ID del objeto");
+            // Asignar automáticamente el ID de la URL al DTO para evitar problemas de sincronización
+            updateDto.IdObra = id;
 
             if (updateDto.IdCliente <= 0)
                 return BadRequest("El ID del cliente debe ser un número válido mayor a 0.");
@@ -89,7 +89,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPatch("{id}/toggle-activo")]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede cambiar estado activo
+        [Authorize(Roles = "SuperAdmin,Administrador")] // SuperAdmin y Administrador pueden cambiar estado activo
         public async Task<IActionResult> ToggleActivo(int id)
         {
             if (id <= 0)
