@@ -15,17 +15,22 @@ namespace pyreApi.Services
     public class UsuarioService : GenericService<Usuario>
     {
         private readonly UsuarioRepository _usuarioRepository;
+        private readonly MovimientoHerramientaRepository _movimientoRepository;
         private readonly ILogger<UsuarioService> _logger;
         private readonly IConfiguration _configuration;
 
         public UsuarioService(
             UsuarioRepository usuarioRepository,
+            MovimientoHerramientaRepository movimientoRepository,
             ILogger<UsuarioService> logger,
             IConfiguration configuration
         )
             : base(usuarioRepository)
         {
             _usuarioRepository = usuarioRepository;
+            _movimientoRepository =
+                movimientoRepository
+                ?? throw new ArgumentNullException(nameof(movimientoRepository));
             _logger = logger;
             _configuration = configuration;
         }
@@ -610,11 +615,38 @@ namespace pyreApi.Services
         {
             try
             {
-                var users = await _usuarioRepository.GetActiveUsersAsync();
+                // Obtener todos los usuarios (con rol) para evaluar inactivos con movimientos pendientes
+                var allUsers = await _usuarioRepository.GetAllWithRolAsync();
+                var resultado = new List<Usuario>();
+
+                foreach (var u in allUsers.Where(u => !u.Eliminado))
+                {
+                    if (u.Activo)
+                    {
+                        resultado.Add(u);
+                        continue;
+                    }
+
+                    // Usuario inactivo: comprobar si tiene herramientas prestadas o en reparación a su cargo
+                    var movimientos = await _movimientoRepository.GetByUsuarioResponsableAsync(
+                        u.Id
+                    );
+                    var tieneHerramientasPendientes = movimientos.Any(m =>
+                        m.Herramienta != null
+                        && (
+                            m.Herramienta.IdDisponibilidad == 2
+                            || m.Herramienta.IdDisponibilidad == 3
+                        )
+                    );
+
+                    if (tieneHerramientasPendientes)
+                        resultado.Add(u);
+                }
+
                 return new BaseResponseDto<IEnumerable<Usuario>>
                 {
                     Success = true,
-                    Data = users,
+                    Data = resultado,
                     Message = "Usuarios activos obtenidos correctamente",
                 };
             }
@@ -772,24 +804,77 @@ namespace pyreApi.Services
                 if (pageSize <= 0)
                     pageSize = 10;
 
-                // Obtener usuarios con filtros aplicados directamente en la base de datos
-                var usuarios = await _usuarioRepository.GetFilteredUsuariosAsync(
+                // Obtener usuarios aplicando filtros salvo el estado (lo manejamos aquí)
+                var usuariosCandidates = await _usuarioRepository.GetFilteredUsuariosAsync(
                     legajo,
-                    estado,
+                    null, // no filtrar por estado en BD
                     nombre,
                     apellido,
                     rolId
                 );
 
-                // Ordenar por Id antes de aplicar la paginación
-                var usuariosOrdenados = usuarios.OrderBy(u => u.Id);
+                var resultado = new List<Usuario>();
 
-                var totalRecords = usuariosOrdenados.Count();
+                foreach (var u in usuariosCandidates.Where(u => !u.Eliminado).OrderBy(u => u.Id))
+                {
+                    // si solicitan estado=true: incluir activos y además inactivos que tengan herramientas pendientes
+                    if (estado.HasValue && estado.Value)
+                    {
+                        if (u.Activo)
+                        {
+                            resultado.Add(u);
+                            continue;
+                        }
 
-                var usuariosPage = usuariosOrdenados
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
+                        // usuario inactivo: comprobar movimientos asociados como responsable
+                        var movimientos = await _movimientoRepository.GetByUsuarioResponsableAsync(
+                            u.Id
+                        );
+                        var tieneHerramientasPendientes = movimientos.Any(m =>
+                            m.Herramienta != null
+                            && (
+                                m.Herramienta.IdDisponibilidad == 2
+                                || m.Herramienta.IdDisponibilidad == 3
+                            )
+                        );
+
+                        if (tieneHerramientasPendientes)
+                            resultado.Add(u);
+                        continue;
+                    }
+
+                    // si solicitan estado=false: incluir solo inactivos
+                    if (estado.HasValue && !estado.Value)
+                    {
+                        if (!u.Activo)
+                            resultado.Add(u);
+                        continue;
+                    }
+
+                    // si no se especifica estado: incluir todos, pero para inactivos permitir solo si tienen herramientas pendientes
+                    if (u.Activo)
+                    {
+                        resultado.Add(u);
+                        continue;
+                    }
+
+                    var movimientosAll = await _movimientoRepository.GetByUsuarioResponsableAsync(
+                        u.Id
+                    );
+                    var tienePendientesAll = movimientosAll.Any(m =>
+                        m.Herramienta != null
+                        && (
+                            m.Herramienta.IdDisponibilidad == 2
+                            || m.Herramienta.IdDisponibilidad == 3
+                        )
+                    );
+                    if (tienePendientesAll)
+                        resultado.Add(u);
+                }
+
+                var totalRecords = resultado.Count();
+
+                var usuariosPage = resultado.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
                 var usuariosDto = usuariosPage.Select(MapToResponseDto).ToList();
                 var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
