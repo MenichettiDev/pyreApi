@@ -1,21 +1,22 @@
+using System.Reflection;
+using System.Security.Claims; // <-- agregado para ClaimTypes
 using System.Text.Json;
+using ClosedXML.Excel;
 using Microsoft.AspNetCore.Http; // <-- agregado
+using Microsoft.EntityFrameworkCore.Storage; // <-- agregado para transacciones
 using Microsoft.Extensions.DependencyInjection; // <-- agregado
 using Microsoft.Extensions.Logging; // <-- agregado
-using Microsoft.EntityFrameworkCore.Storage; // <-- agregado para transacciones
-using ClosedXML.Excel;
-using System.Reflection;
+using pyreApi.Data; // <-- agregado para acceso al contexto
 using pyreApi.DTOs.Common;
 using pyreApi.DTOs.Herramienta;
+using pyreApi.Extensions; // <-- agregado para ClaimsPrincipalExtensions
 using pyreApi.Models;
 using pyreApi.Repositories;
 using pyreApi.Services;
-using pyreApi.Data; // <-- agregado para acceso al contexto
 
 namespace pyreApi.Services
 {
     // Utilidad para comparar dos objetos y obtener solo los campos modificados
-
 
     public class HerramientaService : GenericService<Herramienta>
     {
@@ -46,7 +47,9 @@ namespace pyreApi.Services
         {
             try
             {
-                var herramientas = (await _repository.GetAllAsync()).Where(h => h.Activo && !h.Eliminado).ToList();
+                var herramientas = (await _repository.GetAllAsync())
+                    .Where(h => h.Activo && !h.Eliminado)
+                    .ToList();
                 var herramientaDtos = herramientas.Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<HerramientaDto>>
@@ -208,15 +211,15 @@ namespace pyreApi.Services
                 }
 
                 // Nuevo: bloquear cualquier actualización si la herramienta está en estado 'Bloqueada' (5)
-                // pero permitirla si el usuario actual es SuperAdmin
-                if (herramienta.IdDisponibilidad == 5 && !IsCurrentUserSuperAdmin())
+                // pero permitirla si el usuario actual es SuperAdmin o Administrador
+                if (herramienta.IdDisponibilidad == 5 && !IsCurrentUserSuperAdminOrAdmin())
                 {
                     await transaction.RollbackAsync();
                     return new BaseResponseDto<HerramientaDto>
                     {
                         Success = false,
                         Message =
-                            "La herramienta está BLOQUEADA y no puede modificarse. Sólo SuperAdmin puede desbloquearla mediante PUT /api/herramienta/bloqueo/toggle/{id}.",
+                            "La herramienta está bloqueada. Para editarla, primero debe desbloquearla y luego realizar los cambios.",
                     };
                 }
 
@@ -271,7 +274,6 @@ namespace pyreApi.Services
                         herramienta.Codigo
                     );
                 }
-
 
                 // Guardar cambios después del registro de auditoría
                 await _repository.UpdateAsync(herramienta);
@@ -391,8 +393,9 @@ namespace pyreApi.Services
                         estado,
                         idDisponibilidad
                     )
-                ).Where(h => h.Activo)
-                .Where(h => h.Eliminado == false);
+                )
+                    .Where(h => h.Activo)
+                    .Where(h => h.Eliminado == false);
 
                 // Ordenar por IdHerramienta en orden descendente
                 var herramientasOrdenadas = herramientas.OrderByDescending(h => h.IdHerramienta);
@@ -454,14 +457,14 @@ namespace pyreApi.Services
                     };
                 }
 
-                // Nuevo: impedir cambio de estado si está bloqueada, salvo SuperAdmin
-                if (existingHerramienta.IdDisponibilidad == 5 && !IsCurrentUserSuperAdmin())
+                // Nuevo: impedir cambio de estado si está bloqueada, salvo SuperAdmin o Administrador
+                if (existingHerramienta.IdDisponibilidad == 5 && !IsCurrentUserSuperAdminOrAdmin())
                 {
                     return new BaseResponseDto<HerramientaDto>
                     {
                         Success = false,
                         Message =
-                            "La herramienta está BLOQUEADA y no se permiten movimientos/actualizaciones de estado. Sólo SuperAdmin puede desbloquearla mediante PUT /api/herramienta/bloqueo/toggle/{id}.",
+                            "La herramienta está bloqueada. Para cambiar su estado, primero debe desbloquearla.",
                     };
                 }
 
@@ -630,7 +633,9 @@ namespace pyreApi.Services
             try
             {
                 var herramientas = await _herramientaRepository.GetAllAsync();
-                int totalDisponibles = herramientas.Count(h => h.IdDisponibilidad == 1 && h.Activo && !h.Eliminado);
+                int totalDisponibles = herramientas.Count(h =>
+                    h.IdDisponibilidad == 1 && h.Activo && !h.Eliminado
+                );
 
                 return new BaseResponseDto<int>
                 {
@@ -752,14 +757,14 @@ namespace pyreApi.Services
                     };
                 }
 
-                // Nuevo: impedir cualquier cambio de disponibilidad si la herramienta está bloqueada, salvo SuperAdmin
-                if (existingHerramienta.IdDisponibilidad == 5 && !IsCurrentUserSuperAdmin())
+                // Nuevo: impedir cualquier cambio de disponibilidad si la herramienta está bloqueada, salvo SuperAdmin o Administrador
+                if (existingHerramienta.IdDisponibilidad == 5 && !IsCurrentUserSuperAdminOrAdmin())
                 {
                     return new BaseResponseDto<HerramientaDto>
                     {
                         Success = false,
                         Message =
-                            "La herramienta está BLOQUEADA y no se pueden cambiar sus movimientos/disponibilidad. Sólo SuperAdmin puede desbloquearla mediante PUT /api/herramienta/bloqueo/toggle/{id}.",
+                            "La herramienta está bloqueada. Para cambiar su disponibilidad, primero debe desbloquearla.",
                     };
                 }
 
@@ -1120,7 +1125,95 @@ namespace pyreApi.Services
             }
         }
 
-        // helper para saber si el usuario actual es SuperAdmin
+        // helper para saber si el usuario actual es SuperAdmin o Administrador
+        private bool IsCurrentUserSuperAdminOrAdmin()
+        {
+            try
+            {
+                // Intentamos resolver IHttpContextAccessor de manera opcional.
+                var httpContextAccessor = _serviceProvider.GetService<IHttpContextAccessor>();
+                var user = httpContextAccessor?.HttpContext?.User;
+                if (user == null)
+                {
+                    _logger.LogWarning("IsCurrentUserSuperAdminOrAdmin - HttpContext.User es null");
+                    return false;
+                }
+
+                // Obtener el rol usando la extensión personalizada
+                var userRole = user.GetUserRole();
+                _logger.LogInformation(
+                    "IsCurrentUserSuperAdminOrAdmin - Rol del usuario: {userRole}",
+                    userRole ?? "null"
+                );
+
+                // Verificar usando la extensión personalizada primero
+                if (userRole == "SuperAdmin" || userRole == "Administrador")
+                {
+                    _logger.LogInformation(
+                        "IsCurrentUserSuperAdminOrAdmin - Usuario autorizado con rol: {userRole}",
+                        userRole
+                    );
+                    return true;
+                }
+
+                // Verificar también con los métodos estándar como fallback
+                bool isSuperAdmin = user.IsInRole("SuperAdmin");
+                bool isAdministrador = user.IsInRole("Administrador");
+
+                _logger.LogInformation(
+                    "IsCurrentUserSuperAdminOrAdmin - IsInRole SuperAdmin: {isSuperAdmin}, Administrador: {isAdministrador}",
+                    isSuperAdmin,
+                    isAdministrador
+                );
+
+                if (isSuperAdmin || isAdministrador)
+                    return true;
+
+                // Verificar claims directamente
+                var claims = user.Claims.ToList();
+                _logger.LogInformation(
+                    "IsCurrentUserSuperAdminOrAdmin - Total claims: {count}",
+                    claims.Count
+                );
+
+                foreach (var claim in claims)
+                {
+                    _logger.LogInformation(
+                        "IsCurrentUserSuperAdminOrAdmin - Claim Type: {type}, Value: {value}",
+                        claim.Type,
+                        claim.Value
+                    );
+
+                    if (
+                        (
+                            claim.Type == "role"
+                            || claim.Type.EndsWith("/role")
+                            || claim.Type == ClaimTypes.Role
+                        ) && (claim.Value == "SuperAdmin" || claim.Value == "Administrador")
+                    )
+                    {
+                        _logger.LogInformation(
+                            "IsCurrentUserSuperAdminOrAdmin - Usuario autorizado por claim directo: {value}",
+                            claim.Value
+                        );
+                        return true;
+                    }
+                }
+
+                _logger.LogWarning("IsCurrentUserSuperAdminOrAdmin - Usuario NO autorizado");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "IsCurrentUserSuperAdminOrAdmin - Error al verificar permisos"
+                );
+                return false;
+            }
+        }
+
+        // helper para saber si el usuario actual es SuperAdmin (mantener para compatibilidad si se usa en otros lugares)
         private bool IsCurrentUserSuperAdmin()
         {
             try
@@ -1143,42 +1236,44 @@ namespace pyreApi.Services
             }
         }
 
-        public async Task<BaseResponseDto<byte[]>> ReporteHerramientasAsync()
+        public async Task<BaseResponseDto<byte[]>> ReporteHerramientasAsync(
+            bool includeValorizado = true
+        )
         {
             try
             {
                 var herramientas = (await _repository.GetAllAsync())
-                .Where(h => !h.Eliminado)
-                .ToList();
+                    .Where(h => !h.Eliminado)
+                    .ToList();
 
                 // mapeos fijos solicitados
                 var disponibilidadMap = new Dictionary<int, string>
                 {
-                    {1,"Disponible"},
-                    {2,"Prestada"},
-                    {3,"Mantenimiento"},
-                    {4,"Extraviada"},
-                    {5,"Bloqueada"}
+                    { 1, "Disponible" },
+                    { 2, "Prestada" },
+                    { 3, "Mantenimiento" },
+                    { 4, "Extraviada" },
+                    { 5, "Bloqueada" },
                 };
 
                 var estadoFisicoMap = new Dictionary<int, string>
                 {
-                    {4,"Dañada"},
-                    {3,"Desgastada"},
-                    {1,"Excelente"},
-                    {5,"No Apta"},
-                    {2,"Usada"}
+                    { 4, "Dañada" },
+                    { 3, "Desgastada" },
+                    { 1, "Excelente" },
+                    { 5, "No Apta" },
+                    { 2, "Usada" },
                 };
 
                 var familiaMap = new Dictionary<int, string>
                 {
-                    {1,"Eléctrica"},
-                    {4,"Ferretería"},
-                    {6,"Hidráulica"},
-                    {2,"Mecánica"},
-                    {3,"Medición"},
-                    {7,"Neumática"},
-                    {5,"Seguridad"}
+                    { 1, "Eléctrica" },
+                    { 4, "Ferretería" },
+                    { 6, "Hidráulica" },
+                    { 2, "Mecánica" },
+                    { 3, "Medición" },
+                    { 7, "Neumática" },
+                    { 5, "Seguridad" },
                 };
 
                 // reflection helpers para extraer propiedades comunes (si existen)
@@ -1187,11 +1282,18 @@ namespace pyreApi.Services
                 {
                     foreach (var n in names)
                     {
-                        var p = obj.GetType().GetProperty(n, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                        var p = obj.GetType()
+                            .GetProperty(
+                                n,
+                                BindingFlags.Public
+                                    | BindingFlags.Instance
+                                    | BindingFlags.IgnoreCase
+                            );
                         if (p != null)
                         {
                             var v = p.GetValue(obj);
-                            if (v != null) return v.ToString()!;
+                            if (v != null)
+                                return v.ToString()!;
                         }
                     }
                     return string.Empty;
@@ -1201,13 +1303,22 @@ namespace pyreApi.Services
                 {
                     foreach (var n in names)
                     {
-                        var p = obj.GetType().GetProperty(n, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                        var p = obj.GetType()
+                            .GetProperty(
+                                n,
+                                BindingFlags.Public
+                                    | BindingFlags.Instance
+                                    | BindingFlags.IgnoreCase
+                            );
                         if (p != null)
                         {
                             var v = p.GetValue(obj);
-                            if (v == null) continue;
-                            if (v is int i) return i;
-                            if (int.TryParse(v.ToString(), out var parsed)) return parsed;
+                            if (v == null)
+                                continue;
+                            if (v is int i)
+                                return i;
+                            if (int.TryParse(v.ToString(), out var parsed))
+                                return parsed;
                         }
                     }
                     return null;
@@ -1217,15 +1328,26 @@ namespace pyreApi.Services
                 {
                     foreach (var n in names)
                     {
-                        var p = obj.GetType().GetProperty(n, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                        var p = obj.GetType()
+                            .GetProperty(
+                                n,
+                                BindingFlags.Public
+                                    | BindingFlags.Instance
+                                    | BindingFlags.IgnoreCase
+                            );
                         if (p != null)
                         {
                             var v = p.GetValue(obj);
-                            if (v == null) continue;
-                            if (v is decimal d) return d;
-                            if (v is double db) return (decimal)db;
-                            if (v is float f) return (decimal)f;
-                            if (decimal.TryParse(v.ToString(), out var parsed)) return parsed;
+                            if (v == null)
+                                continue;
+                            if (v is decimal d)
+                                return d;
+                            if (v is double db)
+                                return (decimal)db;
+                            if (v is float f)
+                                return (decimal)f;
+                            if (decimal.TryParse(v.ToString(), out var parsed))
+                                return parsed;
                         }
                     }
                     return null;
@@ -1238,25 +1360,40 @@ namespace pyreApi.Services
                 var activasCount = 0;
 
                 var estadoFisicoCounts = new Dictionary<string, int>();
-                foreach (var kv in estadoFisicoMap) estadoFisicoCounts[kv.Value] = 0;
+                foreach (var kv in estadoFisicoMap)
+                    estadoFisicoCounts[kv.Value] = 0;
 
                 foreach (var h in herramientas)
                 {
                     var dispId = GetIntProp(h, "IdDisponibilidad");
                     var estadoId = GetIntProp(h, "IdEstadoFisico");
-                    var activoVal = GetIntProp(h, "Activo") ?? (h.GetType().GetProperty("Activo")?.GetValue(h) is bool b && b ? 1 : 0);
+                    var activoVal =
+                        GetIntProp(h, "Activo")
+                        ?? (h.GetType().GetProperty("Activo")?.GetValue(h) is bool b && b ? 1 : 0);
 
-                    var costo = GetDecimalProp(h, "CostoDolares");
-                    if (costo.HasValue) totalCosto += costo.Value;
-
-                    if (dispId == 1) disponiblesCount++;
-                    if (dispId == 2) prestadasCount++;
-                    if (dispId == 3) reparacionCount++;
-                    if (activoVal == 1) activasCount++;
-
-                    if (estadoId.HasValue && estadoFisicoMap.TryGetValue(estadoId.Value, out var nombreEstado))
+                    if (includeValorizado)
                     {
-                        estadoFisicoCounts[nombreEstado] = estadoFisicoCounts.GetValueOrDefault(nombreEstado) + 1;
+                        var costo = GetDecimalProp(h, "CostoDolares");
+                        if (costo.HasValue)
+                            totalCosto += costo.Value;
+                    }
+
+                    if (dispId == 1)
+                        disponiblesCount++;
+                    if (dispId == 2)
+                        prestadasCount++;
+                    if (dispId == 3)
+                        reparacionCount++;
+                    if (activoVal == 1)
+                        activasCount++;
+
+                    if (
+                        estadoId.HasValue
+                        && estadoFisicoMap.TryGetValue(estadoId.Value, out var nombreEstado)
+                    )
+                    {
+                        estadoFisicoCounts[nombreEstado] =
+                            estadoFisicoCounts.GetValueOrDefault(nombreEstado) + 1;
                     }
                 }
 
@@ -1274,7 +1411,7 @@ namespace pyreApi.Services
                     "Disponibilidad",
                     "EstadoFisico",
                     "Costo",
-                    "Activo"
+                    "Activo",
                 };
                 for (int c = 0; c < headers.Count; c++)
                     wsList.Cell(1, c + 1).Value = headers[c];
@@ -1286,12 +1423,27 @@ namespace pyreApi.Services
                     var nombre = GetStringProp(h, "NombreHerramienta", "Descripcion");
                     var codigo = GetStringProp(h, "Codigo");
                     var familiaId = GetIntProp(h, "IdFamilia");
-                    var familiaNombre = familiaId.HasValue && familiaMap.TryGetValue(familiaId.Value, out var fName) ? fName : (familiaId?.ToString() ?? string.Empty);
+                    var familiaNombre =
+                        familiaId.HasValue && familiaMap.TryGetValue(familiaId.Value, out var fName)
+                            ? fName
+                            : (familiaId?.ToString() ?? string.Empty);
                     var dispId = GetIntProp(h, "IdDisponibilidad");
-                    var dispNombre = dispId.HasValue && disponibilidadMap.TryGetValue(dispId.Value, out var dName) ? dName : (dispId?.ToString() ?? string.Empty);
+                    var dispNombre =
+                        dispId.HasValue
+                        && disponibilidadMap.TryGetValue(dispId.Value, out var dName)
+                            ? dName
+                            : (dispId?.ToString() ?? string.Empty);
                     var estadoId = GetIntProp(h, "IdEstadoFisico");
-                    var estadoNombre = estadoId.HasValue && estadoFisicoMap.TryGetValue(estadoId.Value, out var eName) ? eName : (estadoId?.ToString() ?? string.Empty);
-                    var costo = GetDecimalProp(h, "CostoDolares")?.ToString("F2") ?? "";
+                    var estadoNombre =
+                        estadoId.HasValue
+                        && estadoFisicoMap.TryGetValue(estadoId.Value, out var eName)
+                            ? eName
+                            : (estadoId?.ToString() ?? string.Empty);
+                    string costo = string.Empty;
+                    if (includeValorizado)
+                    {
+                        costo = GetDecimalProp(h, "CostoDolares")?.ToString("F2") ?? "";
+                    }
                     var activo = GetStringProp(h, "Activo");
 
                     wsList.Cell(row, 1).Value = id;
@@ -1314,9 +1466,12 @@ namespace pyreApi.Services
                 ws.Cell(r++, 1).Value = $"Fecha: {DateTime.Now:yyyy-MM-dd HH:mm:ss} (UTC)";
                 r++;
 
-                ws.Cell(r, 1).Value = "Total Costo";
-                ws.Cell(r, 2).Value = totalCosto;
-                r++;
+                if (includeValorizado)
+                {
+                    ws.Cell(r, 1).Value = "Total Costo";
+                    ws.Cell(r, 2).Value = totalCosto;
+                    r++;
+                }
 
                 ws.Cell(r, 1).Value = "Cantidad Disponibles";
                 ws.Cell(r, 2).Value = disponiblesCount;
@@ -1352,7 +1507,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = bytes,
-                    Message = "Reporte generado correctamente"
+                    Message = "Reporte generado correctamente",
                 };
             }
             catch (Exception ex)
@@ -1361,7 +1516,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al generar el reporte de herramientas",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
