@@ -28,6 +28,6 @@ namespace pyreApi.DTOs.Obra
         [Required(ErrorMessage = "El cliente es requerido")]
         public int IdCliente { get; set; }
 
-        public bool Activo { get; set; }
+        public bool Activo { get; set; } = true; // Default true para preservar estado activo
     }
 }
