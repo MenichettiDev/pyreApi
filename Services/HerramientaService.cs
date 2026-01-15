@@ -1555,5 +1555,56 @@ namespace pyreApi.Services
                 };
             }
         }
+
+        public async Task<BaseResponseDto<object>> GetHerramientasByUsuarioAsync(int usuarioId)
+        {
+            try
+            {
+                var result = await _herramientaRepository.GetHerramientasByUsuarioAsync(usuarioId);
+
+                // Obtener las propiedades del resultado usando reflection
+                var usuariosProperty = result.GetType().GetProperty("UsuariosConHerramientas");
+                var proveedoresProperty = result.GetType().GetProperty("ProveedoresConHerramientas");
+                var resumenProperty = result.GetType().GetProperty("Resumen");
+
+                var usuariosConHerramientas = usuariosProperty?.GetValue(result) as IEnumerable<object> ?? new List<object>();
+                var proveedoresConHerramientas = proveedoresProperty?.GetValue(result) as IEnumerable<object> ?? new List<object>();
+                var resumen = resumenProperty?.GetValue(result);
+
+                var response = new
+                {
+                    UsuariosConHerramientas = usuariosConHerramientas.Select(item => new
+                    {
+                        Usuario = item.GetType().GetProperty("Usuario")?.GetValue(item),
+                        CantidadHerramientas = item.GetType().GetProperty("CantidadHerramientas")?.GetValue(item),
+                        Herramientas = item.GetType().GetProperty("Herramientas")?.GetValue(item)
+                    }),
+                    ProveedoresConHerramientas = proveedoresConHerramientas.Select(item => new
+                    {
+                        Proveedor = item.GetType().GetProperty("Proveedor")?.GetValue(item),
+                        CantidadHerramientas = item.GetType().GetProperty("CantidadHerramientas")?.GetValue(item),
+                        Herramientas = item.GetType().GetProperty("Herramientas")?.GetValue(item)
+                    }),
+                    Resumen = resumen
+                };
+
+                return new BaseResponseDto<object>
+                {
+                    Success = true,
+                    Data = response,
+                    Message = "Reporte de usuarios y proveedores con herramientas obtenido correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener reporte de usuarios y proveedores con herramientas");
+                return new BaseResponseDto<object>
+                {
+                    Success = false,
+                    Message = "Error al obtener el reporte de usuarios y proveedores con herramientas",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
     }
 }

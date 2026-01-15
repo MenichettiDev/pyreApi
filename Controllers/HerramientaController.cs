@@ -271,5 +271,13 @@ namespace pyreApi.Controllers
                 fileName
             );
         }
+
+        [HttpGet("herramientas-usuario")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar el reporte general
+        public async Task<IActionResult> GetReporteGeneral()
+        {
+            var result = await _herramientaService.GetHerramientasByUsuarioAsync(0); // Using 0 as dummy parameter since it's now a general report
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
     }
 }

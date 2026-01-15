@@ -237,5 +237,111 @@ namespace pyreApi.Repositories
                 .Select(p => p.NombrePlanta)
                 .FirstOrDefaultAsync();
         }
+
+        public async Task<object> GetHerramientasByUsuarioAsync(int usuarioId)
+        {
+            // Herramientas prestadas agrupadas por usuario con sus datos
+            var herramientasPrestadas = await _dbSet
+                .Include(h => h.Familia)
+                .Include(h => h.EstadoFisico)
+                .Include(h => h.EstadoDisponibilidad)
+                .Include(h => h.Planta)
+                .Include(h => h.Movimientos)
+                    .ThenInclude(m => m.UsuarioResponsable)
+                .Where(h => h.IdDisponibilidad == 2 && h.Activo && !h.Eliminado)
+                .ToListAsync();
+
+            var usuariosConHerramientas = herramientasPrestadas
+                .SelectMany(h => h.Movimientos
+                    .Where(m => m.IdTipoMovimiento == 1)
+                    .Select(m => new { Herramienta = h, Movimiento = m }))
+                .GroupBy(x => new
+                {
+                    x.Movimiento.IdUsuarioResponsable,
+                    Nombre = x.Movimiento.UsuarioResponsable?.Nombre ?? "Sin nombre",
+                    Apellido = x.Movimiento.UsuarioResponsable?.Apellido ?? "Sin apellido",
+                    Legajo = x.Movimiento.UsuarioResponsable?.Legajo ?? "Sin legajo"
+                })
+                .Select(g => new
+                {
+                    Usuario = new
+                    {
+                        Id = g.Key.IdUsuarioResponsable,
+                        NombreCompleto = $"{g.Key.Nombre} {g.Key.Apellido}",
+                        g.Key.Legajo
+                    },
+                    CantidadHerramientas = g.Count(),
+                    Herramientas = g.Select(x => new
+                    {
+                        IdHerramienta = x.Herramienta.IdHerramienta,
+                        Codigo = x.Herramienta.Codigo,
+                        NombreHerramienta = x.Herramienta.NombreHerramienta,
+                        Familia = x.Herramienta.Familia?.NombreFamilia,
+                        FechaPrestamo = x.Movimiento.Fecha
+                    }).ToList()
+                })
+                .OrderByDescending(x => x.CantidadHerramientas)
+                .ToList();
+
+            // Herramientas en mantenimiento agrupadas por proveedor con sus datos
+            var herramientasEnMantenimiento = await _dbSet
+                .Include(h => h.Familia)
+                .Include(h => h.EstadoFisico)
+                .Include(h => h.EstadoDisponibilidad)
+                .Include(h => h.Planta)
+                .Include(h => h.Movimientos)
+                    .ThenInclude(m => m.Proveedor)
+                .Where(h => h.IdDisponibilidad == 3 && h.Activo && !h.Eliminado)
+                .ToListAsync();
+
+            var proveedoresConHerramientas = herramientasEnMantenimiento
+                .SelectMany(h => h.Movimientos
+                    .Where(m => m.IdTipoMovimiento == 3 && m.IdProveedor.HasValue)
+                    .Select(m => new { Herramienta = h, Movimiento = m }))
+                .GroupBy(x => new
+                {
+                    IdProveedor = x.Movimiento.IdProveedor.Value,
+                    NombreProveedor = x.Movimiento.Proveedor?.NombreProveedor ?? "Proveedor desconocido",
+                    Contacto = x.Movimiento.Proveedor?.Contacto ?? "Sin contacto",
+                    Telefono = x.Movimiento.Proveedor?.Telefono ?? "Sin teléfono"
+                })
+                .Select(g => new
+                {
+                    Proveedor = new
+                    {
+                        Id = g.Key.IdProveedor,
+                        g.Key.NombreProveedor,
+                        g.Key.Contacto,
+                        g.Key.Telefono
+                    },
+                    CantidadHerramientas = g.Count(),
+                    Herramientas = g.Select(x => new
+                    {
+                        IdHerramienta = x.Herramienta.IdHerramienta,
+                        Codigo = x.Herramienta.Codigo,
+                        NombreHerramienta = x.Herramienta.NombreHerramienta,
+                        Familia = x.Herramienta.Familia?.NombreFamilia,
+                        FechaMantenimiento = x.Movimiento.Fecha,
+                        Observaciones = x.Movimiento.Observaciones
+                    }).ToList()
+                })
+                .OrderByDescending(x => x.CantidadHerramientas)
+                .ToList();
+
+            return new
+            {
+                UsuariosConHerramientas = usuariosConHerramientas,
+                ProveedoresConHerramientas = proveedoresConHerramientas,
+                Resumen = new
+                {
+                    TotalUsuariosConPrestamos = usuariosConHerramientas.Count,
+                    TotalProveedoresConMantenimiento = proveedoresConHerramientas.Count,
+                    TotalHerramientasPrestadas = usuariosConHerramientas.Sum(x => x.CantidadHerramientas),
+                    TotalHerramientasEnMantenimiento = proveedoresConHerramientas.Sum(x => x.CantidadHerramientas),
+                    UsuarioConMasHerramientas = usuariosConHerramientas.FirstOrDefault(),
+                    ProveedorConMasHerramientas = proveedoresConHerramientas.FirstOrDefault()
+                }
+            };
+        }
     }
 }
