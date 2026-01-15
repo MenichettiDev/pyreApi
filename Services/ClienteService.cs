@@ -73,6 +73,23 @@ namespace pyreApi.Services
         {
             try
             {
+                // Validar que el CUIT no exista si se proporciona
+                if (!string.IsNullOrWhiteSpace(createDto.Cuit))
+                {
+                    var cuitExists = await _repository.FindAsync(c =>
+                        c.Cuit == createDto.Cuit && !c.Eliminado
+                    );
+                    if (cuitExists.Any())
+                    {
+                        return new BaseResponseDto<ClienteDto>
+                        {
+                            Success = false,
+                            Message = "El CUIT ya existe en el sistema",
+                            Errors = new List<string> { "CUIT duplicado" },
+                        };
+                    }
+                }
+
                 var cliente = MapFromCreateDto(createDto);
                 cliente.FechaRegistro = DateTime.Now;
                 var result = await _repository.AddAsync(cliente);
@@ -109,6 +126,28 @@ namespace pyreApi.Services
                         Success = false,
                         Message = "Cliente no encontrado",
                     };
+                }
+
+                // Validar que el CUIT no exista en otro cliente si se proporciona
+                if (
+                    !string.IsNullOrWhiteSpace(updateDto.Cuit)
+                    && updateDto.Cuit != existingCliente.Cuit
+                )
+                {
+                    var cuitExists = await _repository.FindAsync(c =>
+                        c.Cuit == updateDto.Cuit
+                        && !c.Eliminado
+                        && c.IdCliente != updateDto.IdCliente
+                    );
+                    if (cuitExists.Any())
+                    {
+                        return new BaseResponseDto<ClienteDto>
+                        {
+                            Success = false,
+                            Message = "El CUIT ya existe en otro cliente",
+                            Errors = new List<string> { "CUIT duplicado" },
+                        };
+                    }
                 }
 
                 MapFromUpdateDto(updateDto, existingCliente);
@@ -217,7 +256,8 @@ namespace pyreApi.Services
                 var clientes = await _repository.GetAllAsync();
                 var filteredClientes = clientes
                     .Where(c =>
-                        c.Activo && !c.Eliminado
+                        c.Activo
+                        && !c.Eliminado
                         && (
                             string.IsNullOrWhiteSpace(search)
                             || (
@@ -309,7 +349,8 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = new { Activo = cliente.Activo },
-                    Message = $"Cliente {(cliente.Activo ? "activado" : "desactivado")} correctamente",
+                    Message =
+                        $"Cliente {(cliente.Activo ? "activado" : "desactivado")} correctamente",
                 };
             }
             catch (Exception ex)

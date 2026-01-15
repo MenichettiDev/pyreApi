@@ -18,7 +18,6 @@ namespace pyreApi.DTOs.Usuario
         [MaxLength(20)]
         public string Dni { get; set; } = string.Empty;
 
-        [EmailAddress]
         [MaxLength(150)]
         public string? Email { get; set; }
 
