@@ -265,5 +265,13 @@ namespace pyreApi.Controllers
             var fileName = $"Reporte_Herramientas_{DateTime.Now:yyyyMMdd}.xlsx";
             return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
         }
+
+        [HttpGet("herramientas-usuario")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles pueden consultar el reporte general
+        public async Task<IActionResult> GetReporteGeneral()
+        {
+            var result = await _herramientaService.GetHerramientasByUsuarioAsync(0); // Using 0 as dummy parameter since it's now a general report
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
     }
 }
