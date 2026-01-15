@@ -7,8 +7,17 @@ namespace pyreApi.Services
 {
     public class ProveedorService : GenericService<Proveedor>
     {
-        public ProveedorService(GenericRepository<Proveedor> repository) : base(repository)
+        private readonly MovimientoHerramientaRepository _movimientoRepository;
+
+        public ProveedorService(
+            GenericRepository<Proveedor> repository,
+            MovimientoHerramientaRepository movimientoRepository
+        )
+            : base(repository)
         {
+            _movimientoRepository =
+                movimientoRepository
+                ?? throw new ArgumentNullException(nameof(movimientoRepository));
         }
 
         public async Task<BaseResponseDto<IEnumerable<ProveedorDto>>> GetAllProveedoresAsync()
@@ -22,7 +31,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = proveedorDtos,
-                    Message = "Proveedores obtenidos correctamente"
+                    Message = "Proveedores obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -31,7 +40,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener los proveedores",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -46,7 +55,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<ProveedorDto>
                     {
                         Success = false,
-                        Message = "Proveedor no encontrado"
+                        Message = "Proveedor no encontrado",
                     };
                 }
 
@@ -54,7 +63,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(proveedor),
-                    Message = "Proveedor encontrado"
+                    Message = "Proveedor encontrado",
                 };
             }
             catch (Exception ex)
@@ -63,12 +72,14 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al buscar el proveedor",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<ProveedorDto>> CreateProveedorAsync(CreateProveedorDto createDto)
+        public async Task<BaseResponseDto<ProveedorDto>> CreateProveedorAsync(
+            CreateProveedorDto createDto
+        )
         {
             try
             {
@@ -79,7 +90,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(result),
-                    Message = "Proveedor creado correctamente"
+                    Message = "Proveedor creado correctamente",
                 };
             }
             catch (Exception ex)
@@ -88,12 +99,14 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al crear el proveedor",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<ProveedorDto>> UpdateProveedorAsync(UpdateProveedorDto updateDto)
+        public async Task<BaseResponseDto<ProveedorDto>> UpdateProveedorAsync(
+            UpdateProveedorDto updateDto
+        )
         {
             try
             {
@@ -103,7 +116,7 @@ namespace pyreApi.Services
                     return new BaseResponseDto<ProveedorDto>
                     {
                         Success = false,
-                        Message = "Proveedor no encontrado"
+                        Message = "Proveedor no encontrado",
                     };
                 }
 
@@ -114,7 +127,7 @@ namespace pyreApi.Services
                 {
                     Success = true,
                     Data = MapToDto(existingProveedor),
-                    Message = "Proveedor actualizado correctamente"
+                    Message = "Proveedor actualizado correctamente",
                 };
             }
             catch (Exception ex)
@@ -123,22 +136,27 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al actualizar el proveedor",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<PaginatedResponseDto<ProveedorDto>>> GetAllProveedoresPaginatedAsync(
+        public async Task<
+            BaseResponseDto<PaginatedResponseDto<ProveedorDto>>
+        > GetAllProveedoresPaginatedAsync(
             int page,
             int pageSize,
             string? nombre = null,
             string? cuit = null,
-            bool? activo = null)
+            bool? activo = null
+        )
         {
             try
             {
-                if (page <= 0) page = 1;
-                if (pageSize <= 0) pageSize = 10;
+                if (page <= 0)
+                    page = 1;
+                if (pageSize <= 0)
+                    pageSize = 10;
 
                 var proveedores = await _repository.GetAllAsync();
                 IEnumerable<Proveedor> filtered = proveedores;
@@ -148,7 +166,9 @@ namespace pyreApi.Services
                 if (!string.IsNullOrWhiteSpace(nombre))
                 {
                     var nombreTrim = nombre.Trim().ToLowerInvariant();
-                    filtered = filtered.Where(p => (p.NombreProveedor ?? string.Empty).ToLowerInvariant().Contains(nombreTrim));
+                    filtered = filtered.Where(p =>
+                        (p.NombreProveedor ?? string.Empty).ToLowerInvariant().Contains(nombreTrim)
+                    );
                 }
 
                 if (!string.IsNullOrWhiteSpace(cuit))
@@ -163,10 +183,7 @@ namespace pyreApi.Services
                 }
 
                 var totalRecords = filtered.Count();
-                var proveedoresPage = filtered
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToList();
+                var proveedoresPage = filtered.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 
                 var proveedorDtos = proveedoresPage.Select(MapToDto).ToList();
                 var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
@@ -179,14 +196,14 @@ namespace pyreApi.Services
                     TotalRecords = totalRecords,
                     TotalPages = totalPages,
                     HasNextPage = page < totalPages,
-                    HasPreviousPage = page > 1
+                    HasPreviousPage = page > 1,
                 };
 
                 return new BaseResponseDto<PaginatedResponseDto<ProveedorDto>>
                 {
                     Success = true,
                     Data = paginatedResponse,
-                    Message = "Proveedores obtenidos correctamente"
+                    Message = "Proveedores obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -195,31 +212,74 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener los proveedores",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
 
-        public async Task<BaseResponseDto<IEnumerable<ProveedorDto>>> GetAllComboAsync(string? search = null)
+        public async Task<BaseResponseDto<IEnumerable<ProveedorDto>>> GetAllComboAsync(
+            string? search = null
+        )
         {
             try
             {
                 var proveedores = await _repository.GetAllAsync();
-                var filteredProveedores = proveedores
-                    .Where(p => string.IsNullOrWhiteSpace(search) ||
-                        (p.NombreProveedor != null && p.NombreProveedor.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                        (p.Contacto != null && p.Contacto.Contains(search, StringComparison.OrdinalIgnoreCase)))
-                        .Where(p => p.Activo && !p.Eliminado)
-                    .Take(15)
+
+                // Aplicar filtro de texto primero
+                var candidateProveedores = proveedores
+                    .Where(p =>
+                        !p.Eliminado
+                        && (
+                            string.IsNullOrWhiteSpace(search)
+                            || (
+                                p.NombreProveedor != null
+                                && p.NombreProveedor.Contains(
+                                    search,
+                                    StringComparison.OrdinalIgnoreCase
+                                )
+                            )
+                            || (
+                                p.Contacto != null
+                                && p.Contacto.Contains(search, StringComparison.OrdinalIgnoreCase)
+                            )
+                        )
+                    )
                     .ToList();
 
-                var proveedorDtos = filteredProveedores.Select(MapToDto);
+                var resultado = new List<Proveedor>();
+
+                // Incluir proveedores activos directamente; incluir inactivos sólo si tienen herramientas en préstamo/reparación asociadas
+                foreach (var p in candidateProveedores)
+                {
+                    if (p.Activo)
+                    {
+                        resultado.Add(p);
+                        continue;
+                    }
+
+                    // proveedor inactivo: comprobar movimientos asociados
+                    var movimientos = await _movimientoRepository.GetByProveedorAsync(
+                        p.IdProveedor
+                    );
+                    var tieneHerramientasPendientes = movimientos.Any(m =>
+                        m.Herramienta != null
+                        && (
+                            m.Herramienta.IdDisponibilidad == 2
+                            || m.Herramienta.IdDisponibilidad == 3
+                        )
+                    );
+
+                    if (tieneHerramientasPendientes)
+                        resultado.Add(p);
+                }
+
+                var proveedorDtos = resultado.Take(15).Select(MapToDto);
 
                 return new BaseResponseDto<IEnumerable<ProveedorDto>>
                 {
                     Success = true,
                     Data = proveedorDtos,
-                    Message = "Proveedores obtenidos correctamente"
+                    Message = "Proveedores obtenidos correctamente",
                 };
             }
             catch (Exception ex)
@@ -228,7 +288,7 @@ namespace pyreApi.Services
                 {
                     Success = false,
                     Message = "Error al obtener los proveedores",
-                    Errors = new List<string> { ex.Message }
+                    Errors = new List<string> { ex.Message },
                 };
             }
         }
@@ -280,7 +340,7 @@ namespace pyreApi.Services
                 Email = proveedor.Email,
                 Direccion = proveedor.Direccion,
                 Descripcion = proveedor.Descripcion,
-                Activo = proveedor.Activo
+                Activo = proveedor.Activo,
             };
         }
 
@@ -295,19 +355,36 @@ namespace pyreApi.Services
                 Email = createDto.Email,
                 Direccion = createDto.Direccion,
                 Descripcion = createDto.Descripcion,
-                Activo = createDto.Activo
+                Activo = createDto.Activo,
             };
         }
 
         private void MapFromUpdateDto(UpdateProveedorDto updateDto, Proveedor proveedor)
         {
-            proveedor.NombreProveedor = updateDto.NombreProveedor;
-            proveedor.Cuit = updateDto.Cuit;
-            proveedor.Contacto = updateDto.Contacto;
-            proveedor.Telefono = updateDto.Telefono;
-            proveedor.Email = updateDto.Email;
-            proveedor.Direccion = updateDto.Direccion;
-            proveedor.Descripcion = updateDto.Descripcion;
+            // Solo actualizar campos que no están vacíos o nulos, preservando los existentes
+            if (!string.IsNullOrWhiteSpace(updateDto.NombreProveedor))
+                proveedor.NombreProveedor = updateDto.NombreProveedor;
+
+            if (!string.IsNullOrWhiteSpace(updateDto.Contacto))
+                proveedor.Contacto = updateDto.Contacto;
+
+            // Para campos nullable, solo actualizar si se proporciona un valor no vacío
+            if (!string.IsNullOrWhiteSpace(updateDto.Cuit))
+                proveedor.Cuit = updateDto.Cuit;
+
+            if (!string.IsNullOrWhiteSpace(updateDto.Telefono))
+                proveedor.Telefono = updateDto.Telefono;
+
+            if (!string.IsNullOrWhiteSpace(updateDto.Email))
+                proveedor.Email = updateDto.Email;
+
+            if (!string.IsNullOrWhiteSpace(updateDto.Direccion))
+                proveedor.Direccion = updateDto.Direccion;
+
+            if (!string.IsNullOrWhiteSpace(updateDto.Descripcion))
+                proveedor.Descripcion = updateDto.Descripcion;
+
+            // El estado activo siempre se actualiza ya que es un bool
             proveedor.Activo = updateDto.Activo;
         }
     }
