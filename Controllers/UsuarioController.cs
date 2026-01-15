@@ -18,7 +18,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede ver todos los usuarios
+        [Authorize]
         public async Task<IActionResult> GetAll(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10,
@@ -60,7 +60,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpGet("all-unpaginated")]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede ver todos los usuarios
+        [Authorize] // Solo SuperAdmin puede ver todos los usuarios
         public async Task<IActionResult> GetAllUnpaginated()
         {
             var response = await _usuarioService.GetAllUsuariosAsync();
