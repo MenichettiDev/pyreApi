@@ -394,11 +394,24 @@ namespace pyreApi.Services
 
         private void MapFromUpdateDto(UpdateClienteDto updateDto, Cliente cliente)
         {
-            cliente.Cuit = updateDto.Cuit;
-            cliente.Nombre = updateDto.Nombre;
-            cliente.Telefono = updateDto.Telefono;
-            cliente.Email = updateDto.Email;
-            cliente.Direccion = updateDto.Direccion;
+            // Solo actualizar campos que no están vacíos o nulos, preservando los existentes
+            if (!string.IsNullOrWhiteSpace(updateDto.Nombre))
+                cliente.Nombre = updateDto.Nombre;
+
+            // Para campos nullable, solo actualizar si se proporciona un valor no vacío
+            if (!string.IsNullOrWhiteSpace(updateDto.Cuit))
+                cliente.Cuit = updateDto.Cuit;
+
+            if (!string.IsNullOrWhiteSpace(updateDto.Telefono))
+                cliente.Telefono = updateDto.Telefono;
+
+            if (!string.IsNullOrWhiteSpace(updateDto.Email))
+                cliente.Email = updateDto.Email;
+
+            if (!string.IsNullOrWhiteSpace(updateDto.Direccion))
+                cliente.Direccion = updateDto.Direccion;
+
+            // El estado activo siempre se actualiza ya que es un bool
             cliente.Activo = updateDto.Activo;
         }
     }
