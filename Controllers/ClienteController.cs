@@ -46,7 +46,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede crear clientes
+        [Authorize(Roles = "SuperAdmin,Administrador")] // SuperAdmin y Administrador pueden crear clientes
         public async Task<IActionResult> Create([FromBody] CreateClienteDto createDto)
         {
             if (!ModelState.IsValid)
@@ -59,14 +59,14 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede actualizar clientes
+        [Authorize(Roles = "SuperAdmin,Administrador")] // SuperAdmin y Administrador pueden actualizar clientes
         public async Task<IActionResult> Update(int id, [FromBody] UpdateClienteDto updateDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (id != updateDto.IdCliente)
-                return BadRequest("El ID de la URL no coincide con el ID del objeto");
+            // Asignar automáticamente el ID de la URL al DTO para evitar problemas de sincronización
+            updateDto.IdCliente = id;
 
             var result = await _clienteService.UpdateClienteAsync(updateDto);
             return result.Success ? Ok(result) : BadRequest(result);
@@ -82,14 +82,18 @@ namespace pyreApi.Controllers
 
         [HttpGet("getClientesCombo")]
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos pueden consultar el combo de clientes
-        public async Task<IActionResult> GetAllCombo([FromQuery] string? search = null)
+        public async Task<IActionResult> GetAllCombo(
+            [FromQuery(Name = "q")] string? search = null,
+            [FromQuery] bool? activo = null
+        )
         {
+            // Actualmente el servicio usa por defecto solo activos; mantenemos compatibilidad.
             var result = await _clienteService.GetAllComboAsync(search);
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
         [HttpPatch("{id}/toggle-activo")]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede cambiar estado activo
+        [Authorize(Roles = "SuperAdmin,Administrador")] // SuperAdmin y Administrador pueden cambiar estado activo
         public async Task<IActionResult> ToggleActivo(int id)
         {
             if (id <= 0)

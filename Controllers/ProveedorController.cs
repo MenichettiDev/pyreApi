@@ -1,5 +1,5 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using pyreApi.DTOs.Proveedor;
 using pyreApi.Services;
 
@@ -24,9 +24,16 @@ namespace pyreApi.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? nombre = null,
             [FromQuery] string? cuit = null,
-            [FromQuery] bool? activo = null)
+            [FromQuery] bool? activo = null
+        )
         {
-            var result = await _proveedorService.GetAllProveedoresPaginatedAsync(page, pageSize, nombre, cuit, activo);
+            var result = await _proveedorService.GetAllProveedoresPaginatedAsync(
+                page,
+                pageSize,
+                nombre,
+                cuit,
+                activo
+            );
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
@@ -39,25 +46,27 @@ namespace pyreApi.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede crear proveedores
+        [Authorize(Roles = "SuperAdmin,Administrador")] // SuperAdmin y Administrador pueden crear proveedores
         public async Task<IActionResult> Create([FromBody] CreateProveedorDto createDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             var result = await _proveedorService.CreateProveedorAsync(createDto);
-            return result.Success ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdProveedor }, result) : BadRequest(result);
+            return result.Success
+                ? CreatedAtAction(nameof(GetById), new { id = result.Data?.IdProveedor }, result)
+                : BadRequest(result);
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede actualizar proveedores
+        [Authorize(Roles = "SuperAdmin,Administrador")] // SuperAdmin y Administrador pueden actualizar proveedores
         public async Task<IActionResult> Update(int id, [FromBody] UpdateProveedorDto updateDto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (id != updateDto.IdProveedor)
-                return BadRequest("El ID de la URL no coincide con el ID del objeto");
+            // Asignar automáticamente el ID de la URL al DTO para evitar problemas de sincronización
+            updateDto.IdProveedor = id;
 
             var result = await _proveedorService.UpdateProveedorAsync(updateDto);
             return result.Success ? Ok(result) : BadRequest(result);
@@ -80,12 +89,18 @@ namespace pyreApi.Controllers
         }
 
         [HttpPatch("{id}/toggle-activo")]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede cambiar estado activo
+        [Authorize(Roles = "SuperAdmin,Administrador")] // SuperAdmin y Administrador pueden cambiar estado activo
         public async Task<IActionResult> ToggleActivo(int id)
         {
             if (id <= 0)
             {
-                return BadRequest(new { Success = false, Message = "El ID del proveedor debe ser un número válido mayor a 0." });
+                return BadRequest(
+                    new
+                    {
+                        Success = false,
+                        Message = "El ID del proveedor debe ser un número válido mayor a 0.",
+                    }
+                );
             }
 
             var result = await _proveedorService.ToggleActivoAsync(id);

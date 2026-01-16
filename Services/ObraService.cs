@@ -136,13 +136,30 @@ namespace pyreApi.Services
                 }
 
                 existingObra.IdCliente = updateDto.IdCliente;
-                existingObra.Codigo = updateDto.Codigo;
-                existingObra.NombreObra = updateDto.NombreObra;
-                existingObra.Ubicacion = updateDto.Ubicacion;
-                existingObra.Descripcion = updateDto.Descripcion;
-                existingObra.FechaInicio = updateDto.FechaInicio;
-                existingObra.FechaFin = updateDto.FechaFin;
-                existingObra.Activo = updateDto.Activo;
+
+                // Solo actualizar campos que no están vacíos, preservando los existentes
+                if (!string.IsNullOrWhiteSpace(updateDto.Codigo))
+                    existingObra.Codigo = updateDto.Codigo;
+
+                if (!string.IsNullOrWhiteSpace(updateDto.NombreObra))
+                    existingObra.NombreObra = updateDto.NombreObra;
+
+                if (!string.IsNullOrWhiteSpace(updateDto.Ubicacion))
+                    existingObra.Ubicacion = updateDto.Ubicacion;
+
+                if (!string.IsNullOrWhiteSpace(updateDto.Descripcion))
+                    existingObra.Descripcion = updateDto.Descripcion;
+
+                // Las fechas se actualizan si se proporcionan
+                if (updateDto.FechaInicio.HasValue)
+                    existingObra.FechaInicio = updateDto.FechaInicio;
+
+                if (updateDto.FechaFin.HasValue)
+                    existingObra.FechaFin = updateDto.FechaFin;
+
+                // Preservar el estado actual de Activo - no lo actualizamos en edición normal
+                // existingObra.Activo se mantiene igual
+
                 await _repository.UpdateAsync(existingObra);
 
                 return new BaseResponseDto<ObraDto>

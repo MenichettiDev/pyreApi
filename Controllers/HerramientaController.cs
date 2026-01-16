@@ -35,7 +35,6 @@ namespace pyreApi.Controllers
             [FromQuery] string? marca = null,
             [FromQuery] bool? estado = null,
             [FromQuery] int? idDisponibilidad = null
-
         )
         {
             var result = await _herramientaService.GetPagedAsync(
@@ -246,7 +245,7 @@ namespace pyreApi.Controllers
         }
 
         [HttpPut("bloqueo/toggle/{id}")]
-        [Authorize(Roles = "SuperAdmin")] // Solo SuperAdmin puede bloquear/desbloquear herramientas
+        [Authorize(Roles = "SuperAdmin,Administrador")] // SuperAdmin y Administrador pueden bloquear/desbloquear herramientas
         public async Task<IActionResult> ToggleBloqueo(int id)
         {
             var result = await _herramientaService.ToggleBloqueoAsync(id);
@@ -257,13 +256,20 @@ namespace pyreApi.Controllers
         [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles autorizados para descargar reporte
         public async Task<IActionResult> ReporteHerramientas()
         {
-            var response = await _herramientaService.ReporteHerramientasAsync();
+            // Administrador no verá la información de stock valorizado
+            var includeValorizado = !User.IsInRole("Administrador");
+
+            var response = await _herramientaService.ReporteHerramientasAsync(includeValorizado);
             if (!response.Success)
                 return BadRequest(response);
 
             var fileBytes = response.Data ?? Array.Empty<byte>();
             var fileName = $"Reporte_Herramientas_{DateTime.Now:yyyyMMdd}.xlsx";
-            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                fileName
+            );
         }
 
         [HttpGet("herramientas-usuario")]
