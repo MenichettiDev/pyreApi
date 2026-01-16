@@ -1451,5 +1451,247 @@ namespace pyreApi.Services
                 };
             }
         }
+
+        public async Task<BaseResponseDto<byte[]>> ReporteUsuariosProveedoresAsync(int? usuarioId = null, int? proveedorId = null)
+        {
+            try
+            {
+                var result = await _herramientaRepository.GetHerramientasByUsuarioAsync(0);
+
+                // Obtener las propiedades del resultado usando reflection
+                var usuariosProperty = result.GetType().GetProperty("UsuariosConHerramientas");
+                var proveedoresProperty = result.GetType().GetProperty("ProveedoresConHerramientas");
+                var resumenProperty = result.GetType().GetProperty("Resumen");
+
+                var usuariosConHerramientas = usuariosProperty?.GetValue(result) as IEnumerable<object> ?? new List<object>();
+                var proveedoresConHerramientas = proveedoresProperty?.GetValue(result) as IEnumerable<object> ?? new List<object>();
+                var resumen = resumenProperty?.GetValue(result);
+
+                // Filtrar por usuario específico si se proporciona
+                if (usuarioId.HasValue)
+                {
+                    usuariosConHerramientas = usuariosConHerramientas.Where(item =>
+                    {
+                        var usuario = item.GetType().GetProperty("Usuario")?.GetValue(item);
+                        var idProp = usuario?.GetType().GetProperty("Id")?.GetValue(usuario);
+                        return idProp?.Equals(usuarioId.Value) == true;
+                    });
+                }
+
+                // Filtrar por proveedor específico si se proporciona
+                if (proveedorId.HasValue)
+                {
+                    proveedoresConHerramientas = proveedoresConHerramientas.Where(item =>
+                    {
+                        var proveedor = item.GetType().GetProperty("Proveedor")?.GetValue(item);
+                        var idProp = proveedor?.GetType().GetProperty("Id")?.GetValue(proveedor);
+                        return idProp?.Equals(proveedorId.Value) == true;
+                    });
+                }
+
+                using var workbook = new XLWorkbook();
+
+                // Hoja de Usuarios con Herramientas Prestadas
+                if (usuariosConHerramientas.Any())
+                {
+                    var wsUsuarios = workbook.Worksheets.Add("Usuarios con Herramientas");
+
+                    // Encabezados para usuarios
+                    var headerUsuarios = new[] { "ID Usuario", "Nombre Completo", "Legajo", "Cantidad Herramientas", "Código Herramienta", "Nombre Herramienta", "Familia", "Fecha Préstamo" };
+                    for (int i = 0; i < headerUsuarios.Length; i++)
+                    {
+                        wsUsuarios.Cell(1, i + 1).Value = headerUsuarios[i];
+                        wsUsuarios.Cell(1, i + 1).Style.Font.Bold = true;
+                        wsUsuarios.Cell(1, i + 1).Style.Fill.BackgroundColor = XLColor.LightGray;
+                    }
+
+                    int rowUsuarios = 2;
+                    foreach (var item in usuariosConHerramientas)
+                    {
+                        var usuario = item.GetType().GetProperty("Usuario")?.GetValue(item);
+                        var cantidadHerramientas = item.GetType().GetProperty("CantidadHerramientas")?.GetValue(item);
+                        var herramientas = item.GetType().GetProperty("Herramientas")?.GetValue(item) as IEnumerable<object> ?? new List<object>();
+
+                        var idUsuario = usuario?.GetType().GetProperty("Id")?.GetValue(usuario)?.ToString();
+                        var nombreCompleto = usuario?.GetType().GetProperty("NombreCompleto")?.GetValue(usuario)?.ToString();
+                        var legajo = usuario?.GetType().GetProperty("Legajo")?.GetValue(usuario)?.ToString();
+
+                        if (herramientas.Any())
+                        {
+                            foreach (var herramienta in herramientas)
+                            {
+                                wsUsuarios.Cell(rowUsuarios, 1).Value = idUsuario;
+                                wsUsuarios.Cell(rowUsuarios, 2).Value = nombreCompleto;
+                                wsUsuarios.Cell(rowUsuarios, 3).Value = legajo;
+                                wsUsuarios.Cell(rowUsuarios, 4).Value = cantidadHerramientas?.ToString();
+                                wsUsuarios.Cell(rowUsuarios, 5).Value = herramienta.GetType().GetProperty("Codigo")?.GetValue(herramienta)?.ToString();
+                                wsUsuarios.Cell(rowUsuarios, 6).Value = herramienta.GetType().GetProperty("NombreHerramienta")?.GetValue(herramienta)?.ToString();
+                                wsUsuarios.Cell(rowUsuarios, 7).Value = herramienta.GetType().GetProperty("Familia")?.GetValue(herramienta)?.ToString();
+
+                                var fechaPrestamo = herramienta.GetType().GetProperty("FechaPrestamo")?.GetValue(herramienta);
+                                if (fechaPrestamo is DateTime fecha)
+                                {
+                                    wsUsuarios.Cell(rowUsuarios, 8).Value = fecha;
+                                    wsUsuarios.Cell(rowUsuarios, 8).Style.DateFormat.Format = "dd/mm/yyyy";
+                                }
+                                else
+                                {
+                                    wsUsuarios.Cell(rowUsuarios, 8).Value = fechaPrestamo?.ToString();
+                                }
+
+                                rowUsuarios++;
+                            }
+                        }
+                        else
+                        {
+                            // Usuario sin herramientas
+                            wsUsuarios.Cell(rowUsuarios, 1).Value = idUsuario;
+                            wsUsuarios.Cell(rowUsuarios, 2).Value = nombreCompleto;
+                            wsUsuarios.Cell(rowUsuarios, 3).Value = legajo;
+                            wsUsuarios.Cell(rowUsuarios, 4).Value = cantidadHerramientas?.ToString();
+                            wsUsuarios.Cell(rowUsuarios, 5).Value = "Sin herramientas";
+                            rowUsuarios++;
+                        }
+                    }
+
+                    wsUsuarios.Columns().AdjustToContents();
+                }
+
+                // Hoja de Proveedores con Herramientas en Mantenimiento
+                if (proveedoresConHerramientas.Any())
+                {
+                    var wsProveedores = workbook.Worksheets.Add("Proveedores con Herramientas");
+
+                    // Encabezados para proveedores
+                    var headerProveedores = new[] { "ID Proveedor", "Nombre Proveedor", "Contacto", "Teléfono", "Cantidad Herramientas", "Código Herramienta", "Nombre Herramienta", "Familia", "Fecha Mantenimiento", "Observaciones" };
+                    for (int i = 0; i < headerProveedores.Length; i++)
+                    {
+                        wsProveedores.Cell(1, i + 1).Value = headerProveedores[i];
+                        wsProveedores.Cell(1, i + 1).Style.Font.Bold = true;
+                        wsProveedores.Cell(1, i + 1).Style.Fill.BackgroundColor = XLColor.LightGray;
+                    }
+
+                    int rowProveedores = 2;
+                    foreach (var item in proveedoresConHerramientas)
+                    {
+                        var proveedor = item.GetType().GetProperty("Proveedor")?.GetValue(item);
+                        var cantidadHerramientas = item.GetType().GetProperty("CantidadHerramientas")?.GetValue(item);
+                        var herramientas = item.GetType().GetProperty("Herramientas")?.GetValue(item) as IEnumerable<object> ?? new List<object>();
+
+                        var idProveedor = proveedor?.GetType().GetProperty("Id")?.GetValue(proveedor)?.ToString();
+                        var nombreProveedor = proveedor?.GetType().GetProperty("NombreProveedor")?.GetValue(proveedor)?.ToString();
+                        var contacto = proveedor?.GetType().GetProperty("Contacto")?.GetValue(proveedor)?.ToString();
+                        var telefono = proveedor?.GetType().GetProperty("Telefono")?.GetValue(proveedor)?.ToString();
+
+                        if (herramientas.Any())
+                        {
+                            foreach (var herramienta in herramientas)
+                            {
+                                wsProveedores.Cell(rowProveedores, 1).Value = idProveedor;
+                                wsProveedores.Cell(rowProveedores, 2).Value = nombreProveedor;
+                                wsProveedores.Cell(rowProveedores, 3).Value = contacto;
+                                wsProveedores.Cell(rowProveedores, 4).Value = telefono;
+                                wsProveedores.Cell(rowProveedores, 5).Value = cantidadHerramientas?.ToString();
+                                wsProveedores.Cell(rowProveedores, 6).Value = herramienta.GetType().GetProperty("Codigo")?.GetValue(herramienta)?.ToString();
+                                wsProveedores.Cell(rowProveedores, 7).Value = herramienta.GetType().GetProperty("NombreHerramienta")?.GetValue(herramienta)?.ToString();
+                                wsProveedores.Cell(rowProveedores, 8).Value = herramienta.GetType().GetProperty("Familia")?.GetValue(herramienta)?.ToString();
+
+                                var fechaMantenimiento = herramienta.GetType().GetProperty("FechaMantenimiento")?.GetValue(herramienta);
+                                if (fechaMantenimiento is DateTime fecha)
+                                {
+                                    wsProveedores.Cell(rowProveedores, 9).Value = fecha;
+                                    wsProveedores.Cell(rowProveedores, 9).Style.DateFormat.Format = "dd/mm/yyyy";
+                                }
+                                else
+                                {
+                                    wsProveedores.Cell(rowProveedores, 9).Value = fechaMantenimiento?.ToString();
+                                }
+
+                                wsProveedores.Cell(rowProveedores, 10).Value = herramienta.GetType().GetProperty("Observaciones")?.GetValue(herramienta)?.ToString();
+                                rowProveedores++;
+                            }
+                        }
+                        else
+                        {
+                            // Proveedor sin herramientas
+                            wsProveedores.Cell(rowProveedores, 1).Value = idProveedor;
+                            wsProveedores.Cell(rowProveedores, 2).Value = nombreProveedor;
+                            wsProveedores.Cell(rowProveedores, 3).Value = contacto;
+                            wsProveedores.Cell(rowProveedores, 4).Value = telefono;
+                            wsProveedores.Cell(rowProveedores, 5).Value = cantidadHerramientas?.ToString();
+                            wsProveedores.Cell(rowProveedores, 6).Value = "Sin herramientas";
+                            rowProveedores++;
+                        }
+                    }
+
+                    wsProveedores.Columns().AdjustToContents();
+                }
+
+                // Hoja de Resumen
+                var wsResumen = workbook.Worksheets.Add("Resumen");
+                int r = 1;
+
+                var tipoReporte = usuarioId.HasValue ? "Individual - Usuario" :
+                                proveedorId.HasValue ? "Individual - Proveedor" : "General";
+
+                wsResumen.Cell(r++, 1).Value = $"Reporte de Usuarios y Proveedores - {tipoReporte}";
+                wsResumen.Cell(r++, 1).Value = $"Fecha: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+                r++;
+
+                if (resumen != null)
+                {
+                    var totalUsuarios = resumen.GetType().GetProperty("TotalUsuariosConPrestamos")?.GetValue(resumen);
+                    var totalProveedores = resumen.GetType().GetProperty("TotalProveedoresConMantenimiento")?.GetValue(resumen);
+                    var totalPrestadas = resumen.GetType().GetProperty("TotalHerramientasPrestadas")?.GetValue(resumen);
+                    var totalMantenimiento = resumen.GetType().GetProperty("TotalHerramientasEnMantenimiento")?.GetValue(resumen);
+
+                    wsResumen.Cell(r, 1).Value = "Total Usuarios con Préstamos";
+                    wsResumen.Cell(r++, 2).Value = totalUsuarios?.ToString();
+
+                    wsResumen.Cell(r, 1).Value = "Total Proveedores con Mantenimiento";
+                    wsResumen.Cell(r++, 2).Value = totalProveedores?.ToString();
+
+                    wsResumen.Cell(r, 1).Value = "Total Herramientas Prestadas";
+                    wsResumen.Cell(r++, 2).Value = totalPrestadas?.ToString();
+
+                    wsResumen.Cell(r, 1).Value = "Total Herramientas en Mantenimiento";
+                    wsResumen.Cell(r++, 2).Value = totalMantenimiento?.ToString();
+                }
+
+                wsResumen.Columns().AdjustToContents();
+
+                // Si no hay hojas con datos, crear una hoja informativa
+                if (!workbook.Worksheets.Any(ws => ws.Name != "Resumen"))
+                {
+                    var wsInfo = workbook.Worksheets.Add("Información");
+                    wsInfo.Cell(1, 1).Value = "No se encontraron datos para los criterios especificados";
+                    wsInfo.Cell(2, 1).Value = $"Fecha de consulta: {DateTime.Now:yyyy-MM-dd HH:mm:ss}";
+                }
+
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+                var bytes = stream.ToArray();
+
+                var messageType = usuarioId.HasValue ? "usuario específico" :
+                                proveedorId.HasValue ? "proveedor específico" : "general";
+
+                return new BaseResponseDto<byte[]>
+                {
+                    Success = true,
+                    Data = bytes,
+                    Message = $"Reporte de usuarios y proveedores ({messageType}) generado correctamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar el reporte Excel de usuarios y proveedores");
+                return new BaseResponseDto<byte[]>
+                {
+                    Success = false,
+                    Message = "Error al generar el reporte Excel de usuarios y proveedores",
+                    Errors = new List<string> { ex.Message }
+                };
+            }
+        }
     }
 }

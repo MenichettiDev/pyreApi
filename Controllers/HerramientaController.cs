@@ -273,5 +273,24 @@ namespace pyreApi.Controllers
             var result = await _herramientaService.GetHerramientasByUsuarioAsync(0); // Using 0 as dummy parameter since it's now a general report
             return result.Success ? Ok(result) : BadRequest(result);
         }
+
+        [HttpGet("reporteUsuariosProveedores")]
+        [Authorize(Roles = "SuperAdmin,Administrador,Supervisor,Operario")] // Todos los roles autorizados para descargar reporte
+        public async Task<IActionResult> ReporteUsuariosProveedores(
+            [FromQuery] int? usuarioId = null,
+            [FromQuery] int? proveedorId = null)
+        {
+            var response = await _herramientaService.ReporteUsuariosProveedoresAsync(usuarioId, proveedorId);
+            if (!response.Success)
+                return BadRequest(response);
+
+            var fileBytes = response.Data ?? Array.Empty<byte>();
+
+            var fileNameSuffix = usuarioId.HasValue ? $"Usuario_{usuarioId}" :
+                               proveedorId.HasValue ? $"Proveedor_{proveedorId}" : "General";
+            var fileName = $"Reporte_UsuariosProveedores_{fileNameSuffix}_{DateTime.Now:yyyyMMdd}.xlsx";
+
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
     }
 }
