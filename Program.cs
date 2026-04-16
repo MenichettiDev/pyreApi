@@ -18,8 +18,9 @@ using pyreApi.Data;
 using pyreApi.Repositories;
 using pyreApi.Services;
 
-// 🚀 Forzamos que Kestrel use solo el puerto 1000 en todas las interfaces
-Environment.SetEnvironmentVariable("ASPNETCORE_URLS", "http://0.0.0.0:1000");
+// 🚀 Obtenemos el puerto de la variable de entorno PORT (que asigna Render) o usamos 8080 por defecto
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+Environment.SetEnvironmentVariable("ASPNETCORE_URLS", $"http://0.0.0.0:{port}");
 
 
 var builder = WebApplication.CreateBuilder(args); // aca lo q se hace es crear la instancia de la app
