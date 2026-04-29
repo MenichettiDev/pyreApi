@@ -72,8 +72,8 @@ builder.Services.AddCors(options =>
                     "http://test.forestdev.com.ar", // Producción
                     "http://forestdev.com.ar", // Producción
                     "https://forestdev.com.ar", // Producción
-                    "https://pyre-frontend.netlify.app", // Netlify
-                    "http://pyre-frontend.netlify.app" // Netlify (desarrollo)
+                    "https://pyre-test.netlify.app", // Netlify
+                    "http://pyre-test.netlify.app" // Netlify (desarrollo)
                 )
                 .AllowAnyMethod()
                 .AllowAnyHeader()
