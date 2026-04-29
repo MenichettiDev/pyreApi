@@ -65,19 +65,9 @@ builder.Services.AddCors(options =>
         policy =>
         {
             policy
-                .WithOrigins(
-                    "http://localhost:4200", // Desarrollo
-                    "http://localhost:4200/", // Desarrollo
-                    "https://test.forestdev.com.ar", // Producción
-                    "http://test.forestdev.com.ar", // Producción
-                    "http://forestdev.com.ar", // Producción
-                    "https://forestdev.com.ar", // Producción
-                    "https://pyre-test.netlify.app", // Netlify
-                    "http://pyre-test.netlify.app" // Netlify (desarrollo)
-                )
+                .AllowAnyOrigin()
                 .AllowAnyMethod()
-                .AllowAnyHeader()
-                .AllowCredentials();
+                .AllowAnyHeader();
         }
     );
 });
