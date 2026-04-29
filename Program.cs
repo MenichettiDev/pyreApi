@@ -70,8 +70,10 @@ builder.Services.AddCors(options =>
                     "http://localhost:4200/", // Desarrollo
                     "https://test.forestdev.com.ar", // Producción
                     "http://test.forestdev.com.ar", // Producción
-                "http://forestdev.com.ar", // Producción
-                "https://forestdev.com.ar" // Producción
+                    "http://forestdev.com.ar", // Producción
+                    "https://forestdev.com.ar", // Producción
+                    "https://pyre-frontend.netlify.app", // Netlify
+                    "http://pyre-frontend.netlify.app" // Netlify (desarrollo)
                 )
                 .AllowAnyMethod()
                 .AllowAnyHeader()
